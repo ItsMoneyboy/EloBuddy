@@ -20,7 +20,7 @@ namespace iAhri
         private static Dictionary<int, object[]> PredictedDamage = new Dictionary<int, object[]>();
         private static AIHeroClient myHero;
         private static Vector3 mousePos;
-        private static Menu menu, comboMenu, harassMenu;
+        private static Menu menu, comboMenu, harassMenu, fleeMenu;
         private static Spell.Skillshot Q;
         private static Spell.Skillshot W;
         private static Spell.Skillshot E;
@@ -31,15 +31,14 @@ namespace iAhri
         static void Main(string[] args)
         {
             Bootstrap.Init(null);
-            EloBuddy.SDK.Events.Loading.OnLoadingComplete += OnLoad;
+            Loading.OnLoadingComplete += OnLoad;
         }
         private static void OnLoad(EventArgs args)
         {
             myHero = ObjectManager.Player;
             mousePos = Game.CursorPos;
-
-            Chat.Print(AddonName + " loaded, have fun!.");
             if (myHero.Hero != Champion.Ahri) { return; }
+            Chat.Print(AddonName + " loaded, have fun!.");
             Q = new Spell.Skillshot(SpellSlot.Q, 880, SkillShotType.Linear, 250, 1400, 100);
             W = new Spell.Skillshot(SpellSlot.W, 600, SkillShotType.Circular, 0, 1400, 600);
             E = new Spell.Skillshot(SpellSlot.E, 975, SkillShotType.Linear, 250, 1550, 60);
@@ -50,6 +49,8 @@ namespace iAhri
             menu.AddLabel(AddonName + " made by " + Author);
             menu.Add("CatchQMovement", new CheckBox("Catch the Q with Movement", false));
             menu.Add("Overkill", new Slider("Overkill % for Dmg Prediction", 10, 0, 100));
+            menu.Add("Gapclose", new CheckBox("Use E on gapclose spells", true));
+            menu.Add("Channeling", new CheckBox("Use E on channeling spells", true));
 
             comboMenu = menu.AddSubMenu("Combo", "Combo");
             comboMenu.Add("Q", new CheckBox("Use Q", true));
@@ -57,13 +58,17 @@ namespace iAhri
             comboMenu.Add("E", new CheckBox("Use E", true));
             comboMenu.Add("R", new CheckBox("Use R", true));
             comboMenu.Add("CatchQR", new CheckBox("Use Catch the Q with R", true));
-            comboMenu.Add("CatchQRPriority", new CheckBox("Give Priority to Catch the Q with R", true));
+            comboMenu.Add("CatchQRPriority", new CheckBox("Give Priority to Catch the Q with R", false));
 
             harassMenu = menu.AddSubMenu("Harass", "Harass");
             harassMenu.Add("Q", new CheckBox("Use Q", true));
             harassMenu.Add("W", new CheckBox("Use W", false));
             harassMenu.Add("E", new CheckBox("Use E", false));
             harassMenu.Add("Mana", new Slider("Min. Mana Percent:", 20, 0, 100));
+
+            fleeMenu = menu.AddSubMenu("Flee", "Flee");
+            fleeMenu.Add("Q", new CheckBox("Use Q", true));
+            fleeMenu.Add("R", new CheckBox("Use R", true));
 
             Game.OnTick += OnTick;
             GameObject.OnCreate += OnCreateObj;
@@ -80,6 +85,7 @@ namespace iAhri
 
         static void OnTick(EventArgs args)
         {
+            mousePos = Game.CursorPos;
             if (_Q["Object"] != null)
             {
                 //Q.Range = (uint)_Q["Range2"];
@@ -109,12 +115,10 @@ namespace iAhri
             {
                 Harass();
             }
-            else if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Flee))
+
+            if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Flee))
             {
-                if (R.IsReady())
-                {
-                    R.Cast(mousePos);
-                }
+                Flee();
             }
         }
         static void Combo()
@@ -146,6 +150,17 @@ namespace iAhri
                 }
                 if (harassMenu["Q"].Cast<CheckBox>().CurrentValue) { CastQ(target); }
                 if (harassMenu["W"].Cast<CheckBox>().CurrentValue) { CastW(target); }
+            }
+        }
+        static void Flee()
+        {
+            if (fleeMenu["R"].Cast<CheckBox>().CurrentValue && R.IsReady())
+            {
+                Player.CastSpell(R.Slot, mousePos);
+            }
+            if (fleeMenu["Q"].Cast<CheckBox>().CurrentValue && Q.IsReady())
+            {
+                Player.CastSpell(Q.Slot, mousePos);
             }
         }
         static void CastQ(Obj_AI_Base target)
@@ -345,12 +360,18 @@ namespace iAhri
 
         static void OnGapCloser(AIHeroClient sender, EventArgs args)
         {
-            CastE(sender);
+            if (menu["Gapclose"].Cast<CheckBox>().CurrentValue)
+            {
+                CastE(sender);
+            }
         }
 
         static void OnInterruptableSpell(Obj_AI_Base sender, EloBuddy.SDK.Events.InterruptableSpellEventArgs args)
         {
-            CastE(args.Sender);
+            if (menu["Channeling"].Cast<CheckBox>().CurrentValue)
+            {
+                CastE(args.Sender);
+            }
         }
 
         static void OnProcessSpell(Obj_AI_Base sender, GameObjectProcessSpellCastEventArgs args)
@@ -405,22 +426,22 @@ namespace iAhri
             {
                 if (q)
                 {
-
+                    ComboDamage += myHero.GetSpellDamage(target, Q.Slot);
                     ManaWasted += myHero.Spellbook.GetSpell(SpellSlot.Q).SData.Mana;
                 }
                 if (w)
                 {
-
+                    ComboDamage += myHero.GetSpellDamage(target, W.Slot);
                     ManaWasted += myHero.Spellbook.GetSpell(SpellSlot.W).SData.Mana;
                 }
                 if (e)
                 {
-
+                    ComboDamage += myHero.GetSpellDamage(target, E.Slot);
                     ManaWasted += myHero.Spellbook.GetSpell(SpellSlot.E).SData.Mana;
                 }
                 if (r)
                 {
-
+                    ComboDamage += myHero.GetSpellDamage(target, R.Slot);
                     ManaWasted += myHero.Spellbook.GetSpell(SpellSlot.R).SData.Mana;
                 }
             }
