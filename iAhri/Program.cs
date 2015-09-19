@@ -302,7 +302,6 @@ namespace iAhri
             if (R.IsReady() && target.IsValidTarget())
             {
                 var damageI = GetBestCombo(target);
-                Chat.Print("1");
                 if (SubMenu["Combo"]["CatchQRPriority"].Cast<CheckBox>().CurrentValue)
                 {
                     if ((float)_R["EndTime"] > ((float)0))
