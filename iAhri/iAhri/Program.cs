@@ -17,14 +17,13 @@ namespace iAhri
         private static string Author = "iCreative";
         private static string AddonName = "iAhri";
         private static float RefreshTime = 0.4f;
-        private static Dictionary<int, object[]> PredictedDamage = new Dictionary<int, object[]>();
+        private static Dictionary<int, DamageInfo> PredictedDamage = new Dictionary<int, DamageInfo>() { };
         private static AIHeroClient myHero;
         private static Vector3 mousePos;
-        private static Menu menu, comboMenu, harassMenu, fleeMenu;
-        private static Spell.Skillshot Q;
-        private static Spell.Skillshot W;
-        private static Spell.Skillshot E;
-        private static Spell.Skillshot R;
+        private static Menu menu;
+        private static Dictionary<string, Menu> SubMenu = new Dictionary<string, Menu>() { };
+        private static Spell.Skillshot Q, W, E, R;
+        private static SpellSlot IgniteSlot;
         private static Dictionary<string, object> _Q = new Dictionary<string, object>() { { "MinSpeed", 400 }, { "MaxSpeed", 2500 }, { "Acceleration", -3200 }, { "Speed1", 1400 }, { "Delay1", 250 }, { "Range1", 880 }, { "Delay2", 0 }, { "Range2", int.MaxValue }, { "IsReturning", false }, { "Target", null }, { "Object", null }, { "LastObjectVector", null }, { "LastObjectVectorTime", null }, { "CatchPosition", null } };
         private static Dictionary<string, object> _E = new Dictionary<string, object>() { { "LastCastTime", 0f }, { "Object", null }, };
         private static Dictionary<string, object> _R = new Dictionary<string, object>() { { "EndTime", 0 }, };
@@ -40,10 +39,15 @@ namespace iAhri
             if (myHero.Hero != Champion.Ahri) { return; }
             Chat.Print(AddonName + " loaded, have fun!.");
             Q = new Spell.Skillshot(SpellSlot.Q, 880, SkillShotType.Linear, 250, 1400, 100);
+            Q.AllowedCollisionCount = int.MaxValue;
             W = new Spell.Skillshot(SpellSlot.W, 600, SkillShotType.Circular, 0, 1400, 600);
+            W.AllowedCollisionCount = int.MaxValue;
             E = new Spell.Skillshot(SpellSlot.E, 975, SkillShotType.Linear, 250, 1550, 60);
             E.AllowedCollisionCount = 0;
             R = new Spell.Skillshot(SpellSlot.R, 800, SkillShotType.Circular, 0, 1400, 600);
+            R.AllowedCollisionCount = int.MaxValue;
+
+            IgniteSlot = Player.Spells.FirstOrDefault(o => o.SData.Name.ToLower().Contains("summonerdot")).Slot;
 
             menu = MainMenu.AddMenu(AddonName, AddonName);
             menu.AddLabel(AddonName + " made by " + Author);
@@ -52,23 +56,32 @@ namespace iAhri
             menu.Add("Gapclose", new CheckBox("Use E on gapclose spells", true));
             menu.Add("Channeling", new CheckBox("Use E on channeling spells", true));
 
-            comboMenu = menu.AddSubMenu("Combo", "Combo");
-            comboMenu.Add("Q", new CheckBox("Use Q", true));
-            comboMenu.Add("W", new CheckBox("Use W", true));
-            comboMenu.Add("E", new CheckBox("Use E", true));
-            comboMenu.Add("R", new CheckBox("Use R", true));
-            comboMenu.Add("CatchQR", new CheckBox("Use Catch the Q with R", true));
-            comboMenu.Add("CatchQRPriority", new CheckBox("Give Priority to Catch the Q with R", false));
+            SubMenu["Combo"] = menu.AddSubMenu("Combo", "Combo");
+            SubMenu["Combo"].Add("Q", new CheckBox("Use Q", true));
+            SubMenu["Combo"].Add("W", new CheckBox("Use W", true));
+            SubMenu["Combo"].Add("E", new CheckBox("Use E", true));
+            SubMenu["Combo"].Add("R", new CheckBox("Use R", true));
+            SubMenu["Combo"].Add("CatchQR", new CheckBox("Use Catch the Q with R", true));
+            SubMenu["Combo"].Add("CatchQRPriority", new CheckBox("Give Priority to Catch the Q with R", false));
 
-            harassMenu = menu.AddSubMenu("Harass", "Harass");
-            harassMenu.Add("Q", new CheckBox("Use Q", true));
-            harassMenu.Add("W", new CheckBox("Use W", false));
-            harassMenu.Add("E", new CheckBox("Use E", false));
-            harassMenu.Add("Mana", new Slider("Min. Mana Percent:", 20, 0, 100));
+            SubMenu["Harass"] = menu.AddSubMenu("Harass", "Harass");
+            SubMenu["Harass"].Add("Q", new CheckBox("Use Q", true));
+            SubMenu["Harass"].Add("W", new CheckBox("Use W", false));
+            SubMenu["Harass"].Add("E", new CheckBox("Use E", false));
+            SubMenu["Harass"].Add("Mana", new Slider("Min. Mana Percent:", 20, 0, 100));
 
-            fleeMenu = menu.AddSubMenu("Flee", "Flee");
-            fleeMenu.Add("Q", new CheckBox("Use Q", true));
-            fleeMenu.Add("R", new CheckBox("Use R", true));
+            SubMenu["KillSteal"] = menu.AddSubMenu("KillSteal", "KillSteal");
+            SubMenu["KillSteal"].Add("Q", new CheckBox("Use Q", true));
+            SubMenu["KillSteal"].Add("W", new CheckBox("Use W", true));
+            SubMenu["KillSteal"].Add("E", new CheckBox("Use E", true));
+            SubMenu["KillSteal"].Add("Ignite", new CheckBox("Use Ignite", true));
+
+            SubMenu["Flee"] = menu.AddSubMenu("Flee", "Flee");
+            SubMenu["Flee"].Add("Q", new CheckBox("Use Q", true));
+            SubMenu["Flee"].Add("R", new CheckBox("Use R", true));
+
+            SubMenu["Draw"] = menu.AddSubMenu("Drawing", "Drawing");
+            SubMenu["Draw"].Add("Line", new CheckBox("Draw line for Q orb", true));
 
             Game.OnTick += OnTick;
             GameObject.OnCreate += OnCreateObj;
@@ -86,6 +99,7 @@ namespace iAhri
         static void OnTick(EventArgs args)
         {
             mousePos = Game.CursorPos;
+            if (myHero.IsDead) { return; }
             if (_Q["Object"] != null)
             {
                 //Q.Range = (uint)_Q["Range2"];
@@ -121,46 +135,62 @@ namespace iAhri
                 Flee();
             }
         }
+
+        static void KillSteal() {
+            foreach(AIHeroClient enemy in HeroManager.Enemies){
+                if (enemy.IsValidTarget(E.Range) && enemy.HealthPercent <= 40) {
+                    var damageI = GetBestCombo(enemy);
+                    if (damageI.Damage >= enemy.Health) {
+                        if (SubMenu["KillSteal"]["Q"].Cast<CheckBox>().CurrentValue && (myHero.GetSpellDamage(enemy, Q.Slot) >= enemy.Health || damageI.Q)) { CastQ(enemy); }
+                        if (SubMenu["KillSteal"]["W"].Cast<CheckBox>().CurrentValue && (myHero.GetSpellDamage(enemy, W.Slot) >= enemy.Health || damageI.W)) { CastW(enemy); }
+                        if (SubMenu["KillSteal"]["E"].Cast<CheckBox>().CurrentValue && (myHero.GetSpellDamage(enemy, E.Slot) >= enemy.Health || damageI.E)) { CastE(enemy); }
+                    }
+                    if (IgniteSlot != null && SubMenu["KillSteal"]["Ignite"].Cast<CheckBox>().CurrentValue && myHero.GetSummonerSpellDamage(enemy, DamageLibrary.SummonerSpells.Ignite) >= enemy.Health ) {
+                        Player.CastSpell(IgniteSlot, enemy);
+                    }
+               } 
+            }
+        }
         static void Combo()
         {
             var target = TargetSelector.GetTarget(E.Range, EloBuddy.DamageType.Magical);
             if (target.IsValidTarget())
             {
-                if (comboMenu["E"].Cast<CheckBox>().CurrentValue) { CastE(target); }
+                if (SubMenu["Combo"]["E"].Cast<CheckBox>().CurrentValue) { CastE(target); }
 
                 if ((Game.Time - (float)_E["LastCastTime"] <= (float)(E.CastDelay / 1000 * 1.1)) || (_E["Object"] != null && myHero.Position.Distance(target.Position) > myHero.Position.Distance(((GameObject)_E["Object"]).Position)))
                 {
                     return;
                 }
-                if (comboMenu["Q"].Cast<CheckBox>().CurrentValue) { CastQ(target); }
-                if (comboMenu["W"].Cast<CheckBox>().CurrentValue) { CastW(target); }
-                if (comboMenu["R"].Cast<CheckBox>().CurrentValue) { CastR(target); }
+                if (SubMenu["Combo"]["Q"].Cast<CheckBox>().CurrentValue) { CastQ(target); }
+                if (SubMenu["Combo"]["W"].Cast<CheckBox>().CurrentValue) { CastW(target); }
+                if (SubMenu["Combo"]["R"].Cast<CheckBox>().CurrentValue) { CastR(target); }
             }
         }
 
         static void Harass()
         {
             var target = TargetSelector.GetTarget(E.Range, EloBuddy.DamageType.Magical);
-            if (target.IsValidTarget() && myHero.ManaPercent >= harassMenu["Mana"].Cast<Slider>().CurrentValue)
+            if (target.IsValidTarget() && myHero.ManaPercent >= SubMenu["Harass"]["Mana"].Cast<Slider>().CurrentValue)
             {
-                if (harassMenu["E"].Cast<CheckBox>().CurrentValue) { CastE(target); }
+                if (SubMenu["Harass"]["E"].Cast<CheckBox>().CurrentValue) { CastE(target); }
                 if ((Game.Time - (float)_E["LastCastTime"] <= (float)(E.CastDelay / 1000 * 1.1)) || (_E["Object"] != null && myHero.Position.Distance(target.Position) > myHero.Position.Distance(((GameObject)_E["Object"]).Position)))
                 {
                     return;
                 }
-                if (harassMenu["Q"].Cast<CheckBox>().CurrentValue) { CastQ(target); }
-                if (harassMenu["W"].Cast<CheckBox>().CurrentValue) { CastW(target); }
+                if (SubMenu["Harass"]["Q"].Cast<CheckBox>().CurrentValue) { CastQ(target); }
+                if (SubMenu["Harass"]["W"].Cast<CheckBox>().CurrentValue) { CastW(target); }
             }
         }
         static void Flee()
         {
-            if (fleeMenu["R"].Cast<CheckBox>().CurrentValue && R.IsReady())
+            if ( SubMenu["Flee"]["R"].Cast<CheckBox>().CurrentValue && R.IsReady())
             {
-                Player.CastSpell(R.Slot, mousePos);
+                R.Cast(mousePos);
             }
-            if (fleeMenu["Q"].Cast<CheckBox>().CurrentValue && Q.IsReady())
+            if (SubMenu["Flee"]["Q"].Cast<CheckBox>().CurrentValue && Q.IsReady())
             {
-                Player.CastSpell(Q.Slot, mousePos);
+                Q.Cast(mousePos);
             }
         }
         static void CastQ(Obj_AI_Base target)
@@ -181,7 +211,7 @@ namespace iAhri
             if (W.IsReady() && target.IsValidTarget())
             {
                 var r = W.GetPrediction(target);
-                if (r.HitChance >= HitChance.Medium)
+                if (r.HitChance >= HitChance.High)
                 {
                     if (target.Type == myHero.Type)
                     {
@@ -213,8 +243,8 @@ namespace iAhri
         {
             if (R.IsReady() && target.IsValidTarget())
             {
-                var table = GetBestCombo(target);
-                if (comboMenu["CatchQRPriority"].Cast<CheckBox>().CurrentValue)
+                var damageI = GetBestCombo(target);
+                if (SubMenu["Combo"]["CatchQRPriority"].Cast<CheckBox>().CurrentValue)
                 {
                     if ((float)_R["EndTime"] > 0)
                     { //have active r
@@ -234,9 +264,9 @@ namespace iAhri
                             R.Cast(mousePos);
                         }
                     }
-                    if ((float)table[4] >= target.Health && mousePos.Distance(target.Position) < myHero.Position.Distance(target.Position))
+					if (damageI.Damage >= target.Health && mousePos.Distance(target.Position) < myHero.Position.Distance(target.Position))
                     {
-                        if ((bool)table[3])
+						if (damageI.R)
                         {
                             if (myHero.Position.Distance(target.Position) > 400)
                             {
@@ -265,25 +295,29 @@ namespace iAhri
                     var r = Q.GetPrediction(target);
                     if (Extensions.Distance(myHero, r.CastPosition) <= Extensions.Distance(myHero, (GameObject)_Q["Object"]))
                     {
+                        //Chat.Print("2");
                         var TimeLeft = Extensions.Distance(myHero, target) / Q.Speed;
-                        var ExtendedPos = ((Vector3)_Q["Object"]) + (r.CastPosition - ((Vector3)_Q["Object"])).Normalized() * 1500;
-                        var ClosestToTargetLine = Geometry.ProjectOn(myHero.Position.To2D(), ((Vector3)_Q["Object"]).To2D(), ExtendedPos.To2D());
-                        var ClosestToHeroLine = Geometry.ProjectOn(r.CastPosition.To2D(), ((Vector3)_Q["Object"]).To2D(), myHero.Position.To2D());
-                        if (ClosestToTargetLine.IsOnSegment && ClosestToHeroLine.IsOnSegment && ClosestToTargetLine.SegmentPoint.Distance(((Vector3)_Q["Object"]).To2D()) < r.CastPosition.To2D().Distance(((Vector3)_Q["Object"]).To2D()))
+                        var qObject = ((GameObject)_Q["Object"]).Position;
+                        var ExtendedPos = qObject + (r.CastPosition - qObject).Normalized() * 1500;
+                        var ClosestToTargetLine = myHero.Position.To2D().ProjectOn(qObject.To2D(), ExtendedPos.To2D());
+                        var ClosestToHeroLine = r.CastPosition.To2D().ProjectOn(qObject.To2D(), myHero.Position.To2D());
+                        if (ClosestToTargetLine.IsOnSegment && ClosestToHeroLine.IsOnSegment && ClosestToTargetLine.SegmentPoint.Distance(qObject.To2D()) < r.CastPosition.To2D().Distance(qObject.To2D()))
                         {
+                            //Chat.Print("3");
                             if (ClosestToTargetLine.SegmentPoint.Distance(myHero.Position.To2D()) < myHero.MoveSpeed * TimeLeft)
                             {
                                 if (menu["CatchQMovement"].Cast<CheckBox>().CurrentValue)
                                 {
+                                    //Chat.Print("4");
                                     if (ClosestToHeroLine.SegmentPoint.Distance(r.CastPosition.To2D()) > Q.Width)
                                     {
-                                        Orbwalker.MoveTo(ClosestToTargetLine.SegmentPoint.To3D());
+                                        Orbwalker.OrbwalkTo(ClosestToTargetLine.SegmentPoint.To3D());
                                     }
                                 }
                             }
                             else if (ClosestToTargetLine.SegmentPoint.Distance(myHero.Position.To2D()) < 450 + myHero.MoveSpeed * TimeLeft)
                             {
-                                if (comboMenu["CatchQR"].Cast<CheckBox>().CurrentValue && Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Combo))
+                                if (SubMenu["Combo"]["CatchQR"].Cast<CheckBox>().CurrentValue && Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Combo))
                                 {
                                     if (ClosestToHeroLine.SegmentPoint.Distance(r.CastPosition.To2D()) > Q.Width)
                                     {
@@ -349,7 +383,8 @@ namespace iAhri
 
         static void OnDraw(EventArgs args)
         {
-            if (_Q["Object"] != null)
+            if (myHero.IsDead) { return; }
+            if (_Q["Object"] != null && SubMenu["Draw"]["Line"].Cast<CheckBox>().CurrentValue)
             {
                 var asd = (GameObject)_Q["Object"];
                 var p1 = Drawing.WorldToScreen(myHero.Position);
@@ -360,8 +395,7 @@ namespace iAhri
 
         static void OnGapCloser(AIHeroClient sender, EventArgs args)
         {
-            if (menu["Gapclose"].Cast<CheckBox>().CurrentValue)
-            {
+            if (menu["Gapclose"].Cast<CheckBox>().CurrentValue) {
                 CastE(sender);
             }
         }
@@ -378,7 +412,6 @@ namespace iAhri
         {
             if (sender.IsMe)
             {
-
                 if (args.SData.Name.ToLower().Contains(myHero.Spellbook.GetSpell(SpellSlot.Q).SData.Name.ToLower()))
                 {
                     _Q["IsReturning"] = false;
@@ -418,7 +451,7 @@ namespace iAhri
             return (float)((100 + menu["Overkill"].Cast<Slider>().CurrentValue) / 100);
         }
 
-        static object[] GetComboDamage(Obj_AI_Base target, bool q, bool w, bool e, bool r)
+        static DamageInfo GetComboDamage(Obj_AI_Base target, bool q, bool w, bool e, bool r)
         {
             var ComboDamage = 0f;
             var ManaWasted = 0f;
@@ -445,82 +478,67 @@ namespace iAhri
                     ManaWasted += myHero.Spellbook.GetSpell(SpellSlot.R).SData.Mana;
                 }
             }
-            return new object[] { ComboDamage, ManaWasted };
+            return new DamageInfo(ComboDamage, ManaWasted);
         }
 
-        static object[] GetBestCombo(Obj_AI_Base target)
+		static DamageInfo GetBestCombo(Obj_AI_Base target)
         {
-            if (!target.IsValidTarget()) { return new object[] { false, false, false, false, 0 }; }
             var q = Q.IsReady() ? new bool[] { false, true } : new bool[] { false };
             var w = W.IsReady() ? new bool[] { false, true } : new bool[] { false };
             var e = E.IsReady() ? new bool[] { false, true } : new bool[] { false };
             var r = R.IsReady() ? new bool[] { false, true } : new bool[] { false };
-            var table = PredictedDamage[target.NetworkId];
-            if (table != null)
-            {
-                var time = (float)table[5];
-                if (Game.Time - time <= RefreshTime)
+			if (target.IsValidTarget ()) {
+                if (PredictedDamage.ContainsKey(target.NetworkId))
                 {
-                    return table;
-                }
-                else
-                {
-                    var best = new object[] {
-						Q.IsReady(),
-						W.IsReady(),
-						E.IsReady(),
-						R.IsReady()
-					};
-                    var bestdmg = 0f;
-                    foreach (bool q1 in q)
-                    {
-                        foreach (bool w1 in w)
-                        {
-                            foreach (bool e1 in e)
-                            {
-                                foreach (bool r1 in r)
-                                {
-                                    var table2 = GetComboDamage(target, q1, w1, e1, r1);
-                                    var d = (float)table2[0];
-                                    var m = (float)table2[1];
-                                    if (myHero.Mana >= m)
-                                    {
-                                        if (bestdmg >= target.Health)
-                                        {
-                                            if (d < bestdmg)
-                                            {
-                                                bestdmg = d;
-                                                best = new object[] { q1, w1, e1, r1 };
-                                            }
-                                        }
-                                        else
-                                        {
-                                            if (d >= bestdmg && myHero.Mana >= m)
-                                            {
-                                                bestdmg = d;
-                                                best = new object[] { q1, w1, e1, r1 };
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    table[0] = best[0];
-                    table[1] = best[1];
-                    table[2] = best[2];
-                    table[3] = best[3];
-                    table[4] = bestdmg;
-                    table[5] = Game.Time;
-                    return table;
-                }
+                    var damageI = PredictedDamage[target.NetworkId];
+					if (Game.Time - damageI.Time <= RefreshTime) {
+						return damageI;
+					} else {
+                        bool[] best = new bool[] {
+							Q.IsReady (),
+							W.IsReady (),
+							E.IsReady (),
+							R.IsReady ()
+						};
+						var bestdmg = 0f;
+						var bestmana = 0f;
+						foreach (bool q1 in q) {
+							foreach (bool w1 in w) {
+								foreach (bool e1 in e) {
+									foreach (bool r1 in r) {
+										DamageInfo damageI2 = GetComboDamage (target, q1, w1, e1, r1);
+                                        float d = damageI2.Damage;
+										float m = damageI2.Mana;
+										if (myHero.Mana >= m) {
+											if (bestdmg >= target.Health) {
+												if (d < bestdmg) {
+													bestdmg = d;
+													bestmana = m;
+                                                    best = new bool[] { q1, w1, e1, r1 };
+												}
+											} else {
+												if (d >= bestdmg && myHero.Mana >= m) {
+													bestdmg = d;
+													bestmana = m;
+                                                    best = new bool[] { q1, w1, e1, r1 };
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+						PredictedDamage [target.NetworkId] = new DamageInfo (best [0], best [1], best [2], best [3], bestdmg, bestmana, Game.Time);
+						return PredictedDamage [target.NetworkId];
+					}
+				}
+				else {
+					var damageI2 = GetComboDamage (target, Q.IsReady (), W.IsReady (), E.IsReady (), R.IsReady ());
+					PredictedDamage [target.NetworkId] = new DamageInfo (false, false, false, false, damageI2.Damage, damageI2.Mana, Game.Time - Game.Ping * 2);
+					return GetBestCombo (target);
+				}
             }
-            else
-            {
-                var table2 = GetComboDamage(target, Q.IsReady(), W.IsReady(), E.IsReady(), R.IsReady());
-                PredictedDamage[target.NetworkId] = new object[] { false, false, false, false, table2[0], Game.Time - Game.Ping * 2 };
-                return GetBestCombo(target);
-            }
+            return new DamageInfo(false, false, false, false, 0, 0, 0);
         }
     }
 }
