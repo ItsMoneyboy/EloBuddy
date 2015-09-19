@@ -23,7 +23,7 @@ namespace iAhri
         private static Menu menu;
         private static Dictionary<string, Menu> SubMenu = new Dictionary<string, Menu>() { };
         private static Spell.Skillshot Q, W, E, R;
-        private static SpellSlot IgniteSlot;
+        private static Spell.Targeted Ignite;
         private static Dictionary<string, object> _Q = new Dictionary<string, object>() { { "MinSpeed", 400 }, { "MaxSpeed", 2500 }, { "Acceleration", -3200 }, { "Speed1", 1400 }, { "Delay1", 250 }, { "Range1", 880 }, { "Delay2", 0 }, { "Range2", int.MaxValue }, { "IsReturning", false }, { "Target", null }, { "Object", null }, { "LastObjectVector", null }, { "LastObjectVectorTime", null }, { "CatchPosition", null } };
         private static Dictionary<string, object> _E = new Dictionary<string, object>() { { "LastCastTime", 0f }, { "Object", null }, };
         private static Dictionary<string, object> _R = new Dictionary<string, object>() { { "EndTime", 0 }, };
@@ -44,17 +44,14 @@ namespace iAhri
             E.AllowedCollisionCount = 0;
             R = new Spell.Skillshot(SpellSlot.R, 800, SkillShotType.Circular, 0, 1400, 300);
             R.AllowedCollisionCount = int.MaxValue;
-            if (myHero.Spellbook.Spells.FirstOrDefault(o => o.SData.Name.ToLower().Contains("summonerdot")) != null)
+            var slot = myHero.GetSpellSlotFromName("summonerdot");
+            if (slot != SpellSlot.Unknown)
             {
-                IgniteSlot = myHero.Spellbook.Spells.FirstOrDefault(o => o.SData.Name.ToLower().Contains("summonerdot")).Slot;
+                Ignite = new Spell.Targeted(slot, 600);
             }
 
             menu = MainMenu.AddMenu(AddonName, AddonName);
-            menu.AddLabel(AddonName + " made by " + Author);
-            menu.Add("CatchQMovement", new CheckBox("Catch the Q with movement", false));
-            menu.Add("Overkill", new Slider("Overkill % for damage prediction", 10, 0, 100));
-            menu.Add("Gapclose", new CheckBox("Use E on gapclose spells", true));
-            menu.Add("Channeling", new CheckBox("Use E on channeling spells", true));
+			menu.AddLabel(AddonName + " made by " + Author);
 
             SubMenu["Combo"] = menu.AddSubMenu("Combo", "Combo");
             SubMenu["Combo"].Add("Q", new CheckBox("Use Q", true));
@@ -88,6 +85,12 @@ namespace iAhri
 
             SubMenu["Draw"] = menu.AddSubMenu("Drawing", "Drawing");
             SubMenu["Draw"].Add("Line", new CheckBox("Draw line for Q orb", true));
+
+			SubMenu["Misc"] = menu.AddSubMenu("Misc", "Misc");
+			SubMenu["Misc"].Add("CatchQMovement", new CheckBox("Catch the Q with movement", false));
+			SubMenu["Misc"].Add("Overkill", new Slider("Overkill % for damage prediction", 10, 0, 100));
+			SubMenu["Misc"].Add("Gapclose", new CheckBox("Use E on gapclose spells", true));
+			SubMenu["Misc"].Add("Channeling", new CheckBox("Use E on channeling spells", true));
 
             Game.OnTick += OnTick;
             GameObject.OnCreate += OnCreateObj;
@@ -162,8 +165,8 @@ namespace iAhri
                         if (SubMenu["KillSteal"]["W"].Cast<CheckBox>().CurrentValue && (myHero.GetSpellDamage(enemy, W.Slot) >= enemy.Health || damageI.W)) { CastW(enemy); }
                         if (SubMenu["KillSteal"]["E"].Cast<CheckBox>().CurrentValue && (myHero.GetSpellDamage(enemy, E.Slot) >= enemy.Health || damageI.E)) { CastE(enemy); }
                     }
-                    if (IgniteSlot != null && SubMenu["KillSteal"]["Ignite"].Cast<CheckBox>().CurrentValue && myHero.Spellbook.GetSpell(IgniteSlot).IsReady && myHero.GetSummonerSpellDamage(enemy, DamageLibrary.SummonerSpells.Ignite) >= enemy.Health ) {
-                        Player.CastSpell(IgniteSlot, enemy);
+                    if (Ignite != null && SubMenu["KillSteal"]["Ignite"].Cast<CheckBox>().CurrentValue && Ignite.IsReady() && myHero.GetSummonerSpellDamage(enemy, DamageLibrary.SummonerSpells.Ignite) >= enemy.Health ) {
+                        Ignite.Cast(enemy);
                     }
                } 
             }
@@ -241,6 +244,11 @@ namespace iAhri
         {
             if (Q.IsReady() && target.IsValidTarget())
             {
+                int maxspeed = (int)_Q["MaxSpeed"];
+                int acc = (int)_Q["Acceleration"];
+                var speed = Math.Sqrt(Math.Pow(maxspeed, 2) + 2 * acc * Extensions.Distance(myHero, target));
+                var tf = (speed - maxspeed)/acc;
+                Q.Speed = (int)(Extensions.Distance(myHero, target) / tf);
                 var r = Q.GetPrediction(target);
                 if (r.HitChance >= HitChance.High)
                 {
@@ -350,7 +358,7 @@ namespace iAhri
                             //Chat.Print("3");
                             if (ClosestToTargetLine.SegmentPoint.Distance(myHero.Position.To2D()) < myHero.MoveSpeed * TimeLeft)
                             {
-                                if (menu["CatchQMovement"].Cast<CheckBox>().CurrentValue)
+								if (SubMenu["Misc"]["CatchQMovement"].Cast<CheckBox>().CurrentValue)
                                 {
                                     //Chat.Print("4");
                                     if (ClosestToHeroLine.SegmentPoint.Distance(r.CastPosition.To2D()) > Q.Width)
@@ -439,14 +447,14 @@ namespace iAhri
 
         static void OnGapCloser(AIHeroClient sender, EventArgs args)
         {
-            if (menu["Gapclose"].Cast<CheckBox>().CurrentValue) {
+			if (SubMenu["Misc"]["Gapclose"].Cast<CheckBox>().CurrentValue) {
                 CastE(sender);
             }
         }
 
         static void OnInterruptableSpell(Obj_AI_Base sender, EloBuddy.SDK.Events.InterruptableSpellEventArgs args)
         {
-            if (menu["Channeling"].Cast<CheckBox>().CurrentValue)
+			if (SubMenu["Misc"]["Channeling"].Cast<CheckBox>().CurrentValue)
             {
                 CastE(args.Sender);
             }
@@ -498,7 +506,7 @@ namespace iAhri
 
         static double GetOverkill()
         {
-            return (float)((100 + menu["Overkill"].Cast<Slider>().CurrentValue) / 100);
+			return (float)((100 + SubMenu["Misc"]["Overkill"].Cast<Slider>().CurrentValue) / 100);
         }
 
         static DamageInfo GetComboDamage(Obj_AI_Base target, bool q, bool w, bool e, bool r)
@@ -527,7 +535,7 @@ namespace iAhri
                     ComboDamage += myHero.GetSpellDamage(target, R.Slot);
                     ManaWasted += myHero.Spellbook.GetSpell(SpellSlot.R).SData.Mana;
                 }
-                if ( IgniteSlot != null && myHero.Spellbook.GetSpell(IgniteSlot).IsReady){
+                if ( Ignite != null && Ignite.IsReady()){
                     ComboDamage += myHero.GetSummonerSpellDamage(target, DamageLibrary.SummonerSpells.Ignite);
                 }
             }
