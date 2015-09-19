@@ -29,7 +29,6 @@ namespace iAhri
         private static Dictionary<string, object> _R = new Dictionary<string, object>() { { "EndTime", 0f }, };
         static void Main(string[] args)
         {
-            Bootstrap.Init(null);
             Loading.OnLoadingComplete += OnLoad;
         }
         private static void OnLoad(EventArgs args)
@@ -623,7 +622,7 @@ namespace iAhri
                                         {
                                             if (bestdmg >= target.Health)
                                             {
-                                                if (d < bestdmg || m < bestmana)
+                                                if (d >= target.Health && (d < bestdmg || m < bestmana))
                                                 {
                                                     bestdmg = d;
                                                     bestmana = m;
