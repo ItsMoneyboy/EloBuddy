@@ -35,8 +35,8 @@ namespace iAhri
         private static void OnLoad(EventArgs args)
         {
             if (myHero.Hero != Champion.Ahri) { return; }
-            Chat.Print(AddonName + " loaded, have fun!.");
-            Q = new Spell.Skillshot(SpellSlot.Q, 880, SkillShotType.Linear, 250, 1400, 100);
+            Chat.Print(AddonName + " made by " + Author + " loaded, have fun!.");
+            Q = new Spell.Skillshot(SpellSlot.Q, 880, SkillShotType.Linear, 250, 1500, 100);
             Q.AllowedCollisionCount = int.MaxValue;
             W = new Spell.Skillshot(SpellSlot.W, 600, SkillShotType.Circular, 0, 1400, 300);
             W.AllowedCollisionCount = int.MaxValue;
@@ -69,6 +69,12 @@ namespace iAhri
             SubMenu["Harass"].Add("W", new CheckBox("Use W", false));
             SubMenu["Harass"].Add("E", new CheckBox("Use E", false));
             SubMenu["Harass"].Add("Mana", new Slider("Min. Mana Percent:", 20, 0, 100));
+
+            SubMenu["JungleClear"] = menu.AddSubMenu("JungleClear", "JungleClear");
+            SubMenu["JungleClear"].Add("Q", new CheckBox("Use Q", true));
+            SubMenu["JungleClear"].Add("W", new CheckBox("Use W", true));
+            SubMenu["JungleClear"].Add("E", new CheckBox("Use E", true));
+            SubMenu["JungleClear"].Add("Mana", new Slider("Min. Mana Percent:", 20, 0, 100));
 
             SubMenu["KillSteal"] = menu.AddSubMenu("KillSteal", "KillSteal");
             SubMenu["KillSteal"].Add("Q", new CheckBox("Use Q", true));
@@ -133,6 +139,13 @@ namespace iAhri
             {
                 Harass();
             }
+            else if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.JungleClear) || Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.LaneClear))
+            {
+                if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.JungleClear))
+                {
+                    JungleClear();
+                }
+            }
 
             if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Flee))
             {
@@ -149,7 +162,7 @@ namespace iAhri
                         if (SubMenu["KillSteal"]["W"].Cast<CheckBox>().CurrentValue && (myHero.GetSpellDamage(enemy, W.Slot) >= enemy.Health || damageI.W)) { CastW(enemy); }
                         if (SubMenu["KillSteal"]["E"].Cast<CheckBox>().CurrentValue && (myHero.GetSpellDamage(enemy, E.Slot) >= enemy.Health || damageI.E)) { CastE(enemy); }
                     }
-                    if (IgniteSlot != null && SubMenu["KillSteal"]["Ignite"].Cast<CheckBox>().CurrentValue && myHero.GetSummonerSpellDamage(enemy, DamageLibrary.SummonerSpells.Ignite) >= enemy.Health ) {
+                    if (IgniteSlot != null && SubMenu["KillSteal"]["Ignite"].Cast<CheckBox>().CurrentValue && myHero.Spellbook.GetSpell(IgniteSlot).IsReady && myHero.GetSummonerSpellDamage(enemy, DamageLibrary.SummonerSpells.Ignite) >= enemy.Health ) {
                         Player.CastSpell(IgniteSlot, enemy);
                     }
                } 
@@ -198,9 +211,30 @@ namespace iAhri
             }
         }
 
-        static void Laneclear() {
-            foreach (Obj_AI_Base minion in EntityManager.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position.To2D(), 1000f, true)) {
+        static void LaneClear() {
+            foreach (Obj_AI_Base minion in EntityManager.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position.To2D(), 1000f)) {
                     
+            }
+        }
+
+        static void JungleClear()
+        {
+            if (myHero.ManaPercent >= SubMenu["JungleClear"]["Mana"].Cast<Slider>().CurrentValue)
+            {
+                foreach (Obj_AI_Base minion in EntityManager.GetJungleMonsters(myHero.Position.To2D(), 1000f))
+                {
+                    if (minion.IsValidTarget() && myHero.ManaPercent >= SubMenu["JungleClear"]["Mana"].Cast<Slider>().CurrentValue)
+                    {
+                        if (SubMenu["JungleClear"]["E"].Cast<CheckBox>().CurrentValue) { CastE(minion); }
+                        if ((Game.Time - (float)_E["LastCastTime"] <= (float)(E.CastDelay / 1000 * 1.1)) || (_E["Object"] != null && myHero.Position.Distance(minion.Position) > myHero.Position.Distance(((GameObject)_E["Object"]).Position)))
+                        {
+                            return;
+                        }
+                        if (SubMenu["JungleClear"]["Q"].Cast<CheckBox>().CurrentValue) { CastQ(minion); }
+                        if (SubMenu["JungleClear"]["W"].Cast<CheckBox>().CurrentValue) { CastW(minion); }
+                    }
+                }
+            
             }
         }
         static void CastQ(Obj_AI_Base target)
@@ -443,7 +477,10 @@ namespace iAhri
             if (sender.IsMe)
             {
                 var buff = args.Buff;
-                _R["EndTime"] = Game.Time + buff.EndTime - buff.StartTime;
+                if (buff.Name.ToLower() == "ahritumble")
+                {
+                    _R["EndTime"] = Game.Time + buff.EndTime - buff.StartTime;
+                }
             }
         }
 
@@ -452,7 +489,10 @@ namespace iAhri
             if (sender.IsMe)
             {
                 var buff = args.Buff;
-                _R["EndTime"] = 0;
+                if (buff.Name.ToLower() == "ahritumble")
+                {
+                    _R["EndTime"] = 0;
+                }
             }
         }
 
@@ -487,7 +527,11 @@ namespace iAhri
                     ComboDamage += myHero.GetSpellDamage(target, R.Slot);
                     ManaWasted += myHero.Spellbook.GetSpell(SpellSlot.R).SData.Mana;
                 }
+                if ( IgniteSlot != null && myHero.Spellbook.GetSpell(IgniteSlot).IsReady){
+                    ComboDamage += myHero.GetSummonerSpellDamage(target, DamageLibrary.SummonerSpells.Ignite);
+                }
             }
+
             return new DamageInfo(ComboDamage, ManaWasted);
         }
 
