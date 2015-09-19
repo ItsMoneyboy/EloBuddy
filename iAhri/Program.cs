@@ -99,8 +99,8 @@ namespace iAhri
             Obj_AI_Base.OnProcessSpellCast += OnProcessSpell;
             Obj_AI_Base.OnBuffGain += OnApplyBuff;
             Obj_AI_Base.OnBuffLose += OnRemoveBuff;
-            EloBuddy.SDK.Events.Gapcloser.OnGapCloser += OnGapCloser;
-            EloBuddy.SDK.Events.Interrupter.OnInterruptableSpell += OnInterruptableSpell;
+            Gapcloser.OnGapCloser += OnGapCloser;
+            Interrupter.OnInterruptableSpell += OnInterruptableSpell;
         }
 
 		public static bool IsWall(Vector3 v)
@@ -161,9 +161,9 @@ namespace iAhri
                 if (enemy.IsValidTarget(E.Range) && enemy.HealthPercent <= 40) {
                     var damageI = GetBestCombo(enemy);
                     if (damageI.Damage >= enemy.Health) {
-                        if (SubMenu["KillSteal"]["Q"].Cast<CheckBox>().CurrentValue && (myHero.GetSpellDamage(enemy, Q.Slot) >= enemy.Health || damageI.Q)) { CastQ(enemy); }
-                        if (SubMenu["KillSteal"]["W"].Cast<CheckBox>().CurrentValue && (myHero.GetSpellDamage(enemy, W.Slot) >= enemy.Health || damageI.W)) { CastW(enemy); }
-                        if (SubMenu["KillSteal"]["E"].Cast<CheckBox>().CurrentValue && (myHero.GetSpellDamage(enemy, E.Slot) >= enemy.Health || damageI.E)) { CastE(enemy); }
+                        if (SubMenu["KillSteal"]["Q"].Cast<CheckBox>().CurrentValue && (Damage(enemy, Q.Slot) >= enemy.Health || damageI.Q)) { CastQ(enemy); }
+                        if (SubMenu["KillSteal"]["W"].Cast<CheckBox>().CurrentValue && (Damage(enemy, W.Slot) >= enemy.Health || damageI.W)) { CastW(enemy); }
+                        if (SubMenu["KillSteal"]["E"].Cast<CheckBox>().CurrentValue && (Damage(enemy, E.Slot) >= enemy.Health || damageI.E)) { CastE(enemy); }
                     }
                     if (Ignite != null && SubMenu["KillSteal"]["Ignite"].Cast<CheckBox>().CurrentValue && Ignite.IsReady() && myHero.GetSummonerSpellDamage(enemy, DamageLibrary.SummonerSpells.Ignite) >= enemy.Health ) {
                         Ignite.Cast(enemy);
@@ -504,9 +504,28 @@ namespace iAhri
             }
         }
 
-        static double GetOverkill()
+        static Obj_AI_Base LastHit(Spell.SpellBase spell) {
+            return null;
+        }
+
+        static float Damage(Obj_AI_Base target, SpellSlot slot)
+
         {
-			return (float)((100 + SubMenu["Misc"]["Overkill"].Cast<Slider>().CurrentValue) / 100);
+            if (target.IsValidTarget()){
+                if (slot == SpellSlot.Q){
+                    return myHero.CalculateDamageOnUnit(target, DamageType.Magical, (float) 25 * Q.Level + 15 + 0.35f * myHero.FlatMagicDamageMod) + myHero.CalculateDamageOnUnit(target, DamageType.True, (float) 25 * Q.Level + 15 + 0.35f * myHero.FlatMagicDamageMod);
+                }
+                else if (slot == SpellSlot.W){
+                    return 1.6f * myHero.CalculateDamageOnUnit(target, DamageType.Magical, (float) 25 * W.Level + 15 + 0.4f * myHero.FlatMagicDamageMod);
+                }
+                else if (slot == SpellSlot.E){
+                    return myHero.CalculateDamageOnUnit(target, DamageType.Magical, (float) 35 * E.Level + 25 + 0.5f * myHero.FlatMagicDamageMod);
+                }
+                else if (slot == SpellSlot.R){
+                    return 3 * myHero.CalculateDamageOnUnit(target, DamageType.Magical, (float) 40 * R.Level + 30 + 0.3f * myHero.FlatMagicDamageMod);
+                }
+            }
+            return myHero.GetSpellDamage(target, slot);
         }
 
         static DamageInfo GetComboDamage(Obj_AI_Base target, bool q, bool w, bool e, bool r)
@@ -517,22 +536,22 @@ namespace iAhri
             {
                 if (q)
                 {
-                    ComboDamage += myHero.GetSpellDamage(target, Q.Slot);
+                    ComboDamage += Damage(target, Q.Slot);
                     ManaWasted += myHero.Spellbook.GetSpell(SpellSlot.Q).SData.Mana;
                 }
                 if (w)
                 {
-                    ComboDamage += myHero.GetSpellDamage(target, W.Slot);
+                    ComboDamage += Damage(target, W.Slot);
                     ManaWasted += myHero.Spellbook.GetSpell(SpellSlot.W).SData.Mana;
                 }
                 if (e)
                 {
-                    ComboDamage += myHero.GetSpellDamage(target, E.Slot);
+                    ComboDamage += Damage(target, E.Slot);
                     ManaWasted += myHero.Spellbook.GetSpell(SpellSlot.E).SData.Mana;
                 }
                 if (r)
                 {
-                    ComboDamage += myHero.GetSpellDamage(target, R.Slot);
+                    ComboDamage += Damage(target, R.Slot);
                     ManaWasted += myHero.Spellbook.GetSpell(SpellSlot.R).SData.Mana;
                 }
                 if ( Ignite != null && Ignite.IsReady()){
@@ -543,6 +562,10 @@ namespace iAhri
             return new DamageInfo(ComboDamage, ManaWasted);
         }
 
+        static float GetOverkill()
+        {
+            return (float)((100 + SubMenu["Misc"]["Overkill"].Cast<Slider>().CurrentValue) / 100);
+        }
 		static DamageInfo GetBestCombo(Obj_AI_Base target)
         {
             var q = Q.IsReady() ? new bool[] { false, true } : new bool[] { false };
