@@ -49,7 +49,7 @@ namespace iAhri
                 Ignite = new Spell.Targeted(slot, 600);
             }
 
-            menu = MainMenu.AddMenu(AddonName, AddonName + " by " + Author);
+            menu = MainMenu.AddMenu(AddonName, AddonName + " by " + Author + "v1.0");
             menu.AddLabel(AddonName + " made by " + Author);
 
             SubMenu["Combo"] = menu.AddSubMenu("Combo", "Combo");
@@ -58,7 +58,7 @@ namespace iAhri
             SubMenu["Combo"].Add("E", new CheckBox("Use E", true));
             SubMenu["Combo"].Add("R", new CheckBox("Use R", true));
             SubMenu["Combo"].Add("CatchQR", new CheckBox("Catch the Q with R", true));
-            SubMenu["Combo"].Add("CatchQRPriority", new CheckBox("Give Priority to Catch the Q with R", false));
+            SubMenu["Combo"].Add("CatchQRPriority", new CheckBox("Give Priority to Catch the Q with R", true));
 
             SubMenu["Harass"] = menu.AddSubMenu("Harass", "Harass");
             SubMenu["Harass"].Add("Q", new CheckBox("Use Q", true));
@@ -86,8 +86,8 @@ namespace iAhri
             SubMenu["Draw"].Add("Line", new CheckBox("Draw line for Q orb", true));
 
             SubMenu["Misc"] = menu.AddSubMenu("Misc", "Misc");
-            SubMenu["Misc"].Add("CatchQMovement", new CheckBox("Catch the Q with movement", false));
             SubMenu["Misc"].Add("Overkill", new Slider("Overkill % for damage prediction", 10, 0, 100));
+            SubMenu["Misc"].Add("CatchQMovement", new CheckBox("Catch the Q with movement", false));
             SubMenu["Misc"].Add("Gapclose", new CheckBox("Use E on gapclose spells", true));
             SubMenu["Misc"].Add("Channeling", new CheckBox("Use E on channeling spells", true));
 
