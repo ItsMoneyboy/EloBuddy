@@ -107,9 +107,10 @@ namespace XerathBuddy
             R.AllowedCollisionCount = int.MaxValue;
             if (IsChargingQ)
             {
-                Q = new Spell.Skillshot(Q.Slot, (uint)Math.Min((1550 - 750) * (Game.Time - Q_LastCastTime)/1.5f + 750, 1550), Q.Type, Q.CastDelay, Q.Speed, Q.Width);
+                Q = new Spell.Skillshot(Q.Slot, (uint)Math.Min((1550 - 750) * (Game.Time - Q_LastCastTime) / 1.5f + 750, 1550), Q.Type, Q.CastDelay, Q.Speed, Q.Width);
             }
-            else {
+            else
+            {
                 Q = new Spell.Skillshot(Q.Slot, 1550, Q.Type, Q.CastDelay, Q.Speed, Q.Width);
             }
             Q.AllowedCollisionCount = int.MaxValue;
@@ -117,7 +118,8 @@ namespace XerathBuddy
             {
                 Orbwalker.DisableMovement = true;
             }
-            else {
+            else
+            {
                 Orbwalker.DisableMovement = false;
             }
             if (IsChargingQ || IsCastingR)
@@ -158,7 +160,7 @@ namespace XerathBuddy
                     if (pred.HitChance == HitChance.Medium)
                     {
                         myHero.Spellbook.CastSpell(Q.Slot, pred.CastPosition);
-                        //myHero.Spellbook.UpdateChargeableSpell(Q.Slot, pred.CastPosition, true);
+                        myHero.Spellbook.UpdateChargeableSpell(Q.Slot, pred.CastPosition, true);
                     }
                 }
                 else
@@ -182,10 +184,13 @@ namespace XerathBuddy
                 }
             }
         }
-        private static void CastE(Obj_AI_Base target) {
-            if (E.IsReady() && target.IsValidTarget()) {
+        private static void CastE(Obj_AI_Base target)
+        {
+            if (E.IsReady() && target.IsValidTarget())
+            {
                 var pred = E.GetPrediction(target);
-                if (pred.HitChance == HitChance.High) {
+                if (pred.HitChance == HitChance.High)
+                {
                     E.Cast(pred.CastPosition);
                 }
             }
@@ -293,7 +298,8 @@ namespace XerathBuddy
                         IsChargingQ = false;
                         Orbwalker.DisableAttacking = false;
                     }
-                    else {
+                    else
+                    {
                         IsChargingQ = true;
                         Orbwalker.DisableAttacking = true;
                         Q_LastCastTime = Game.Time;
@@ -311,8 +317,9 @@ namespace XerathBuddy
                         RStack = 3;
                         Core.DelayAction(() => RStack = 3, 10 * 1000);
                     }
-                    else { 
-                    
+                    else
+                    {
+
                     }
                 }
             }
@@ -326,10 +333,13 @@ namespace XerathBuddy
 
         private static void OnCreateObj(GameObject sender, EventArgs args)
         {
-            if (sender.Name.ToLower().Contains(myHero.ChampionName.ToLower())) {
+            if (sender.Name.ToLower().Contains(myHero.ChampionName.ToLower()))
+            {
                 var name = sender.Name.ToLower();
-                if (Extensions.Distance(sender, myHero) < 150) { 
-                    if (name.Contains("_r") && name.Contains("_buf")){
+                if (Extensions.Distance(sender, myHero) < 150)
+                {
+                    if (name.Contains("_r") && name.Contains("_buf"))
+                    {
                         IsCastingR = true;
                     }
                     else if (name.Contains("_q") && name.Contains("_cas") && name.Contains("_charge"))
@@ -343,11 +353,12 @@ namespace XerathBuddy
             {
                 return;
             }
-            var unit = (Obj_AI_Base) missile.SpellCaster;
+            var unit = (Obj_AI_Base)missile.SpellCaster;
             if (missile.SpellCaster.IsMe)
             {
                 var name = missile.SData.Name.ToLower();
-                if (name.Contains("xerathmagespear")){
+                if (name.Contains("xerathmagespear"))
+                {
                     E_GameObject = sender;
                 }
             }
@@ -374,7 +385,7 @@ namespace XerathBuddy
             {
                 return;
             }
-            var unit = (Obj_AI_Base) missile.SpellCaster;
+            var unit = (Obj_AI_Base)missile.SpellCaster;
             if (missile.SpellCaster.IsMe)
             {
                 var name = missile.SData.Name.ToLower();
