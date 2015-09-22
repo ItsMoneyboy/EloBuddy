@@ -397,23 +397,26 @@ namespace iAhri
             {
                 return;
             }
-            var unit = (Obj_AI_Base)missile.SpellCaster;
-            if (missile.SpellCaster.IsMe)
+            if (sender.Name.ToLower().Contains("missile"))
             {
-                var name = missile.SData.Name.ToLower();
-                if (name.Contains("ahriorbmissile"))
+                var unit = (Obj_AI_Base) missile.SpellCaster;
+                if (missile.SpellCaster.IsMe)
                 {
-                    _Q["Object"] = sender;
-                    _Q["IsReturning"] = false;
-                }
-                else if (name.Contains("ahriorbreturn"))
-                {
-                    _Q["Object"] = sender;
-                    _Q["IsReturning"] = true;
-                }
-                else if (name.Contains("ahriseducemissile"))
-                {
-                    _E["Object"] = sender;
+                    var name = missile.SData.Name.ToLower();
+                    if (name.Contains("ahriorbmissile"))
+                    {
+                        _Q["Object"] = sender;
+                        _Q["IsReturning"] = false;
+                    }
+                    else if (name.Contains("ahriorbreturn"))
+                    {
+                        _Q["Object"] = sender;
+                        _Q["IsReturning"] = true;
+                    }
+                    else if (name.Contains("ahriseducemissile"))
+                    {
+                        _E["Object"] = sender;
+                    }
                 }
             }
         }
@@ -424,20 +427,23 @@ namespace iAhri
             {
                 return;
             }
-            var unit = (Obj_AI_Base)missile.SpellCaster;
-            if (missile.SpellCaster.IsMe)
+            if (sender.Name.ToLower().Contains("missile"))
             {
-                var name = missile.SData.Name.ToLower();
-                if (name.Contains("ahriorbreturn"))
+                var unit = (Obj_AI_Base) missile.SpellCaster;
+                if (missile.SpellCaster.IsMe)
                 {
-                    _Q["Object"] = null;
-                    _Q["IsReturning"] = false;
-                    _Q["Target"] = null;
-                    _Q["LastObjectVector"] = null;
-                }
-                else if (name.Contains("ahriseducemissile"))
-                {
-                    _E["Object"] = null;
+                    var name = missile.SData.Name.ToLower();
+                    if (name.Contains("ahriorbreturn"))
+                    {
+                        _Q["Object"] = null;
+                        _Q["IsReturning"] = false;
+                        _Q["Target"] = null;
+                        _Q["LastObjectVector"] = null;
+                    }
+                    else if (name.Contains("ahriseducemissile"))
+                    {
+                        _E["Object"] = null;
+                    }
                 }
             }
         }
@@ -601,11 +607,11 @@ namespace iAhri
                     else
                     {
                         bool[] best = new bool[] {
-							Q.IsReady (),
-							W.IsReady (),
-							E.IsReady (),
-							R.IsReady ()
-						};
+                            Q.IsReady (),
+                            W.IsReady (),
+                            E.IsReady (),
+                            R.IsReady ()
+                        };
                         var bestdmg = 0f;
                         var bestmana = 0f;
                         foreach (bool q1 in q)
