@@ -155,13 +155,13 @@ namespace XerathBuddy
             }
             else if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Harass))
             {
-                //Harass();
+                Harass();
             }
             else if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.JungleClear) || Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.LaneClear))
             {
                 if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.JungleClear))
                 {
-                    //JungleClear();
+                    JungleClear();
                 }
             }
         }
@@ -236,12 +236,38 @@ namespace XerathBuddy
 
         private static void JungleClear()
         {
-            throw new NotImplementedException();
+            if (myHero.ManaPercent >= SubMenu["JungleClear"]["Mana"].Cast<Slider>().CurrentValue)
+            {
+                foreach (Obj_AI_Base minion in EntityManager.GetJungleMonsters(myHero.Position.To2D(), 1000f))
+                {
+                    if (minion.IsValidTarget() && myHero.ManaPercent >= SubMenu["JungleClear"]["Mana"].Cast<Slider>().CurrentValue)
+                    {
+                        if (SubMenu["JungleClear"]["E"].Cast<CheckBox>().CurrentValue) { CastE(minion); }
+                        if ((Game.Time - E_LastCastTime <= (float)(E.CastDelay / 1000 * 1.1)) || (E_GameObject != null && Extensions.Distance(myHero, minion) > Extensions.Distance(myHero, E_GameObject)))
+                        {
+                            return;
+                        }
+                        if (SubMenu["JungleClear"]["Q"].Cast<CheckBox>().CurrentValue) { CastQ(minion); }
+                        if (SubMenu["JungleClear"]["W"].Cast<CheckBox>().CurrentValue) { CastW(minion); }
+                    }
+                }
+
+            }
         }
 
         private static void Harass()
         {
-            throw new NotImplementedException();
+            var target = TargetSelector.GetTarget(Q.Range, EloBuddy.DamageType.Magical);
+            if (target.IsValidTarget() && myHero.ManaPercent >= SubMenu["Harass"]["Mana"].Cast<Slider>().CurrentValue)
+            {
+                if (SubMenu["Harass"]["E"].Cast<CheckBox>().CurrentValue) { CastE(target); }
+                if ((Game.Time - E_LastCastTime <= (float)(E.CastDelay / 1000 * 1.1)) || (E_GameObject != null && Extensions.Distance(myHero, target) > Extensions.Distance(myHero, E_GameObject)))
+                {
+                    return;
+                }
+                if (SubMenu["Harass"]["Q"].Cast<CheckBox>().CurrentValue) { CastQ(target); }
+                if (SubMenu["Harass"]["W"].Cast<CheckBox>().CurrentValue) { CastW(target); }
+            }
         }
 
         private static void Combo()
