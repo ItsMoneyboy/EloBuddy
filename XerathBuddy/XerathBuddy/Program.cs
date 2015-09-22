@@ -73,6 +73,8 @@ namespace XerathBuddy
             SubMenu["Combo"].Add("W", new CheckBox("Use W", true));
             SubMenu["Combo"].Add("E", new CheckBox("Use E", true));
 
+            SubMenu["Ultimate"] = menu.AddSubMenu("Ultimate", "Ultimate");
+
             SubMenu["Harass"] = menu.AddSubMenu("Harass", "Harass");
             SubMenu["Harass"].Add("Q", new CheckBox("Use Q", false));
             SubMenu["Harass"].Add("W", new CheckBox("Use W", false));
@@ -95,6 +97,7 @@ namespace XerathBuddy
             SubMenu["Flee"].Add("E", new CheckBox("Use E", true));
 
             SubMenu["Draw"] = menu.AddSubMenu("Drawing", "Drawing");
+            SubMenu["Draw"].Add("Killable", new CheckBox("Draw text if killable with R", true));
 
             SubMenu["Misc"] = menu.AddSubMenu("Misc", "Misc");
             SubMenu["Misc"].Add("Overkill", new Slider("Overkill % for damage prediction", 10, 0, 100));
@@ -140,6 +143,10 @@ namespace XerathBuddy
             else
             {
                 Orbwalker.DisableAttacking = false;
+            }
+            if (R_IsCasting)
+            {
+                return;
             }
             KillSteal();
             if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Combo))
@@ -336,7 +343,30 @@ namespace XerathBuddy
 
         private static void OnDraw(EventArgs args)
         {
-            throw new NotImplementedException();
+            if (myHero.IsDead)
+                return;
+            if (SubMenu["Draw"]["Killable"].Cast<CheckBox>().CurrentValue && R.IsReady() && myHero.Mana >= myHero.Spellbook.GetSpell(R.Slot).SData.Mana)
+            {
+                var count = 0;
+                foreach (AIHeroClient enemy in HeroManager.Enemies)
+                {
+                    if (enemy.IsValidTarget(R.Range))
+                    {
+                        if (Damage(enemy, R.Slot) * R_Stack >= enemy.Health)
+                        {
+                            if (enemy.VisibleOnScreen)
+                            {
+                                var p = Drawing.WorldToScreen(enemy.Position);
+                                Drawing.DrawText(p, System.Drawing.Color.Red, "R Killable", 25);
+                            }
+
+                            Drawing.DrawText(new Vector2(100, 50 + count * 50), System.Drawing.Color.Red, enemy.ChampionName.ToUpper() + " KILLABLE", 35);
+                            count++;
+                        }
+                    }
+                }
+
+            }
         }
 
 
