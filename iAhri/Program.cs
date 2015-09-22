@@ -573,6 +573,7 @@ namespace iAhri
                 {
                     ComboDamage += myHero.GetSummonerSpellDamage(target, DamageLibrary.SummonerSpells.Ignite);
                 }
+                ComboDamage += myHero.GetAutoAttackDamage(target, true);
             }
 
             return new DamageInfo(ComboDamage, ManaWasted);
