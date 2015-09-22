@@ -26,12 +26,22 @@ namespace XerathBuddy
         private static Spell.Skillshot Q;
         private static Spell.Skillshot W, E, R;
         private static Spell.Targeted Ignite;
-        private static int RStack = 3;
-        private static bool IsCastingR = false;
-        private static bool IsChargingQ = false;
+        private static bool Q_IsCharging = false;
         private static float Q_LastCastTime = 0f;
         private static float E_LastCastTime = 0f;
         private static GameObject E_GameObject = null;
+        private static int R_Stack
+        {
+            get
+            {
+                if (myHero.HasBuff("xerathrshots"))
+                    return myHero.GetBuff("xerathrshots").Count;
+                if (R.IsReady())
+                    return 3;
+                return 0;
+            }
+        }
+        private static bool R_IsCasting = false;
         static void Main(string[] args)
         {
             Loading.OnLoadingComplete += OnLoad;
@@ -43,7 +53,7 @@ namespace XerathBuddy
             //Q = new Spell.Chargeable(SpellSlot.Q, 750, 1400, 1500, 600, int.MaxValue, 100);
             Q = new Spell.Skillshot(SpellSlot.Q, 1550, SkillShotType.Linear, 600, int.MaxValue, 100);
             Q.AllowedCollisionCount = int.MaxValue;
-            W = new Spell.Skillshot(SpellSlot.W, 1100, SkillShotType.Circular, 790, int.MaxValue, 120);
+            W = new Spell.Skillshot(SpellSlot.W, 1100, SkillShotType.Circular, 790, int.MaxValue, 100);
             W.AllowedCollisionCount = int.MaxValue;
             E = new Spell.Skillshot(SpellSlot.E, 1050, SkillShotType.Linear, 250, 1400, 60);
             E.AllowedCollisionCount = 0;
@@ -101,11 +111,12 @@ namespace XerathBuddy
             Gapcloser.OnGapcloser += OnGapCloser;
             Interrupter.OnInterruptableSpell += OnInterruptableSpell;
         }
+
         private static void OnTick(EventArgs args)
         {
             R = new Spell.Skillshot(R.Slot, (uint)(2000 + 1200 * R.Level), R.Type, R.CastDelay, R.Speed, R.Width);
             R.AllowedCollisionCount = int.MaxValue;
-            if (IsChargingQ)
+            if (Q_IsCharging)
             {
                 Q = new Spell.Skillshot(Q.Slot, (uint)Math.Min((1550 - 750) * (Game.Time - Q_LastCastTime) / 1.5f + 750, 1550), Q.Type, Q.CastDelay, Q.Speed, Q.Width);
             }
@@ -114,7 +125,7 @@ namespace XerathBuddy
                 Q = new Spell.Skillshot(Q.Slot, 1550, Q.Type, Q.CastDelay, Q.Speed, Q.Width);
             }
             Q.AllowedCollisionCount = int.MaxValue;
-            if (IsCastingR)
+            if (R_IsCasting)
             {
                 Orbwalker.DisableMovement = true;
             }
@@ -122,7 +133,7 @@ namespace XerathBuddy
             {
                 Orbwalker.DisableMovement = false;
             }
-            if (IsChargingQ || IsCastingR)
+            if (Q_IsCharging || R_IsCasting)
             {
                 Orbwalker.DisableAttacking = true;
             }
@@ -154,8 +165,8 @@ namespace XerathBuddy
             if (Q.IsReady() && target.IsValidTarget(Q.Range * 1.2f))
             {
                 var pred = Q.GetPrediction(target);
-                Chat.Print(pred.HitChance + " " + Q.Range + " " + IsChargingQ + " " + Q.Width + " " + Q.CastDelay);
-                if (IsChargingQ)
+                //Chat.Print(pred.HitChance + " " + Q.Range + " " + Q_IsCharging + " " + Q.Width + " " + Q.CastDelay);
+                if (Q_IsCharging)
                 {
                     if (pred.HitChance == HitChance.Medium)
                     {
@@ -199,7 +210,7 @@ namespace XerathBuddy
         {
             foreach (AIHeroClient enemy in HeroManager.Enemies)
             {
-                if (enemy.IsValidTarget(E.Range) && enemy.HealthPercent <= 30)
+                if (enemy.IsValidTarget(E.Range) && enemy.HealthPercent <= 40)
                 {
                     var damageI = GetBestCombo(enemy);
                     if (damageI.Damage >= enemy.Health)
@@ -263,11 +274,11 @@ namespace XerathBuddy
             {
                 if (args.Buff.Name.ToLower().Contains("xeratharcanopulsechargeup"))
                 {
-                    IsChargingQ = true;
+                    Q_IsCharging = true;
                 }
                 else if (args.Buff.Name.ToLower().Contains("xerathlocusofpower2"))
                 {
-                    IsCastingR = true;
+                    R_IsCasting = true;
                 }
             }
         }
@@ -277,11 +288,11 @@ namespace XerathBuddy
             {
                 if (args.Buff.Name.ToLower().Contains("xeratharcanopulsechargeup"))
                 {
-                    IsChargingQ = false;
+                    Q_IsCharging = false;
                 }
                 else if (args.Buff.Name.ToLower().Contains("xerathlocusofpower2"))
                 {
-                    IsCastingR = false;
+                    R_IsCasting = false;
                 }
             }
         }
@@ -295,12 +306,12 @@ namespace XerathBuddy
                 {
                     if (args.SData.Name.ToLower().Contains("locus2"))
                     {
-                        IsChargingQ = false;
+                        Q_IsCharging = false;
                         Orbwalker.DisableAttacking = false;
                     }
                     else
                     {
-                        IsChargingQ = true;
+                        Q_IsCharging = true;
                         Orbwalker.DisableAttacking = true;
                         Q_LastCastTime = Game.Time;
                     }
@@ -313,9 +324,7 @@ namespace XerathBuddy
                 {
                     if (args.SData.Name.ToLower().Contains("locusofpower2"))
                     {
-                        IsCastingR = true;
-                        RStack = 3;
-                        Core.DelayAction(() => RStack = 3, 10 * 1000);
+                        R_IsCasting = true;
                     }
                     else
                     {
@@ -340,11 +349,11 @@ namespace XerathBuddy
                 {
                     if (name.Contains("_r") && name.Contains("_buf"))
                     {
-                        IsCastingR = true;
+                        R_IsCasting = true;
                     }
                     else if (name.Contains("_q") && name.Contains("_cas") && name.Contains("_charge"))
                     {
-                        IsChargingQ = true;
+                        Q_IsCharging = true;
                     }
                 }
             }
@@ -372,11 +381,11 @@ namespace XerathBuddy
                 {
                     if (name.Contains("_r") && name.Contains("_buf"))
                     {
-                        IsCastingR = false;
+                        R_IsCasting = false;
                     }
                     else if (name.Contains("_q") && name.Contains("_cas") && name.Contains("_charge"))
                     {
-                        IsChargingQ = false;
+                        Q_IsCharging = false;
                     }
                 }
             }
@@ -443,7 +452,7 @@ namespace XerathBuddy
                 }
                 if (r)
                 {
-                    ComboDamage += Damage(target, R.Slot);
+                    ComboDamage += R_Stack * Damage(target, R.Slot);
                     ManaWasted += myHero.Spellbook.GetSpell(SpellSlot.R).SData.Mana;
                 }
                 if (Ignite != null && Ignite.IsReady())
