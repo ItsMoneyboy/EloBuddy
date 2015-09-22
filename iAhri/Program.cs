@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using EloBuddy;
@@ -98,7 +98,7 @@ namespace iAhri
             Obj_AI_Base.OnProcessSpellCast += OnProcessSpell;
             Obj_AI_Base.OnBuffGain += OnApplyBuff;
             Obj_AI_Base.OnBuffLose += OnRemoveBuff;
-			Gapcloser.OnGapcloser += OnGapCloser;
+            Gapcloser.OnGapcloser += OnGapCloser;
             Interrupter.OnInterruptableSpell += OnInterruptableSpell;
         }
 
@@ -274,12 +274,12 @@ namespace iAhri
                     {
                         if (_Q["Object"] != null || Orbwalker.LastTarget.NetworkId == target.NetworkId)
                         {
-							myHero.Spellbook.CastSpell(W.Slot);
+                            myHero.Spellbook.CastSpell(W.Slot);
                         }
                     }
                     else
                     {
-						myHero.Spellbook.CastSpell(W.Slot);
+                        myHero.Spellbook.CastSpell(W.Slot);
                     }
                 }
             }
@@ -454,7 +454,7 @@ namespace iAhri
             }
         }
 
-		static void OnGapCloser(Obj_AI_Base sender, Gapcloser.GapcloserEventArgs args)
+        static void OnGapCloser(Obj_AI_Base sender, Gapcloser.GapcloserEventArgs args)
         {
             if (SubMenu["Misc"]["Gapclose"].Cast<CheckBox>().CurrentValue)
             {
@@ -462,7 +462,7 @@ namespace iAhri
             }
         }
 
-		static void OnInterruptableSpell(Obj_AI_Base sender, Interrupter.InterruptableSpellEventArgs args)
+        static void OnInterruptableSpell(Obj_AI_Base sender, Interrupter.InterruptableSpellEventArgs args)
         {
             if (SubMenu["Misc"]["Channeling"].Cast<CheckBox>().CurrentValue)
             {
