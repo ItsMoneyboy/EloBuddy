@@ -50,7 +50,7 @@ namespace XerathBuddy
         {
             if (myHero.Hero != Champion.Xerath) { return; }
             Chat.Print(AddonName + " made by " + Author + " loaded, have fun!.");
-            //Q = new Spell.Chargeable(SpellSlot.Q, 750, 1400, 1500, 600, int.MaxValue, 100);
+            //Q = new Spell.Chargeable(SpellSlot.Q, 750, 1550, 1500, 600, int.MaxValue, 100);
             Q = new Spell.Skillshot(SpellSlot.Q, 1550, SkillShotType.Linear, 600, int.MaxValue, 100);
             Q.AllowedCollisionCount = int.MaxValue;
             W = new Spell.Skillshot(SpellSlot.W, 1100, SkillShotType.Circular, 790, int.MaxValue, 100);
@@ -383,10 +383,10 @@ namespace XerathBuddy
                             if (enemy.VisibleOnScreen)
                             {
                                 var p = Drawing.WorldToScreen(enemy.Position);
-                                Drawing.DrawText(p, System.Drawing.Color.Red, "R Killable", 25);
+                                Drawing.DrawText(p, System.Drawing.Color.Red, "R Killable", 200);
                             }
 
-                            Drawing.DrawText(new Vector2(100, 50 + count * 50), System.Drawing.Color.Red, enemy.ChampionName.ToUpper() + " KILLABLE", 35);
+                            Drawing.DrawText(new Vector2(100, 50 + count * 50), System.Drawing.Color.Red, enemy.ChampionName.ToUpper() + " KILLABLE", 250);
                             count++;
                         }
                     }
