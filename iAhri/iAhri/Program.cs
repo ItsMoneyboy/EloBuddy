@@ -392,14 +392,14 @@ namespace iAhri
 
         static void OnCreateObj(EloBuddy.GameObject sender, EventArgs args)
         {
-            var missile = (MissileClient)sender;
-            if (missile == null || !missile.IsValid || missile.SpellCaster == null || !missile.SpellCaster.IsValid)
-            {
-                return;
-            }
             if (sender.Name.ToLower().Contains("missile"))
             {
-                var unit = (Obj_AI_Base) missile.SpellCaster;
+                var missile = (MissileClient)sender;
+                if (missile == null || !missile.IsValid || missile.SpellCaster == null || !missile.SpellCaster.IsValid)
+                {
+                    return;
+                }
+                var unit = (Obj_AI_Base)missile.SpellCaster;
                 if (missile.SpellCaster.IsMe)
                 {
                     var name = missile.SData.Name.ToLower();
@@ -422,14 +422,14 @@ namespace iAhri
         }
         static void OnDeleteObj(GameObject sender, EventArgs args)
         {
-            var missile = (MissileClient)sender;
-            if (missile == null || !missile.IsValid || missile.SpellCaster == null || !missile.SpellCaster.IsValid)
-            {
-                return;
-            }
             if (sender.Name.ToLower().Contains("missile"))
             {
-                var unit = (Obj_AI_Base) missile.SpellCaster;
+                var missile = (MissileClient)sender;
+                if (missile == null || !missile.IsValid || missile.SpellCaster == null || !missile.SpellCaster.IsValid)
+                {
+                    return;
+                }
+                var unit = (Obj_AI_Base)missile.SpellCaster;
                 if (missile.SpellCaster.IsMe)
                 {
                     var name = missile.SData.Name.ToLower();
