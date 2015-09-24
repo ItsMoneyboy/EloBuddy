@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using EloBuddy;
@@ -25,6 +25,7 @@ namespace Project_Zed
         static Spell.Skillshot Q, W, E;
         static Spell.Targeted Ignite, R;
         static _Spell _W, _R;
+        static Obj_AI_Minion wFound, rFound;
         static float Overkill
         {
             get
@@ -36,7 +37,7 @@ namespace Project_Zed
         {
             get
             {
-                return Game.Time - _W.LastCastTime < 0.5 && wShadow == null && IsW1 && W.IsReady();
+                return Game.Time - _W.LastCastTime < 0.1 && wShadow == null && IsW1 && W.IsReady();
                 //return Game.Time - _W.LastCastTime < 0.5 && wShadow == null;
             }
         }
@@ -111,9 +112,9 @@ namespace Project_Zed
         {
             get
             {
-                if (IsR1 && R.IsReady() || _R.End == Vector3.Zero)
+                if (rFound != null && !rFound.IsDead)
                 {
-                    return null;
+                    return rFound;
                 }
                 return ObjectManager.Get<Obj_AI_Minion>().FirstOrDefault(obj => obj.Name.ToLower() == "shadow" && !obj.IsDead && obj.Team == myHero.Team && Extensions.Distance(_R.End, obj) < 60);
             }
@@ -122,10 +123,6 @@ namespace Project_Zed
         {
             get
             {
-                if (IsW1 && W.IsReady() || _W.End == Vector3.Zero)
-                {
-                    return null;
-                }
                 if (rShadow != null)
                 {
                     return ObjectManager.Get<Obj_AI_Minion>().FirstOrDefault(obj => obj.Name.ToLower() == "shadow" && !obj.IsDead && obj.Team == myHero.Team && Extensions.Distance(_W.End, obj) < 100 && Extensions.Distance(rShadow, obj) > 0);
@@ -133,7 +130,6 @@ namespace Project_Zed
                 return ObjectManager.Get<Obj_AI_Minion>().FirstOrDefault(obj => obj.Name.ToLower() == "shadow" && !obj.IsDead && obj.Team == myHero.Team && Extensions.Distance(_W.End, obj) < 250);
             }
         }
-        static GameObject IsDeadObject = null;
         static void Main(string[] args)
         {
             Loading.OnLoadingComplete += OnLoad;
@@ -156,7 +152,7 @@ namespace Project_Zed
             }
             _W = new _Spell();
             _R = new _Spell();
-            menu = MainMenu.AddMenu(AddonName, AddonName + " by " + Author + "v1.00");
+            menu = MainMenu.AddMenu(AddonName, AddonName + " by " + Author + "v1");
             menu.AddLabel(AddonName + " made by " + Author);
 
             SubMenu["Combo"] = menu.AddSubMenu("Combo", "Combo");
@@ -165,7 +161,7 @@ namespace Project_Zed
             SubMenu["Combo"].Add("E", new CheckBox("Use E", true));
             SubMenu["Combo"].Add("R", new CheckBox("Use R", true));
             SubMenu["Combo"].Add("SwapDead", new CheckBox("Use W2/R2 if target will die", true));
-            SubMenu["Combo"].Add("SwapHP", new Slider("Use W2/R2 if the % of my health is less than ", 15, 0, 100));
+            SubMenu["Combo"].Add("SwapHp", new Slider("Use W2/R2 if the % of my health is less than ", 15, 0, 100));
             SubMenu["Combo"].Add("SwapGapclose", new CheckBox("Use W2/R2 to get close to target", true));
             SubMenu["Combo"].Add("Prevent", new KeyBind("Don't use spells before R", true, KeyBind.BindTypes.PressToggle, (uint)'L'));
 
@@ -390,11 +386,7 @@ namespace Project_Zed
         {
             if (SubMenu["Flee"]["W"].Cast<CheckBox>().CurrentValue && W.IsReady())
             {
-                if (IsW1)
-                    W.Cast(mousePos);
-                else
-                    myHero.Spellbook.CastSpell(W.Slot);
-                
+                W.Cast(mousePos);
             }
             if (SubMenu["Flee"]["E"].Cast<CheckBox>().CurrentValue && E.IsReady())
             {
@@ -525,17 +517,13 @@ namespace Project_Zed
 
         static void OnCreateObj(GameObject sender, EventArgs args)
         {
-            if (sender.Name.ToLower().Contains(myHero.ChampionName.ToLower()) && sender.Name.ToLower().Contains("base_r") && sender.Name.ToLower().Contains("buf_tell"))
+            if (sender.Name.ToLower().Contains("zed") && sender.Name.ToLower().Contains("base_r"))
             {
-                IsDeadObject = sender;
+                //Chat.Print(sender.Name + " " + sender.Type);
             }
         }
         static void OnDeleteObj(GameObject sender, EventArgs args)
         {
-            if (sender.Name.ToLower().Contains(myHero.ChampionName.ToLower()) && sender.Name.ToLower().Contains("base_r") && sender.Name.ToLower().Contains("buf_tell"))
-            {
-                IsDeadObject = null;
-            }
         }
 
         static void OnDraw(EventArgs args)
@@ -618,9 +606,10 @@ namespace Project_Zed
         {
             if (!IsR1 && target.IsValidTarget() && TargetHaveR(target))
             {
-                if (IsDeadObject != null)
+                var dead = ObjectManager.Get<Obj_GeneralParticleEmitter>().FirstOrDefault(obj => obj.Name.ToLower().Contains(myHero.ChampionName.ToLower()) && obj.Name.ToLower().Contains("base_r") && obj.Name.ToLower().Contains("buf_tell"));
+                if (dead != null)
                 {
-                    return Extensions.Distance(IsDeadObject, target) < 200;
+                    return Extensions.Distance(dead, target) < 200;
                 }
             }
             return false;
@@ -630,7 +619,7 @@ namespace Project_Zed
             float damage = 0f;
             if (100 * health / target.MaxHealth <= 50)
             {
-                return myHero.CalculateDamageOnUnit(target, DamageType.Physical, (float)(4 + 2 * R.Level) / target.MaxHealth);
+                return myHero.CalculateDamageOnUnit(target, DamageType.Physical, (float)( 4 + 2 * R.Level) * health / target.MaxHealth);
             }
             return damage;
         }
