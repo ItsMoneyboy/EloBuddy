@@ -18,13 +18,20 @@ namespace Project_Zed
         static string AddonName = "Project Zed";
         static float RefreshTime = 0.4f;
         static Dictionary<int, DamageInfo> PredictedDamage = new Dictionary<int, DamageInfo>() { };
-        private static AIHeroClient myHero { get { return ObjectManager.Player; } }
+        static AIHeroClient myHero { get { return ObjectManager.Player; } }
         static Vector3 mousePos { get { return Game.CursorPos; } }
         static Menu menu;
         static Dictionary<string, Menu> SubMenu = new Dictionary<string, Menu>() { };
         static Spell.Skillshot Q, W, E;
         static Spell.Targeted Ignite, R;
         static _Spell _W, _R;
+        static float Overkill
+        {
+            get
+            {
+                return (float)((100 + SubMenu["Misc"]["Overkill"].Cast<Slider>().CurrentValue) / 100);
+            }
+        }
         static bool IsWaitingShadow
         {
             get
@@ -136,7 +143,7 @@ namespace Project_Zed
             }
             _W = new _Spell();
             _R = new _Spell();
-            menu = MainMenu.AddMenu(AddonName, AddonName.Replace(" ", "") + " by " + Author + "v1.0");
+            menu = MainMenu.AddMenu(AddonName, AddonName + " by " + Author + "v1");
             menu.AddLabel(AddonName + " made by " + Author);
 
             SubMenu["Combo"] = menu.AddSubMenu("Combo", "Combo");
@@ -144,13 +151,24 @@ namespace Project_Zed
             SubMenu["Combo"].Add("W", new CheckBox("Use W", true));
             SubMenu["Combo"].Add("E", new CheckBox("Use E", true));
             SubMenu["Combo"].Add("R", new CheckBox("Use R", true));
+            SubMenu["Combo"].Add("SwapDead", new CheckBox("Use W2/R2 if target will die", true));
+            SubMenu["Combo"].Add("SwapHp", new Slider("Use W2/R2 if the % of my health is less than ", 15, 0, 100));
             SubMenu["Combo"].Add("Prevent", new KeyBind("Don't use spells before R", true, KeyBind.BindTypes.PressToggle, (uint)'L'));
 
             SubMenu["Harass"] = menu.AddSubMenu("Harass", "Harass");
-            SubMenu["Harass"].Add("Q", new CheckBox("Use Q", true));
-            SubMenu["Harass"].Add("W", new CheckBox("Use W", false));
-            SubMenu["Harass"].Add("E", new CheckBox("Use E", false));
+            SubMenu["Harass"].AddGroupLabel("Harass 1");
+            SubMenu["Harass"].Add("Q", new CheckBox("Use Q on Harass 1", true));
+            SubMenu["Harass"].Add("W", new CheckBox("Use W on Harass 1", false));
+            SubMenu["Harass"].Add("E", new CheckBox("Use E on Harass 1", true));
             SubMenu["Harass"].Add("Mana", new Slider("Min. Mana Percent:", 20, 0, 100));
+            SubMenu["Harass"].AddGroupLabel("Harass 2");
+            SubMenu["Harass"].Add("Q2", new CheckBox("Use Q on Harass 2", true));
+            SubMenu["Harass"].Add("W2", new CheckBox("Use W on Harass 2", true));
+            SubMenu["Harass"].Add("E2", new CheckBox("Use E on Harass 2", true));
+            SubMenu["Harass"].Add("Mana2", new Slider("Min. Mana Percent:", 20, 0, 100));
+            SubMenu["Harass"].AddGroupLabel("Harass Keys");
+            SubMenu["Harass"].Add("Key1", new KeyBind("Harass 1 Key", false, KeyBind.BindTypes.HoldActive, (uint)'C'));
+            SubMenu["Harass"].Add("Key2", new KeyBind("Harass 2 Key", false, KeyBind.BindTypes.HoldActive, (uint)'K'));
 
             SubMenu["JungleClear"] = menu.AddSubMenu("JungleClear", "JungleClear");
             SubMenu["JungleClear"].Add("Q", new CheckBox("Use Q", true));
@@ -169,6 +187,8 @@ namespace Project_Zed
             SubMenu["Flee"].Add("E", new CheckBox("Use E", true));
 
             SubMenu["Draw"] = menu.AddSubMenu("Drawing", "Drawing");
+            SubMenu["Draw"].Add("W", new CheckBox("Draw W Shadow", true));
+            SubMenu["Draw"].Add("R", new CheckBox("Draw R Shadow", true));
 
             SubMenu["Misc"] = menu.AddSubMenu("Misc", "Misc");
             SubMenu["Misc"].Add("Overkill", new Slider("Overkill % for damage prediction", 10, 0, 100));
@@ -190,13 +210,17 @@ namespace Project_Zed
         {
             if (myHero.IsDead) { return; }
             KillSteal();
+            if (SubMenu["Harass"]["Key1"].Cast<KeyBind>().CurrentValue)
+            {
+                Harass();
+            }
+            else if (SubMenu["Harass"]["Key2"].Cast<KeyBind>().CurrentValue)
+            {
+                Harass2();
+            }
             if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Combo))
             {
                 Combo();
-            }
-            else if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Harass))
-            {
-                Harass();
             }
             else if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.JungleClear) || Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.LaneClear))
             {
@@ -216,7 +240,7 @@ namespace Project_Zed
         {
             foreach (AIHeroClient enemy in HeroManager.Enemies)
             {
-                if (enemy.IsValidTarget(TS_Range) && enemy.HealthPercent <= 40)
+                if (enemy.IsValidTarget(TS_Range) && enemy.HealthPercent <= 40 && !IsDead(enemy))
                 {
                     var damageI = GetBestCombo(enemy);
                     if (damageI.Damage >= enemy.Health)
@@ -237,12 +261,52 @@ namespace Project_Zed
             var target = TS_Target;
             if (target.IsValidTarget())
             {
+                var damageI = GetBestCombo(target);
+                if (SubMenu["Combo"]["SwapHP"].Cast<Slider>().CurrentValue >= myHero.HealthPercent)
+                {
+                    if (damageI.Damage <= target.Health || myHero.HealthPercent < target.HealthPercent)
+                    {
+                        var HeroCount = myHero.CountEnemiesInRange(400);
+                        var wCount = (wShadow != null && W.IsReady() && !IsW1) ? wShadow.CountEnemiesInRange(400) : 1000;
+                        var rCount = (rShadow != null && R.IsReady() && !IsR1) ? rShadow.CountEnemiesInRange(400) : 1000;
+                        var min = Math.Min(rCount, wCount);
+                        if (HeroCount > min)
+                        {
+                            if (min == wCount)
+                            {
+                                myHero.Spellbook.CastSpell(W.Slot);
+                            }
+                            else if (min == rCount)
+                            {
+                                myHero.Spellbook.CastSpell(R.Slot);
+                            }
+                        }
+                    }
+                }
+                if (IsDead(target) && SubMenu["Combo"]["SwapDead"].Cast<KeyBind>().CurrentValue)
+                {
+                    var HeroCount = myHero.CountEnemiesInRange(400);
+                    var wCount = (wShadow != null && W.IsReady() && !IsW1) ? wShadow.CountEnemiesInRange(400) : 1000;
+                    var rCount = (rShadow != null && R.IsReady() && !IsR1) ? rShadow.CountEnemiesInRange(400) : 1000;
+                    var min = Math.Min(rCount, wCount);
+                    if (HeroCount > min)
+                    {
+                        if (min == wCount)
+                        {
+                            myHero.Spellbook.CastSpell(W.Slot);
+                        }
+                        else if (min == rCount)
+                        {
+                            myHero.Spellbook.CastSpell(R.Slot);
+                        }
+                    }
+                }
                 if (SubMenu["Combo"]["R"].Cast<CheckBox>().CurrentValue) { CastR(target); }
                 if (SubMenu["Combo"]["Prevent"].Cast<KeyBind>().CurrentValue && R.IsReady() && IsR1)
                 {
                     return;
                 }
-                if (SubMenu["Combo"]["W"].Cast<CheckBox>().CurrentValue) { CastW(target); }
+                if (SubMenu["Combo"]["W"].Cast<CheckBox>().CurrentValue && NeedsW(target)) { CastW(target); }
                 if (SubMenu["Combo"]["E"].Cast<CheckBox>().CurrentValue) { CastE(target); }
                 if (SubMenu["Combo"]["Q"].Cast<CheckBox>().CurrentValue) { CastQ(target); }
             }
@@ -253,9 +317,19 @@ namespace Project_Zed
             var target = TS_Target;
             if (target.IsValidTarget() && myHero.ManaPercent >= SubMenu["Harass"]["Mana"].Cast<Slider>().CurrentValue)
             {
+                if (SubMenu["Harass"]["W"].Cast<CheckBox>().CurrentValue) { CastW(target); }
                 if (SubMenu["Harass"]["E"].Cast<CheckBox>().CurrentValue) { CastE(target); }
                 if (SubMenu["Harass"]["Q"].Cast<CheckBox>().CurrentValue) { CastQ(target); }
-                if (SubMenu["Harass"]["W"].Cast<CheckBox>().CurrentValue) { CastW(target); }
+            }
+        }
+        static void Harass2()
+        {
+            var target = TS_Target;
+            if (target.IsValidTarget() && myHero.ManaPercent >= SubMenu["Harass"]["Mana2"].Cast<Slider>().CurrentValue)
+            {
+                if (SubMenu["Harass"]["W2"].Cast<CheckBox>().CurrentValue) { CastW(target); }
+                if (SubMenu["Harass"]["E2"].Cast<CheckBox>().CurrentValue) { CastE(target); }
+                if (SubMenu["Harass"]["Q2"].Cast<CheckBox>().CurrentValue) { CastQ(target); }
             }
         }
         static void Flee()
@@ -293,9 +367,9 @@ namespace Project_Zed
                 {
                     if (minion.IsValidTarget() && myHero.ManaPercent >= SubMenu["JungleClear"]["Mana"].Cast<Slider>().CurrentValue)
                     {
-                        if (SubMenu["JungleClear"]["E"].Cast<CheckBox>().CurrentValue) { CastE(minion); }
-                        if (SubMenu["JungleClear"]["Q"].Cast<CheckBox>().CurrentValue) { CastQ(minion); }
                         if (SubMenu["JungleClear"]["W"].Cast<CheckBox>().CurrentValue) { CastW(minion); }
+                        if (SubMenu["JungleClear"]["Q"].Cast<CheckBox>().CurrentValue) { CastQ(minion); }
+                        if (SubMenu["JungleClear"]["E"].Cast<CheckBox>().CurrentValue) { CastE(minion); }
                     }
                 }
 
@@ -311,16 +385,8 @@ namespace Project_Zed
                 }
                 else
                 {
-                    var wShadowDistance = 999999f;
-                    var rShadowDistance = 999999f;
-                    if (wShadow != null)
-                    {
-                        wShadowDistance = Extensions.Distance(myHero, wShadow);
-                    }
-                    if (rShadow != null)
-                    {
-                        rShadowDistance = Extensions.Distance(myHero, rShadow);
-                    }
+                    var wShadowDistance = wShadow != null ? Extensions.Distance(myHero, wShadow) : 999999f;
+                    var rShadowDistance = rShadow != null ? Extensions.Distance(myHero, rShadow) : 999999f;
                     var min = Math.Min(rShadowDistance, wShadowDistance);
                     if (min == rShadowDistance)
                     {
@@ -341,8 +407,9 @@ namespace Project_Zed
 
         static void CastW(Obj_AI_Base target)
         {
-            if (W.IsReady() && IsW1 && target.IsValidTarget())
+            if (W.IsReady() && IsW1 && target.IsValidTarget() && Game.Time - _W.LastSentTime > 0.12f)
             {
+                _W.LastSentTime = Game.Time;
                 _W.LastCastTime = Game.Time;
                 var r = W.GetPrediction(target);
                 if (r.HitChance == HitChance.High)
@@ -379,16 +446,8 @@ namespace Project_Zed
             {
                 var pred = E.GetPrediction(target);
                 var heroDistance = Extensions.Distance(myHero, pred.CastPosition);
-                var wShadowDistance = 999999f;
-                var rShadowDistance = 999999f;
-                if (wShadow != null)
-                {
-                    wShadowDistance = Extensions.Distance(pred.CastPosition, wShadow);
-                }
-                if (rShadow != null)
-                {
-                    rShadowDistance = Extensions.Distance(pred.CastPosition, rShadow);
-                }
+                var wShadowDistance = wShadow != null ? Extensions.Distance(pred.CastPosition, wShadow) : 999999f;
+                var rShadowDistance = rShadow != null ? Extensions.Distance(pred.CastPosition, rShadow) : 999999f;
                 var min = Math.Min(Math.Min(rShadowDistance, wShadowDistance), heroDistance);
                 if (min <= E.Range)
                 {
@@ -408,6 +467,9 @@ namespace Project_Zed
 
         static void OnCreateObj(GameObject sender, EventArgs args)
         {
+            if (sender.Name.ToLower().Contains("zed") && sender.Name.ToLower().Contains("base_r")) {
+                //Chat.Print(sender.Name + " " + sender.Type);
+            }
         }
         static void OnDeleteObj(GameObject sender, EventArgs args)
         {
@@ -416,11 +478,11 @@ namespace Project_Zed
         static void OnDraw(EventArgs args)
         {
             if (myHero.IsDead) { return; }
-            if (wShadow != null)
+            if (wShadow != null && SubMenu["Draw"]["W"].Cast<CheckBox>().CurrentValue)
             {
                 Circle.Draw(Color.Blue, 100, wShadow.Position);
             }
-            if (rShadow != null)
+            if (rShadow != null && SubMenu["Draw"]["R"].Cast<CheckBox>().CurrentValue)
             {
                 Circle.Draw(Color.Orange, 100, rShadow.Position);
             }
@@ -473,6 +535,18 @@ namespace Project_Zed
             }
         }
 
+        static bool NeedsW(Obj_AI_Base target)
+        {
+            if (target.IsValidTarget())
+            {
+                var damageI = GetBestCombo(target);
+                if (Extensions.Distance(myHero, target) < 550 && damageI.Damage >= target.Health && (myHero.Mana < myHero.Spellbook.GetSpell(SpellSlot.W).SData.Mana + myHero.Spellbook.GetSpell(SpellSlot.Q).SData.Mana || myHero.Mana < myHero.Spellbook.GetSpell(SpellSlot.W).SData.Mana + myHero.Spellbook.GetSpell(SpellSlot.E).SData.Mana))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
         static bool TargetHaveR(Obj_AI_Base target)
         {
             return target.HasBuff("zedrtargetmark");
@@ -481,10 +555,10 @@ namespace Project_Zed
         {
             if (!IsR1 && target.IsValidTarget() && TargetHaveR(target))
             {
-                var dead = ObjectManager.Get<Obj_AI_Base>().FirstOrDefault(obj => obj.Name.ToLower().Contains(myHero.ChampionName.ToLower()) && obj.Name.ToLower().Contains("base_r") && obj.Name.ToLower().Contains("buf_tell"));
+                var dead = ObjectManager.Get<Obj_GeneralParticleEmitter>().FirstOrDefault(obj => obj.Name.ToLower().Contains(myHero.ChampionName.ToLower()) && obj.Name.ToLower().Contains("base_r") && obj.Name.ToLower().Contains("buf_tell"));
                 if (dead != null)
                 {
-                    return Extensions.Distance(dead, target) < 100;
+                    return Extensions.Distance(dead, target) < 200;
                 }
             }
             return false;
@@ -519,46 +593,59 @@ namespace Project_Zed
             var ManaWasted = 0f;
             if (target.IsValidTarget())
             {
+                if (w && IsW1 && W.IsReady())
+                {
+                    ManaWasted += myHero.Spellbook.GetSpell(SpellSlot.W).SData.Mana;
+                }
+                if (w && e)
+                {
+                    ComboDamage += Damage(target, E.Slot);
+                }
+                if (w && q)
+                {
+                    ComboDamage += 0.5f * Damage(target, Q.Slot);
+                }
+                if (r && q)
+                {
+                    ComboDamage += 0.5f * Damage(target, Q.Slot);
+                }
+
                 if (q)
                 {
                     ComboDamage += Damage(target, Q.Slot);
                     ManaWasted += myHero.Spellbook.GetSpell(SpellSlot.Q).SData.Mana;
-                }
-                if (w)
-                {
-                    ComboDamage += Damage(target, W.Slot);
-                    ManaWasted += myHero.Spellbook.GetSpell(SpellSlot.W).SData.Mana;
                 }
                 if (e)
                 {
                     ComboDamage += Damage(target, E.Slot);
                     ManaWasted += myHero.Spellbook.GetSpell(SpellSlot.E).SData.Mana;
                 }
-                if (r)
-                {
-                    ComboDamage += Damage(target, R.Slot);
-                    ManaWasted += myHero.Spellbook.GetSpell(SpellSlot.R).SData.Mana;
-                }
                 if (Ignite != null && Ignite.IsReady())
                 {
                     ComboDamage += myHero.GetSummonerSpellDamage(target, DamageLibrary.SummonerSpells.Ignite);
                 }
+                if (r)
+                {
+                    ComboDamage += Damage(target, R.Slot);
+                    ComboDamage += ComboDamage * (5f + R.Level * 15) / 100f;
+                    ManaWasted += myHero.Spellbook.GetSpell(SpellSlot.R).SData.Mana;
+                }
+                if (TargetHaveR(target))
+                {
+                    ComboDamage += ComboDamage * (5f + R.Level * 15) / 100f;
+                }
                 ComboDamage += myHero.GetAutoAttackDamage(target, true);
             }
-
+            ComboDamage = ComboDamage * Overkill;
             return new DamageInfo(ComboDamage, ManaWasted);
         }
 
-        static float GetOverkill()
-        {
-            return (float)((100 + SubMenu["Misc"]["Overkill"].Cast<Slider>().CurrentValue) / 100);
-        }
         static DamageInfo GetBestCombo(Obj_AI_Base target)
         {
             var q = Q.IsReady() ? new bool[] { false, true } : new bool[] { false };
-            var w = W.IsReady() ? new bool[] { false, true } : new bool[] { false };
+            var w = ((W.IsReady() && IsW1) || wShadow != null) ? new bool[] { false, true } : new bool[] { false };
             var e = E.IsReady() ? new bool[] { false, true } : new bool[] { false };
-            var r = R.IsReady() ? new bool[] { false, true } : new bool[] { false };
+            var r = (R.IsReady() && IsR1) ? new bool[] { false, true } : new bool[] { false };
             if (target.IsValidTarget())
             {
                 if (PredictedDamage.ContainsKey(target.NetworkId))
