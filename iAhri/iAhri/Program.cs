@@ -24,6 +24,13 @@ namespace iAhri
         private static Dictionary<string, Menu> SubMenu = new Dictionary<string, Menu>() { };
         private static Spell.Skillshot Q, W, E, R;
         private static Spell.Targeted Ignite;
+        static float Overkill
+        {
+            get
+            {
+                return (float)((100 + SubMenu["Misc"]["Overkill"].Cast<Slider>().CurrentValue) / 100);
+            }
+        }
         private static Dictionary<string, object> _Q = new Dictionary<string, object>() { { "MinSpeed", 400 }, { "MaxSpeed", 2500 }, { "Acceleration", -3200 }, { "Speed1", 1400 }, { "Delay1", 250 }, { "Range1", 880 }, { "Delay2", 0 }, { "Range2", int.MaxValue }, { "IsReturning", false }, { "Target", null }, { "Object", null }, { "LastObjectVector", null }, { "LastObjectVectorTime", null }, { "CatchPosition", null } };
         private static Dictionary<string, object> _E = new Dictionary<string, object>() { { "LastCastTime", 0f }, { "Object", null }, };
         private static Dictionary<string, object> _R = new Dictionary<string, object>() { { "EndTime", 0f }, };
@@ -335,7 +342,24 @@ namespace iAhri
                 }
                 else
                 {
-                    R.Cast(mousePos);
+                    if ((float)_R["EndTime"] > ((float)0))
+                    {
+                        if (!Q.IsReady() && (float)_R["EndTime"] - Game.Time <= myHero.Spellbook.GetSpell(R.Slot).Cooldown)
+                        {
+                            R.Cast(mousePos);
+                        }
+                    }
+                    if (damageI.Damage >= target.Health && Extensions.Distance(mousePos, target) < Extensions.Distance(myHero, target))
+                    {
+                        if (damageI.R)
+                        {
+                            if (Extensions.Distance(myHero, target) > 400)
+                            {
+                                R.Cast(mousePos);
+                            }
+
+                        }
+                    }
                 }
             }
         }
@@ -581,14 +605,10 @@ namespace iAhri
                 }
                 ComboDamage += myHero.GetAutoAttackDamage(target, true);
             }
-
+            ComboDamage = ComboDamage * Overkill;
             return new DamageInfo(ComboDamage, ManaWasted);
         }
 
-        static float GetOverkill()
-        {
-            return (float)((100 + SubMenu["Misc"]["Overkill"].Cast<Slider>().CurrentValue) / 100);
-        }
         static DamageInfo GetBestCombo(Obj_AI_Base target)
         {
             var q = Q.IsReady() ? new bool[] { false, true } : new bool[] { false };
