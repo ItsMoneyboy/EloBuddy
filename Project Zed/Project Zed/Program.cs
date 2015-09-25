@@ -27,6 +27,7 @@ namespace Project_Zed
         static _Spell _W, _R;
         static Obj_AI_Minion wFound, rFound;
         static GameObject IsDeadObject = null;
+        static Dictionary<int, bool> PassiveUsed = new Dictionary<int, bool>();
         static float Overkill
         {
             get
@@ -168,6 +169,11 @@ namespace Project_Zed
             }
             _W = new _Spell();
             _R = new _Spell();
+            foreach (AIHeroClient enemy in HeroManager.Enemies)
+            {
+                PassiveUsed.Add(enemy.NetworkId, false);
+            }
+
             menu = MainMenu.AddMenu(AddonName, AddonName + " by " + Author + "v1");
             menu.AddLabel(AddonName + " made by " + Author);
 
@@ -182,6 +188,7 @@ namespace Project_Zed
             SubMenu["Combo"].Add("Prevent", new KeyBind("Don't use spells before R", true, KeyBind.BindTypes.PressToggle, (uint)'L'));
 
             SubMenu["Harass"] = menu.AddSubMenu("Harass", "Harass");
+            SubMenu["Harass"].Add("SwapGapclose", new CheckBox("Use W2 if target is killable", true));
             SubMenu["Harass"].AddGroupLabel("Harass 1");
             SubMenu["Harass"].Add("Q", new CheckBox("Use Q on Harass 1", true));
             SubMenu["Harass"].Add("W", new CheckBox("Use W on Harass 1", false));
@@ -218,6 +225,7 @@ namespace Project_Zed
 
             SubMenu["Misc"] = menu.AddSubMenu("Misc", "Misc");
             SubMenu["Misc"].Add("Overkill", new Slider("Overkill % for damage prediction", 10, 0, 100));
+
 
             Game.OnTick += OnTick;
             GameObject.OnCreate += OnCreateObj;
@@ -391,7 +399,7 @@ namespace Project_Zed
                 }
                 else if (IsHarass)
                 {
-                    if (W.IsReady() && !IsW1 && wShadow != null && target.HealthPercent <= 50 && damageI.Damage / Overkill >= target.Health && Extensions.Distance(myHero, target) > Extensions.Distance(wShadow, target) && Extensions.Distance(wShadow, target) < E.Range)
+                    if (SubMenu["Harass"]["SwapGapclose"].Cast<CheckBox>().CurrentValue && W.IsReady() && !IsW1 && wShadow != null && target.HealthPercent <= 50 && Passive(target, target.Health) > 0f && damageI.Damage / Overkill >= target.Health && Extensions.Distance(myHero, target) > Extensions.Distance(wShadow, target) && Extensions.Distance(wShadow, target) < E.Range)
                     {
                         myHero.Spellbook.CastSpell(W.Slot);
                     }
@@ -536,9 +544,24 @@ namespace Project_Zed
 
         static void OnCreateObj(GameObject sender, EventArgs args)
         {
-            if (sender.Name.ToLower().Contains(myHero.ChampionName.ToLower()) && sender.Name.ToLower().Contains("base_r") && sender.Name.ToLower().Contains("buf_tell"))
+            if (sender.Name.ToLower().Contains(myHero.ChampionName.ToLower()))
             {
-                IsDeadObject = sender;
+                if (sender.Name.ToLower().Contains("base_r") && sender.Name.ToLower().Contains("buf_tell") && TS_Target != null && Extensions.Distance(TS_Target, sender) < 200)
+                {
+                    IsDeadObject = sender;
+                }
+                if (sender.Name.ToLower().Contains("passive") && sender.Name.ToLower().Contains("proc") && sender.Name.ToLower().Contains("target"))
+                {
+                    if (Orbwalker.LastTarget != null)
+                    {
+                        if (Extensions.Distance(Orbwalker.LastTarget, sender) < 100 && PassiveUsed.ContainsKey(Orbwalker.LastTarget.NetworkId))
+                        {
+                            var target = Orbwalker.LastTarget;
+                            PassiveUsed[Orbwalker.LastTarget.NetworkId] = true;
+                            Core.DelayAction(delegate { PassiveUsed[target.NetworkId] = false; }, 10 * 1000);
+                        }
+                    }
+                }
             }
         }
         static void OnDeleteObj(GameObject sender, EventArgs args)
@@ -652,6 +675,11 @@ namespace Project_Zed
             float damage = 0f;
             if (100 * health / target.MaxHealth <= 50)
             {
+                if (PassiveUsed.ContainsKey(target.NetworkId)){
+                    if (PassiveUsed[target.NetworkId]) {
+                        return 0f;
+                    }
+                }
                 return myHero.CalculateDamageOnUnit(target, DamageType.Physical, (float)(4 + 2 * R.Level) / target.MaxHealth);
             }
             return damage;
