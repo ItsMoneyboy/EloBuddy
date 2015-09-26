@@ -241,7 +241,7 @@ namespace The_Ball_Is_Angry
                 }
                 if (Ball.CountEnemiesInRange(Q.Range) >= SubMenu["Combo"]["R2"].Cast<Slider>().CurrentValue)
                 {
-                    if (HitR() > SubMenu["Combo"]["R2"].Cast<Slider>().CurrentValue)
+                    if (HitR() >= SubMenu["Combo"]["R2"].Cast<Slider>().CurrentValue)
                     {
                         myHero.Spellbook.CastSpell(R.Slot);
                     }
