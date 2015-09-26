@@ -9,6 +9,7 @@ using EloBuddy.SDK.Menu;
 using EloBuddy.SDK.Menu.Values;
 using EloBuddy.SDK.Rendering;
 using SharpDX;
+using System.Windows.Input;
 
 namespace Project_Zed
 {
@@ -28,6 +29,7 @@ namespace Project_Zed
         static Obj_AI_Minion wFound, rFound;
         static GameObject IsDeadObject = null;
         static Dictionary<int, bool> PassiveUsed = new Dictionary<int, bool>();
+        static bool Combo1Pressed, Combo2Pressed, Harass1Pressed, Harass2Pressed = false;
         static float Overkill
         {
             get
@@ -39,7 +41,7 @@ namespace Project_Zed
         {
             get
             {
-                return Game.Time - _W.LastCastTime < 0.1 && wShadow == null && IsW1 && W.IsReady();
+                return Game.Time - _W.LastCastTime < 0.5 && wShadow == null && IsW1 && W.IsReady();
                 //return Game.Time - _W.LastCastTime < 0.5 && wShadow == null;
             }
         }
@@ -51,9 +53,40 @@ namespace Project_Zed
         {
             get { return myHero.Spellbook.GetSpell(R.Slot).SData.Name.ToLower() != "zedr2"; }
         }
-        static bool IsHarass
+        static int HarassType
         {
-            get { return Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Harass) || SubMenu["Harass"]["Key1"].Cast<KeyBind>().CurrentValue || SubMenu["Harass"]["Key2"].Cast<KeyBind>().CurrentValue; }
+            get
+            {
+                if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Harass))
+                {
+                    if (Harass1Pressed) {
+                        return 1;
+                    }
+                    else if (Harass2Pressed)
+                    {
+                        return 2;
+                    }
+                }
+                return -1;
+            }
+        }
+        static int ComboType
+        {
+            get
+            {
+                if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Combo))
+                {
+                    if (Combo1Pressed)
+                    {
+                        return 1;
+                    }
+                    else if (Combo2Pressed)
+                    {
+                        return 2;
+                    }
+                }
+                return -1;
+            }
         }
         static int TS_Range
         {
@@ -174,7 +207,7 @@ namespace Project_Zed
                 PassiveUsed.Add(enemy.NetworkId, false);
             }
 
-            menu = MainMenu.AddMenu(AddonName, AddonName + " by " + Author + "v1");
+            menu = MainMenu.AddMenu(AddonName, AddonName + " by " + Author + "v1.0000");
             menu.AddLabel(AddonName + " made by " + Author);
 
             SubMenu["Combo"] = menu.AddSubMenu("Combo", "Combo");
@@ -199,9 +232,6 @@ namespace Project_Zed
             SubMenu["Harass"].Add("W2", new CheckBox("Use W on Harass 2", true));
             SubMenu["Harass"].Add("E2", new CheckBox("Use E on Harass 2", true));
             SubMenu["Harass"].Add("Mana2", new Slider("Min. Mana Percent:", 20, 0, 100));
-            SubMenu["Harass"].AddGroupLabel("Harass Keys");
-            SubMenu["Harass"].Add("Key1", new KeyBind("Harass 1 Key", false, KeyBind.BindTypes.HoldActive, (uint)'C'));
-            SubMenu["Harass"].Add("Key2", new KeyBind("Harass 2 Key", false, KeyBind.BindTypes.HoldActive, (uint)'K'));
 
             SubMenu["JungleClear"] = menu.AddSubMenu("JungleClear", "JungleClear");
             SubMenu["JungleClear"].Add("Q", new CheckBox("Use Q", true));
@@ -224,14 +254,65 @@ namespace Project_Zed
             SubMenu["Draw"].Add("R", new CheckBox("Draw R Shadow", true));
 
             SubMenu["Misc"] = menu.AddSubMenu("Misc", "Misc");
+
             SubMenu["Misc"].Add("Overkill", new Slider("Overkill % for damage prediction", 10, 0, 100));
-
-
+            if (Orbwalker.Menu["Combo"].Cast<KeyBind>().Keys.Item2 == KeyBind.UnboundKey)
+            {
+                Orbwalker.Menu["Combo"].Cast<KeyBind>().Keys = new Tuple<uint, uint>(Orbwalker.Menu["Combo"].Cast<KeyBind>().Keys.Item1, (uint)'A');
+            }
+            if (Orbwalker.Menu["Harass"].Cast<KeyBind>().Keys.Item2 == KeyBind.UnboundKey)
+            {
+                Orbwalker.Menu["Harass"].Cast<KeyBind>().Keys = new Tuple<uint, uint>(Orbwalker.Menu["Harass"].Cast<KeyBind>().Keys.Item2, (uint)'S');
+            }
             Game.OnTick += OnTick;
             GameObject.OnCreate += OnCreateObj;
             GameObject.OnDelete += OnDeleteObj;
+            Game.OnWndProc += OnWndProc;
             Drawing.OnDraw += OnDraw;
             Obj_AI_Base.OnProcessSpellCast += OnProcessSpell;
+        }
+
+        private static void OnWndProc(WndEventArgs args)
+        {
+            switch (args.Msg)
+            {
+                case (uint)WindowMessages.KeyDown:
+                    if (Orbwalker.Menu["Combo"].Cast<KeyBind>().Keys.Item1 == args.WParam)
+                    {
+                        Combo1Pressed = true;
+                    }
+                    if (Orbwalker.Menu["Combo"].Cast<KeyBind>().Keys.Item2 == args.WParam)
+                    {
+                        Combo2Pressed = true;
+                    }
+                    if (Orbwalker.Menu["Harass"].Cast<KeyBind>().Keys.Item1 == args.WParam)
+                    {
+                        Harass1Pressed = true;
+                    }
+                    if (Orbwalker.Menu["Harass"].Cast<KeyBind>().Keys.Item2 == args.WParam)
+                    {
+                        Harass2Pressed = true;
+                    }
+                    break;
+                case (uint)WindowMessages.KeyUp:
+                    if (Orbwalker.Menu["Combo"].Cast<KeyBind>().Keys.Item1 == args.WParam)
+                    {
+                        Combo1Pressed = false;
+                    }
+                    if (Orbwalker.Menu["Combo"].Cast<KeyBind>().Keys.Item2 == args.WParam)
+                    {
+                        Combo2Pressed = false;
+                    }
+                    if (Orbwalker.Menu["Harass"].Cast<KeyBind>().Keys.Item1 == args.WParam)
+                    {
+                        Harass1Pressed = false;
+                    }
+                    if (Orbwalker.Menu["Harass"].Cast<KeyBind>().Keys.Item2 == args.WParam)
+                    {
+                        Harass2Pressed = false;
+                    }
+                    break;
+            }
         }
 
         static bool IsWall(Vector3 v)
@@ -249,13 +330,13 @@ namespace Project_Zed
             {
                 Combo();
             }
-            else if (IsHarass)
+            else if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Harass))
             {
-                if (SubMenu["Harass"]["Key1"].Cast<KeyBind>().CurrentValue)
+                if (HarassType == 1)
                 {
                     Harass();
                 }
-                else if (SubMenu["Harass"]["Key2"].Cast<KeyBind>().CurrentValue)
+                else if (HarassType == 2)
                 {
                     Harass2();
                 }
@@ -278,13 +359,13 @@ namespace Project_Zed
         {
             foreach (AIHeroClient enemy in HeroManager.Enemies)
             {
-                if (enemy.IsValidTarget(TS_Range) && enemy.HealthPercent <= 40 && !IsDead(enemy))
+                if (enemy.IsValidTarget(TS_Range) && enemy.HealthPercent <= 40f && !IsDead(enemy))
                 {
                     var damageI = GetBestCombo(enemy);
                     if (damageI.Damage >= enemy.Health)
                     {
                         if (SubMenu["KillSteal"]["Q"].Cast<CheckBox>().CurrentValue && (Damage(enemy, Q.Slot) >= enemy.Health || damageI.Q)) { CastQ(enemy); }
-                        if (SubMenu["KillSteal"]["W"].Cast<CheckBox>().CurrentValue && (Damage(enemy, W.Slot) >= enemy.Health || damageI.W)) { CastW(enemy); }
+                        if (SubMenu["KillSteal"]["W"].Cast<CheckBox>().CurrentValue && enemy.HealthPercent < 20f && (Damage(enemy, W.Slot) >= enemy.Health || damageI.W)) { CastW(enemy); }
                         if (SubMenu["KillSteal"]["E"].Cast<CheckBox>().CurrentValue && (Damage(enemy, E.Slot) >= enemy.Health || damageI.E)) { CastE(enemy); }
                     }
                     if (Ignite != null && SubMenu["KillSteal"]["Ignite"].Cast<CheckBox>().CurrentValue && Ignite.IsReady() && myHero.GetSummonerSpellDamage(enemy, DamageLibrary.SummonerSpells.Ignite) >= enemy.Health)
@@ -397,7 +478,7 @@ namespace Project_Zed
                         }
                     }
                 }
-                else if (IsHarass)
+                else if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Harass))
                 {
                     if (SubMenu["Harass"]["SwapGapclose"].Cast<CheckBox>().CurrentValue && W.IsReady() && !IsW1 && wShadow != null && target.HealthPercent <= 50 && Passive(target, target.Health) > 0f && damageI.Damage / Overkill >= target.Health && Extensions.Distance(myHero, target) > Extensions.Distance(wShadow, target) && Extensions.Distance(wShadow, target) < E.Range)
                     {
@@ -675,8 +756,10 @@ namespace Project_Zed
             float damage = 0f;
             if (100 * health / target.MaxHealth <= 50)
             {
-                if (PassiveUsed.ContainsKey(target.NetworkId)){
-                    if (PassiveUsed[target.NetworkId]) {
+                if (PassiveUsed.ContainsKey(target.NetworkId))
+                {
+                    if (PassiveUsed[target.NetworkId])
+                    {
                         return 0f;
                     }
                 }
