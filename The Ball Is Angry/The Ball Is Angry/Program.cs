@@ -26,6 +26,7 @@ namespace The_Ball_Is_Angry
         static Spell.Targeted Ignite;
         static _Spell _W, _R;
         static GameObject BallObject;
+        static float LastGapclose = 0f;
         static Vector3 Ball
         {
             get
@@ -67,8 +68,7 @@ namespace The_Ball_Is_Angry
             }
             _W = new _Spell();
             _R = new _Spell();
-            BallObject = myHero;
-            menu = MainMenu.AddMenu(AddonName, AddonName + " by " + Author + "v1.00");
+            menu = MainMenu.AddMenu(AddonName, AddonName + " by " + Author + " v1.1");
             menu.AddLabel(AddonName + " made by " + Author);
 
             SubMenu["Combo"] = menu.AddSubMenu("Combo", "Combo");
@@ -86,6 +86,12 @@ namespace The_Ball_Is_Angry
             SubMenu["Harass"].Add("E", new Slider("Use E If Hit", 1, 1, 5));
             SubMenu["Harass"].Add("E2", new Slider("Use E If HealthPercent <=", 30, 0, 100));
             SubMenu["Harass"].Add("Mana", new Slider("Min. Mana Percent:", 20, 0, 100));
+
+            SubMenu["LaneClear"] = menu.AddSubMenu("LaneClear", "LaneClear");
+            SubMenu["LaneClear"].Add("Q", new Slider("Use Q If Hit", 4, 0, 10));
+            SubMenu["LaneClear"].Add("W", new Slider("Use W If Hit", 3, 0, 10));
+            SubMenu["LaneClear"].Add("E", new Slider("Use E If Hit", 6, 0, 10));
+            SubMenu["LaneClear"].Add("Mana", new Slider("Min. Mana Percent:", 50, 0, 100));
 
             SubMenu["JungleClear"] = menu.AddSubMenu("JungleClear", "JungleClear");
             SubMenu["JungleClear"].Add("Q", new CheckBox("Use Q", true));
@@ -107,8 +113,8 @@ namespace The_Ball_Is_Angry
 
             SubMenu["Draw"] = menu.AddSubMenu("Drawing", "Drawing");
             SubMenu["Draw"].Add("Ball", new CheckBox("Draw ball position", true));
-            SubMenu["Draw"].Add("W", new CheckBox("Draw W range", true));
-            SubMenu["Draw"].Add("R", new CheckBox("Draw R range", true));
+            SubMenu["Draw"].Add("W", new CheckBox("Draw W Range", true));
+            SubMenu["Draw"].Add("R", new CheckBox("Draw R Range", true));
 
             SubMenu["Misc"] = menu.AddSubMenu("Misc", "Misc");
             SubMenu["Misc"].Add("Overkill", new Slider("Overkill % for damage prediction", 10, 0, 100));
@@ -120,13 +126,13 @@ namespace The_Ball_Is_Angry
 
             Game.OnTick += OnTick;
             GameObject.OnCreate += OnCreateObj;
-            GameObject.OnDelete += OnDeleteObj;
             Drawing.OnDraw += OnDraw;
             Obj_AI_Base.OnProcessSpellCast += OnProcessSpell;
             Obj_AI_Base.OnPlayAnimation += OnPlayAnimation;
             Interrupter.OnInterruptableSpell += OnInterruptableSpell;
             Gapcloser.OnGapcloser += OnGapcloser;
             Spellbook.OnCastSpell += OnCastSpell;
+            BallObject = ObjectManager.Get<GameObject>().FirstOrDefault(obj => obj.Name != null && obj.IsValid && obj.Name.ToLower().Contains("doomball"));
         }
 
         private static void OnCastSpell(Spellbook sender, SpellbookCastSpellEventArgs args)
@@ -148,6 +154,14 @@ namespace The_Ball_Is_Angry
             E.SourcePosition = Ball;
             W.SourcePosition = Ball;
             R.SourcePosition = Ball;
+            if (R.IsReady() && SubMenu["Misc"]["R2"].Cast<Slider>().CurrentValue <= HitR())
+            {
+                myHero.Spellbook.CastSpell(SpellSlot.R);
+            }
+            if (W.IsReady() && SubMenu["Misc"]["W2"].Cast<Slider>().CurrentValue <= HitW(HeroManager.Enemies.ToList<Obj_AI_Base>()))
+            {
+                myHero.Spellbook.CastSpell(SpellSlot.W);
+            }
             KillSteal();
             if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Combo))
             {
@@ -162,6 +176,10 @@ namespace The_Ball_Is_Angry
                 if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.JungleClear))
                 {
                     JungleClear();
+                }
+                if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.LaneClear))
+                {
+                    LaneClear();
                 }
             }
             else if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.LastHit))
@@ -281,6 +299,42 @@ namespace The_Ball_Is_Angry
                 }
             }
         }
+        private static void LaneClear()
+        {
+            if (myHero.ManaPercent >= SubMenu["LaneClear"]["Mana"].Cast<Slider>().CurrentValue)
+            {
+                if (E.IsReady())
+                {
+                    object[] info = BestHitE(EntityManager.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position.To2D(), E.Range, true));
+                    if (info[0] != null && info[1] != null)
+                    {
+                        Obj_AI_Base bestAlly = (Obj_AI_Base)info[0];
+                        int bestHit = (int)info[1];
+                        if (SubMenu["LaneClear"]["E"].Cast<Slider>().CurrentValue > 0 && bestHit >= SubMenu["LaneClear"]["E"].Cast<Slider>().CurrentValue && bestAlly.IsValid)
+                        {
+                            CastE(bestAlly);
+                        }
+                    }
+                }
+                if (Q.IsReady())
+                {
+                    object[] info2 = BestHitQ(EntityManager.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position.To2D(), Q.Range, true));
+                    if (info2[0] != null && info2[1] != null)
+                    {
+                        Obj_AI_Base bestTarget = (Obj_AI_Base)info2[0];
+                        int bestHit = (int)info2[1];
+                        if (SubMenu["LaneClear"]["Q"].Cast<Slider>().CurrentValue > 0 && bestHit >= SubMenu["LaneClear"]["Q"].Cast<Slider>().CurrentValue && bestTarget.IsValidTarget())
+                        {
+                            CastQ(bestTarget);
+                        }
+                    }
+                }
+                if (W.IsReady() && SubMenu["LaneClear"]["W"].Cast<Slider>().CurrentValue > 0 && HitW(EntityManager.GetLaneMinions(EntityManager.UnitTeam.Enemy, Ball.To2D(), W.Range, true)) >= SubMenu["LaneClear"]["Q"].Cast<Slider>().CurrentValue)
+                {
+                    myHero.Spellbook.CastSpell(W.Slot);
+                }
+            }
+        }
         private static void JungleClear()
         {
             if (myHero.ManaPercent >= SubMenu["JungleClear"]["Mana"].Cast<Slider>().CurrentValue)
@@ -329,6 +383,7 @@ namespace The_Ball_Is_Angry
                 {
                     CastE(myHero);
                 }
+                if (Game.Time - LastGapclose < 0.15f) { return; }
                 var pred = Q.GetPrediction(target);
                 if (pred.HitChancePercent >= percent)
                 {
@@ -464,7 +519,7 @@ namespace The_Ball_Is_Angry
                 foreach (Obj_AI_Base obj in list.Where(o => o.IsValidTarget(Q.Range + Q.Width)))
                 {
                     var pred = Q.GetPrediction(obj);
-                    if (pred.HitChancePercent >= 50)
+                    if (pred.HitChancePercent >= 30)
                     {
                         var info = pred.CastPosition.To2D().ProjectOn(StartPos.To2D(), EndPos.To2D());
                         if (info.IsOnSegment && Extensions.Distance(pred.CastPosition.To2D(), info.SegmentPoint) < Q.Width)
@@ -487,7 +542,7 @@ namespace The_Ball_Is_Angry
                     var pred = Q.GetPrediction(obj);
                     if (pred.HitChancePercent > 0)
                     {
-                        var hit = CountHitQ(Ball, pred.CastPosition, list) + 1;
+                        var hit = CountHitQ(Ball, pred.CastPosition, list);
                         if (hit > bestHit)
                         {
                             bestHit = hit;
@@ -568,6 +623,7 @@ namespace The_Ball_Is_Angry
                 if (SubMenu["Misc"]["E"].Cast<CheckBox>().CurrentValue)
                 {
                     CastE(e.Sender);
+                    LastGapclose = Game.Time;
                 }
                 //..
             }
@@ -579,8 +635,14 @@ namespace The_Ball_Is_Angry
             {
                 if (SubMenu["Misc"]["R"].Cast<CheckBox>().CurrentValue)
                 {
-                    ThrowBall(e.Sender);
-                    CastR(e.Sender);
+                    if (Extensions.Distance(Ball, e.Sender) > R.Range)
+                    {
+                        ThrowBall(e.Sender);
+                    }
+                    else
+                    {
+                        CastR(e.Sender);
+                    }
                 }
                 //..
             }
@@ -623,25 +685,25 @@ namespace The_Ball_Is_Angry
                 Circle.Draw(new ColorBGRA(255, 255, 255, 100), R.Range, Ball);
             }
         }
-        private static void OnDeleteObj(GameObject sender, EventArgs args)
-        {
-        }
 
         private static void OnCreateObj(GameObject sender, EventArgs args)
         {
-            if (sender.Name.ToLower().Contains("missile"))
+            if (sender != null && sender.Name != null)
             {
-                var missile = (MissileClient)sender;
-                if (missile.SpellCaster.IsMe && (missile.SData.Name.ToLower().Contains("orianaizuna") || missile.SData.Name.ToLower().Contains("orianaredact")))
+                if (sender.Name.ToLower().Contains("missile"))
                 {
-                    BallObject = sender;
+                    var missile = (MissileClient)sender;
+                    if (missile.SpellCaster.IsMe && (missile.SData.Name.ToLower().Contains("orianaizuna") || missile.SData.Name.ToLower().Contains("orianaredact")))
+                    {
+                        BallObject = sender;
+                    }
                 }
-            }
-            else if (sender.Name.ToLower().Contains(myHero.ChampionName.ToLower()))
-            {
-                if (sender.Name.ToLower().Contains("yomu") && sender.Name.ToLower().Contains("green"))
+                else if (sender.Name.ToLower().Contains(myHero.ChampionName.ToLower()))
                 {
-                    BallObject = sender;
+                    if (sender.Name.ToLower().Contains("yomu") && sender.Name.ToLower().Contains("green"))
+                    {
+                        BallObject = sender;
+                    }
                 }
             }
         }
