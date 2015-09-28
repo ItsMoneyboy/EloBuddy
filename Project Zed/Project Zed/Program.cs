@@ -207,7 +207,7 @@ namespace Project_Zed
                 PassiveUsed.Add(enemy.NetworkId, false);
             }
 
-            menu = MainMenu.AddMenu(AddonName, AddonName + " by " + Author + "v1.000");
+            menu = MainMenu.AddMenu(AddonName, AddonName + " by " + Author + "v1.1");
             menu.AddLabel(AddonName + " made by " + Author);
 
             SubMenu["Combo"] = menu.AddSubMenu("Combo", "Combo");
@@ -226,7 +226,7 @@ namespace Project_Zed
             }
 
             SubMenu["Harass"] = menu.AddSubMenu("Harass", "Harass");
-            SubMenu["Harass"].Add("Collision", new CheckBox("Use Q with collision", false));
+            SubMenu["Harass"].Add("Collision", new CheckBox("Check collision with Q", false));
             SubMenu["Harass"].Add("SwapGapclose", new CheckBox("Use W2 if target is killable", true));
             SubMenu["Harass"].AddGroupLabel("Harass 1");
             SubMenu["Harass"].Add("Q", new CheckBox("Use Q on Harass 1", true));
