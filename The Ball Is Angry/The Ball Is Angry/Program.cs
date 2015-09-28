@@ -25,6 +25,9 @@ namespace The_Ball_Is_Angry
         static Spell.Skillshot Q, W, E, R;
         static Spell.Targeted Ignite;
         static GameObject E_Target = null;
+        static float Q_LastRequest = 0f;
+        static float E_LastRequest = 0f;
+        static float TimePerRequest = 0.13f;
         static GameObject BallObject;
         static float LastGapclose = 0f;
         static Vector3 Ball
@@ -70,6 +73,8 @@ namespace The_Ball_Is_Angry
             menu.AddLabel(AddonName + " made by " + Author);
 
             SubMenu["Combo"] = menu.AddSubMenu("Combo", "Combo");
+            SubMenu["Combo"].Add("E2", new Slider("Use E If HealthPercent <=", 30, 0, 100));
+            SubMenu["Combo"].AddSeparator();
             SubMenu["Combo"].Add("TF", new Slider("Use TeamFight Logic if enemies near >=", 3, 1, 5));
             SubMenu["Combo"].AddGroupLabel("1 vs 1 Logic");
             SubMenu["Combo"].Add("Q", new CheckBox("Use Q On Target", true));
@@ -79,7 +84,6 @@ namespace The_Ball_Is_Angry
             SubMenu["Combo"].Add("Q2", new Slider("Use Q If Hit", 2, 1, 5));
             SubMenu["Combo"].Add("W2", new Slider("Use W If Hit", 2, 1, 5));
             SubMenu["Combo"].Add("E", new Slider("Use E If Hit", 1, 1, 5));
-            SubMenu["Combo"].Add("E2", new Slider("Use E If HealthPercent <=", 30, 0, 100));
             SubMenu["Combo"].Add("R2", new Slider("Use R if Hit", 3, 1, 5));
 
             SubMenu["Harass"] = menu.AddSubMenu("Harass", "Harass");
@@ -143,8 +147,8 @@ namespace The_Ball_Is_Angry
             Interrupter.OnInterruptableSpell += OnInterruptableSpell;
             Gapcloser.OnGapcloser += OnGapcloser;
             Spellbook.OnCastSpell += OnCastSpell;
-            BallObject = ObjectManager.Get<GameObject>().FirstOrDefault(obj => obj.Name != null && obj.IsValid && obj.Name.ToLower().Contains("doomball"));
             Orbwalker.OnUnkillableMinion += OnUnkillableMinion;
+            BallObject = ObjectManager.Get<GameObject>().FirstOrDefault(obj => obj.Name != null && obj.IsValid && obj.Name.ToLower().Contains("doomball"));
         }
 
         private static void OnUnkillableMinion(Obj_AI_Base target, Orbwalker.UnkillableMinionArgs args)
@@ -188,9 +192,13 @@ namespace The_Ball_Is_Angry
         {
             if (myHero.IsDead) { return; }
             Q.SourcePosition = Ball;
+            Q.RangeCheckSource = myHero.Position;
             E.SourcePosition = Ball;
+            E.RangeCheckSource = myHero.Position;
             W.SourcePosition = Ball;
+            W.RangeCheckSource = Ball;
             R.SourcePosition = Ball;
+            R.RangeCheckSource = Ball;
             if (R.IsReady() && SubMenu["Misc"]["R2"].Cast<Slider>().CurrentValue <= HitR())
             {
                 myHero.Spellbook.CastSpell(SpellSlot.R);
@@ -287,7 +295,7 @@ namespace The_Ball_Is_Angry
                     if (list.Count >= SubMenu["Combo"]["E"].Cast<Slider>().CurrentValue)
                     {
                         var info = BestHitE(list);
-                        if (info.Item1 != null && info.Item2 != null)
+                        if (info.Item1 != null && info.Item2 > 0)
                         {
                             Obj_AI_Base bestAlly = info.Item1;
                             int bestHit = info.Item2;
@@ -333,7 +341,7 @@ namespace The_Ball_Is_Angry
                     if (list.Count >= SubMenu["Harass"]["E"].Cast<Slider>().CurrentValue)
                     {
                         var info = BestHitE(list);
-                        if (info.Item1 != null && info.Item2 != null)
+                        if (info.Item1 != null && info.Item2 > 0)
                         {
                             Obj_AI_Base bestAlly = info.Item1;
                             int bestHit = info.Item2;
@@ -485,21 +493,21 @@ namespace The_Ball_Is_Angry
         {
             if (SubMenu["Flee"]["Q"].Cast<CheckBox>().CurrentValue)
             {
-                if (Q.IsReady() && Extensions.Distance(myHero, Ball) > W.Range && !E.IsReady() && BallObject != null && !BallObject.Name.ToLower().Contains("missile"))
+                if (Q.IsReady() && Extensions.Distance(myHero, Ball, true) > W.RangeSquared && !E.IsReady() && BallObject != null && !BallObject.Name.ToLower().Contains("missile"))
                 {
                     myHero.Spellbook.CastSpell(Q.Slot, myHero.ServerPosition);
                 }
             }
             if (SubMenu["Flee"]["W"].Cast<CheckBox>().CurrentValue)
             {
-                if (W.IsReady() && Extensions.Distance(myHero, Ball) < W.Range)
+                if (W.IsReady() && Extensions.Distance(myHero, Ball, true) < W.RangeSquared)
                 {
                     myHero.Spellbook.CastSpell(W.Slot);
                 }
             }
             if (SubMenu["Flee"]["E"].Cast<CheckBox>().CurrentValue)
             {
-                if (E.IsReady() && Extensions.Distance(myHero, Ball) > W.Range)
+                if (E.IsReady() && Extensions.Distance(myHero, Ball, true) > W.RangeSquared)
                 {
                     CastE(myHero);
                 }
@@ -509,7 +517,7 @@ namespace The_Ball_Is_Angry
         {
             if (Q.IsReady() && target.IsValidTarget(Q.Range + Q.Width))
             {
-                if (E.IsReady() && target.Type == myHero.Type && Extensions.Distance(Ball, target) > Q.Range * 1.2f && Extensions.Distance(myHero, target) < Extensions.Distance(Ball, target))
+                if (E.IsReady() && myHero.Mana >= myHero.Spellbook.GetSpell(Q.Slot).SData.Mana + myHero.Spellbook.GetSpell(E.Slot).SData.Mana && target.Type == myHero.Type && Extensions.Distance(Ball, target, true) > Math.Pow(Q.Range * 1.2f, 2) && Extensions.Distance(myHero, target, true) < Extensions.Distance(Ball, target, true))
                 {
                     var pred = Q.GetPrediction(target);
                     if (pred.HitChancePercent <= 5)
@@ -554,7 +562,7 @@ namespace The_Ball_Is_Angry
             if (W.IsReady())
             {
                 var pred = W.GetPrediction(target);
-                if (pred.HitChancePercent >= percent && Extensions.Distance(Ball, pred.CastPosition) <= W.Range)
+                if (pred.HitChancePercent >= percent && Extensions.Distance(Ball, pred.CastPosition, true) < W.RangeSquared)
                 {
                     myHero.Spellbook.CastSpell(W.Slot);
                 }
@@ -562,7 +570,7 @@ namespace The_Ball_Is_Angry
         }
         private static void CastE(Obj_AI_Base target)
         {
-            if (E.IsReady() && target != null && target.IsValid && Extensions.Distance(myHero, target) < E.Range)
+            if (E.IsReady() && target != null && target.IsValid && Extensions.Distance(myHero, target, true) < E.RangeSquared)
             {
                 if (target.Team == myHero.Team)
                 {
@@ -606,20 +614,20 @@ namespace The_Ball_Is_Angry
         {
             Obj_AI_Base eAlly = null;
             Vector3 predictedPos = Vector3.Zero;
-            if (E.IsReady() && target.IsValidTarget() && Extensions.Distance(Ball, target) > R.Width)
+            if (E.IsReady() && target.IsValidTarget() && Extensions.Distance(Ball, target, true) > R.RangeSquared)
             {
                 var pred = E.GetPrediction(target);
-                foreach (AIHeroClient ally in HeroManager.Allies.Where(o => o.IsValid && Extensions.Distance(myHero, o) < E.Range && Extensions.Distance(Ball, o) > 0))
+                foreach (AIHeroClient ally in HeroManager.Allies.Where(o => o.IsValid && Extensions.Distance(myHero, o, true) < E.RangeSquared && Extensions.Distance(Ball, o, true) > 0))
                 {
                     var pred2 = E.GetPrediction(ally);
-                    if (Extensions.Distance(pred.CastPosition, pred2.CastPosition) < R.Width)
+                    if (Extensions.Distance(pred.CastPosition, pred2.CastPosition, true) <= R.RangeSquared)
                     {
                         if (eAlly == null)
                         {
                             eAlly = ally;
                             predictedPos = pred2.CastPosition;
                         }
-                        else if (Extensions.Distance(pred.CastPosition, predictedPos) > Extensions.Distance(pred.CastPosition, pred2.CastPosition))
+                        else if (Extensions.Distance(pred.CastPosition, predictedPos, true) > Extensions.Distance(pred.CastPosition, pred2.CastPosition, true))
                         {
                             eAlly = ally;
                             predictedPos = pred2.CastPosition;
@@ -641,10 +649,10 @@ namespace The_Ball_Is_Angry
             int count = 0;
             if (W.IsReady())
             {
-                foreach (Obj_AI_Base obj in list.Where(obj => Extensions.Distance(obj.ServerPosition, Ball) <= W.Range * 1.5f))
+                foreach (Obj_AI_Base obj in list.Where(obj => Extensions.Distance(obj.ServerPosition, Ball, true) <= W.RangeSquared * 2.25f))
                 {
                     var pred = W.GetPrediction(obj);
-                    if (pred.HitChancePercent >= 50 && Extensions.Distance(Ball, pred.CastPosition) <= W.Range)
+                    if (pred.HitChancePercent >= 50 && Extensions.Distance(Ball, pred.CastPosition, true) <= W.RangeSquared)
                     {
                         count++;
                     }
@@ -657,16 +665,30 @@ namespace The_Ball_Is_Angry
             int count = 0;
             if (R.IsReady())
             {
-                foreach (AIHeroClient obj in HeroManager.Enemies.Where(o => o.IsValidTarget() && Extensions.Distance(Ball, o) <= R.Range * 1.6f))
+                foreach (AIHeroClient obj in HeroManager.Enemies.Where(o => o.IsValidTarget() && Extensions.Distance(Ball, o, true) <= R.RangeSquared * 1.96f))
                 {
                     var pred = R.GetPrediction(obj);
-                    if (pred.HitChancePercent >= 50 && Extensions.Distance(Ball, pred.CastPosition) <= R.Range)
+                    if (pred.HitChancePercent >= 50 && Extensions.Distance(Ball, pred.CastPosition, true) <= R.RangeSquared)
                     {
                         count++;
                     }
                 }
             }
             return count;
+        }
+        private static void CastQR()
+        {
+            Q.CastDelay = 500;
+            List<Vector3> Positions = new List<Vector3>();
+            foreach (AIHeroClient enemy in HeroManager.Enemies.Where(o => o.IsValidTarget(Q.Range + R.Range)))
+            {
+                var pred = Q.GetPrediction(enemy);
+                if (pred.HitChancePercent >= 60)
+                {
+                    Positions.Add(pred.CastPosition);
+                }
+            }
+            Q.CastDelay = 0;
         }
         private static Tuple<int, Dictionary<int, bool>> CountHitQ(Vector3 StartPos, Vector3 EndPos, List<Obj_AI_Base> list)
         {
@@ -677,13 +699,14 @@ namespace The_Ball_Is_Angry
                 foreach (Obj_AI_Base obj in list.Where(o => o.IsValidTarget(Q.Range + Q.Width)))
                 {
                     var info = obj.ServerPosition.To2D().ProjectOn(StartPos.To2D(), EndPos.To2D());
-                    if (info.IsOnSegment && Extensions.Distance(obj.ServerPosition.To2D(), info.SegmentPoint) <= Q.Width * 1.5f + obj.BoundingRadius / 2)
+                    if (info.IsOnSegment && Extensions.Distance(obj.ServerPosition.To2D(), info.SegmentPoint, true) <= Math.Pow(Q.Width * 1.5f + obj.BoundingRadius / 2, 2))
                     {
+                        var hitchancepercent = obj.Type == myHero.Type ? 70 : 30;
                         var pred = Q.GetPrediction(obj);
-                        if (pred.HitChancePercent >= 70)
+                        if (pred.HitChancePercent >= hitchancepercent)
                         {
                             info = pred.CastPosition.To2D().ProjectOn(StartPos.To2D(), EndPos.To2D());
-                            if (info.IsOnSegment && Extensions.Distance(pred.CastPosition.To2D(), info.SegmentPoint) <= Q.Width + obj.BoundingRadius / 2)
+                            if (info.IsOnSegment && Extensions.Distance(pred.CastPosition.To2D(), info.SegmentPoint, true) <= Math.Pow(Q.Width + obj.BoundingRadius / 2, 2))
                             {
                                 count++;
                                 counted[obj.NetworkId] = true;
@@ -696,6 +719,11 @@ namespace The_Ball_Is_Angry
         }
         private static Tuple<Vector3, int> BestHitQ(List<Obj_AI_Base> list, Obj_AI_Base target = null)
         {
+            if (Game.Time - Q_LastRequest < TimePerRequest)
+            {
+                return new Tuple<Vector3, int>(Vector3.Zero, 0);
+            }
+            Q_LastRequest = Game.Time;
             Vector3 BestPos = Vector3.Zero;
             int bestHit = 0;
             bool checktarget = target != null && target.IsValidTarget();
@@ -704,7 +732,8 @@ namespace The_Ball_Is_Angry
                 foreach (Obj_AI_Base obj in list.Where(o => o.IsValidTarget(Q.Range + Q.Width)))
                 {
                     var pred = Q.GetPrediction(obj);
-                    if (pred.HitChancePercent >= 70)
+                    var hitchancepercent = obj.Type == myHero.Type ? 70 : 30;
+                    if (pred.HitChancePercent >= hitchancepercent)
                     {
                         var t = CountHitQ(Ball, pred.CastPosition, list);
                         var hit = t.Item1;
@@ -737,13 +766,14 @@ namespace The_Ball_Is_Angry
                 foreach (Obj_AI_Base obj in list.Where(o => o.IsValidTarget(E.Range)))
                 {
                     var info = obj.ServerPosition.To2D().ProjectOn(StartPos.To2D(), EndPos.To2D());
-                    if (info.IsOnSegment && Extensions.Distance(obj.ServerPosition.To2D(), info.SegmentPoint) <= E.Width * 1.5f + obj.BoundingRadius / 2)
+                    if (info.IsOnSegment && Extensions.Distance(obj.ServerPosition.To2D(), info.SegmentPoint, true) <= Math.Pow(E.Width * 1.5f + obj.BoundingRadius / 2, 2))
                     {
                         var pred = E.GetPrediction(obj);
-                        if (pred.HitChancePercent >= 50 && Extensions.Distance(pred.CastPosition, myHero) < E.Range)
+                        var hitchancepercent = obj.Type == myHero.Type ? 50 : 30;
+                        if (pred.HitChancePercent >= hitchancepercent && Extensions.Distance(pred.CastPosition, myHero, true) <= E.RangeSquared)
                         {
                             info = pred.CastPosition.To2D().ProjectOn(StartPos.To2D(), EndPos.To2D());
-                            if (info.IsOnSegment && Extensions.Distance(pred.CastPosition.To2D(), info.SegmentPoint) <= E.Width + obj.BoundingRadius / 2)
+                            if (info.IsOnSegment && Extensions.Distance(pred.CastPosition.To2D(), info.SegmentPoint, true) <= Math.Pow(E.Width + obj.BoundingRadius / 2, 2))
                             {
                                 count++;
                                 counted[obj.NetworkId] = true;
@@ -756,14 +786,19 @@ namespace The_Ball_Is_Angry
         }
         private static Tuple<Obj_AI_Base, int> BestHitE(List<Obj_AI_Base> list, Obj_AI_Base target = null)
         {
+            if (Game.Time - E_LastRequest < TimePerRequest)
+            {
+                return new Tuple<Obj_AI_Base, int>(null, 0);
+            }
+            E_LastRequest = Game.Time;
             Obj_AI_Base bestAlly = null;
             int bestHit = 0;
             bool checktarget = target != null && target.IsValidTarget();
             if (E.IsReady())
             {
-                foreach (Obj_AI_Base ally in HeroManager.Allies.Where(o => o.IsValid && Extensions.Distance(myHero, o) < E.Range))
+                foreach (Obj_AI_Base ally in HeroManager.AllHeroes.Where(o => o.IsValid && o.Team == myHero.Team && Extensions.Distance(myHero, o, true) < E.RangeSquared))
                 {
-                    if (Extensions.Distance(Ball, ally) > 0)
+                    if (Extensions.Distance(Ball, ally, true) > 0)
                     {
                         var pred = E.GetPrediction(ally);
                         var info = CountHitE(Ball, pred.CastPosition, list);
@@ -793,7 +828,7 @@ namespace The_Ball_Is_Angry
             if (R.IsReady())
             {
                 var pred = R.GetPrediction(target);
-                if (pred.HitChancePercent >= 70 && Extensions.Distance(Ball, pred.CastPosition) <= R.Range)
+                if (pred.HitChancePercent >= 70 && Extensions.Distance(Ball, pred.CastPosition, true) < R.RangeSquared)
                 {
                     myHero.Spellbook.CastSpell(R.Slot);
                 }
@@ -811,7 +846,6 @@ namespace The_Ball_Is_Angry
                     CastE(e.Sender);
                     LastGapclose = Game.Time;
                 }
-                //..
             }
         }
 
@@ -821,7 +855,7 @@ namespace The_Ball_Is_Angry
             {
                 if (SubMenu["Misc"]["R"].Cast<CheckBox>().CurrentValue)
                 {
-                    if (Extensions.Distance(Ball, e.Sender) > R.Range)
+                    if (Extensions.Distance(Ball, e.Sender, true) > R.RangeSquared)
                     {
                         ThrowBall(e.Sender);
                     }
@@ -830,7 +864,6 @@ namespace The_Ball_Is_Angry
                         CastR(e.Sender);
                     }
                 }
-                //..
             }
         }
         private static void OnPlayAnimation(Obj_AI_Base sender, GameObjectPlayAnimationEventArgs args)
@@ -1007,7 +1040,7 @@ namespace The_Ball_Is_Angry
                                         {
                                             if (bestdmg >= target.Health)
                                             {
-                                                if (d >= target.Health && (d < bestdmg || m < bestmana))
+                                                if (d >= target.Health && (d < bestdmg || m < bestmana || (best[3] == true && damageI2.R == false)))
                                                 {
                                                     bestdmg = d;
                                                     bestmana = m;
