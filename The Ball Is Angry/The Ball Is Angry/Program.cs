@@ -266,7 +266,7 @@ namespace The_Ball_Is_Angry
             if (target.IsValidTarget())
             {
                 var damageI = GetBestCombo(target);
-                if (myHero.CountEnemiesInRange(Q.Range + Q.Width) >= SubMenu["Combo"]["TF"].Cast<Slider>().CurrentValue)
+                if (myHero.CountEnemiesInRange(E.Range) >= SubMenu["Combo"]["TF"].Cast<Slider>().CurrentValue)
                 {
                     if (Q.IsReady() && SubMenu["Combo"]["Q2"].Cast<Slider>().CurrentValue > 0)
                     {
@@ -538,7 +538,7 @@ namespace The_Ball_Is_Angry
                 List<Obj_AI_Base> list = new List<Obj_AI_Base>();
                 if (target.Type == GameObjectType.AIHeroClient)
                 {
-                    list = HeroManager.Enemies.ToList<Obj_AI_Base>();
+                    list = HeroManager.Enemies.Where(o => o.IsValidTarget(Q.Range + Q.Width)).ToList<Obj_AI_Base>();
                 }
                 else
                 {
@@ -661,7 +661,7 @@ namespace The_Ball_Is_Angry
                 foreach (Obj_AI_Base obj in list.Where(obj => Extensions.Distance(obj.ServerPosition, Ball, true) <= W.RangeSquared * 2.25f))
                 {
                     var pred = W.GetPrediction(obj);
-                    if (pred.HitChancePercent >= 50 && Extensions.Distance(Ball, pred.CastPosition, true) <= W.RangeSquared)
+                    if (pred.HitChancePercent >= 70 && Extensions.Distance(Ball, pred.CastPosition, true) <= W.RangeSquared)
                     {
                         count++;
                     }
@@ -677,7 +677,7 @@ namespace The_Ball_Is_Angry
                 foreach (AIHeroClient obj in HeroManager.Enemies.Where(o => o.IsValidTarget() && Extensions.Distance(Ball, o, true) <= R.RangeSquared * 1.96f))
                 {
                     var pred = R.GetPrediction(obj);
-                    if (pred.HitChancePercent >= 50 && Extensions.Distance(Ball, pred.CastPosition, true) <= R.RangeSquared)
+                    if (pred.HitChancePercent >= 70 && Extensions.Distance(Ball, pred.CastPosition, true) <= R.RangeSquared)
                     {
                         count++;
                     }
@@ -783,7 +783,7 @@ namespace The_Ball_Is_Angry
             }
             Q_LastRequest = Game.Time + (float)Math.Pow(list.Count, 3) / 1000;
             Vector3 BestPos = Vector3.Zero;
-            int bestHit = 0;
+            int bestHit = -1;
             bool checktarget = target != null && target.IsValidTarget();
             if (Q.IsReady())
             {
