@@ -40,13 +40,6 @@ namespace The_Ball_Is_Angry
                 return myHero.Position;
             }
         }
-        static float Overkill
-        {
-            get
-            {
-                return (float)((100 + SubMenu["Misc"]["Overkill"].Cast<Slider>().CurrentValue) / 100);
-            }
-        }
         static void Main(string[] args)
         {
             Loading.OnLoadingComplete += OnLoad;
@@ -68,8 +61,22 @@ namespace The_Ball_Is_Angry
             {
                 Ignite = new Spell.Targeted(slot, 600);
             }
-            menu = MainMenu.AddMenu(AddonName, AddonName + " by " + Author + " v1.3");
+            menu = MainMenu.AddMenu(AddonName, AddonName + " by " + Author + " v1.4");
             menu.AddLabel(AddonName + " made by " + Author);
+
+            SubMenu["Prediction"] = menu.AddSubMenu("Prediction", "Prediction");
+            SubMenu["Prediction"].AddGroupLabel("Q Settings");
+            SubMenu["Prediction"].Add("QCombo", new Slider("Combo HitChancePercent", 60, 0, 100));
+            SubMenu["Prediction"].Add("QHarass", new Slider("Harass HitChancePercent", 75, 0, 100));
+            SubMenu["Prediction"].AddGroupLabel("W Settings");
+            SubMenu["Prediction"].Add("WCombo", new Slider("Combo HitChancePercent", 60, 0, 100));
+            SubMenu["Prediction"].Add("WHarass", new Slider("Harass HitChancePercent", 75, 0, 100));
+            SubMenu["Prediction"].AddGroupLabel("E Settings");
+            SubMenu["Prediction"].Add("ECombo", new Slider("Combo HitChancePercent", 45, 0, 100));
+            SubMenu["Prediction"].Add("EHarass", new Slider("Harass HitChancePercent", 60, 0, 100));
+            SubMenu["Prediction"].AddGroupLabel("R Settings");
+            SubMenu["Prediction"].Add("RCombo", new Slider("Combo HitChancePercent", 60, 0, 100));
+            SubMenu["Prediction"].Add("RHarass", new Slider("Harass HitChancePercent", 75, 0, 100));
 
             SubMenu["Combo"] = menu.AddSubMenu("Combo", "Combo");
             SubMenu["Combo"].Add("TF", new Slider("Use TeamFight Logic if enemies near >=", 3, 1, 5));
@@ -77,7 +84,7 @@ namespace The_Ball_Is_Angry
             SubMenu["Combo"].Add("Q", new CheckBox("Use Q On Target", true));
             SubMenu["Combo"].Add("W", new CheckBox("Use W On Target", true));
             SubMenu["Combo"].Add("E", new Slider("Use E If Hit", 1, 1, 5));
-            SubMenu["Combo"].Add("E2", new Slider("Use E If HealthPercent <=", 30, 0, 100));
+            SubMenu["Combo"].Add("E2", new Slider("Use E If HealthPercent <=", 50, 0, 100));
             SubMenu["Combo"].AddGroupLabel("1 vs 1 Logic");
             SubMenu["Combo"].Add("R", new CheckBox("Use R On Target If Killable", true));
             SubMenu["Combo"].AddGroupLabel("TeamFight Logic");
@@ -89,7 +96,7 @@ namespace The_Ball_Is_Angry
             SubMenu["Harass"].Add("Q", new CheckBox("Use Q", true));
             SubMenu["Harass"].Add("W", new CheckBox("Use W", true));
             SubMenu["Harass"].Add("E", new Slider("Use E If Hit", 1, 1, 5));
-            SubMenu["Harass"].Add("E2", new Slider("Use E If HealthPercent <=", 30, 0, 100));
+            SubMenu["Harass"].Add("E2", new Slider("Use E If HealthPercent <=", 40, 0, 100));
             SubMenu["Harass"].Add("Mana", new Slider("Min. Mana Percent:", 20, 0, 100));
 
             SubMenu["LaneClear"] = menu.AddSubMenu("LaneClear", "LaneClear");
@@ -129,7 +136,7 @@ namespace The_Ball_Is_Angry
             SubMenu["Draw"].Add("Q", new CheckBox("Draw Q Range", true));
             SubMenu["Draw"].Add("W", new CheckBox("Draw W Range", true));
             SubMenu["Draw"].Add("R", new CheckBox("Draw R Range", true));
-
+            
             SubMenu["Misc"] = menu.AddSubMenu("Misc", "Misc");
             SubMenu["Misc"].Add("Overkill", new Slider("Overkill % for damage prediction", 10, 0, 100));
             SubMenu["Misc"].Add("BlockR", new CheckBox("Block R if will not hit", true));
@@ -147,30 +154,7 @@ namespace The_Ball_Is_Angry
             Interrupter.OnInterruptableSpell += OnInterruptableSpell;
             Gapcloser.OnGapcloser += OnGapcloser;
             Spellbook.OnCastSpell += OnCastSpell;
-            Orbwalker.OnUnkillableMinion += OnUnkillableMinion;
             BallObject = ObjectManager.Get<GameObject>().FirstOrDefault(obj => obj.Name != null && obj.IsValid && obj.Name.ToLower().Contains("doomball"));
-        }
-
-        private static void OnUnkillableMinion(Obj_AI_Base target, Orbwalker.UnkillableMinionArgs args)
-        {
-            /**
-            if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.LaneClear) || Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.LastHit))
-            {
-
-                if (myHero.ManaPercent >= SubMenu["LastHit"]["Mana"].Cast<Slider>().CurrentValue)
-                {
-                    if (target.IsValidTarget(Q.Range) && SubMenu["LastHit"]["Q"].Cast<CheckBox>().CurrentValue)
-                    {
-                        int time = (int)(1000 * Extensions.Distance(Q.SourcePosition.Value, target) / Q.Speed + Q.CastDelay);
-                        var health = Prediction.Health.GetPrediction(target, time);
-                        if (health >= 0 && health <= Damage(target, Q.Slot))
-                        {
-                            CastQ(target);
-                        }
-                    }
-                }
-            }
-            **/
         }
 
         private static void OnCastSpell(Spellbook sender, SpellbookCastSpellEventArgs args)
@@ -181,7 +165,7 @@ namespace The_Ball_Is_Angry
                 {
                     args.Process = false;
                 }
-                if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Harass) && !Orbwalker.CanMove && Orbwalker.LastTarget.Type != myHero.Type)
+                if (IsHarass && !Orbwalker.CanMove && Orbwalker.LastTarget.Type != myHero.Type)
                 {
                     args.Process = false;
                 }
@@ -208,30 +192,30 @@ namespace The_Ball_Is_Angry
                 myHero.Spellbook.CastSpell(SpellSlot.W);
             }
             KillSteal();
-            if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Combo))
+            if (IsCombo)
             {
                 Combo();
             }
-            else if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Harass))
+            else if (IsHarass)
             {
                 Harass();
             }
-            else if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.JungleClear) || Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.LaneClear))
+            else if (IsClear)
             {
-                if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.JungleClear))
+                if (IsJungleClear)
                 {
                     JungleClear();
                 }
-                if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.LaneClear))
+                if (IsLaneClear)
                 {
                     LaneClear();
                 }
             }
-            else if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.LastHit))
+            else if (IsLastHit)
             {
                 LastHit();
             }
-            if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Flee))
+            if (IsFlee)
             {
                 Flee();
             }
@@ -566,12 +550,12 @@ namespace The_Ball_Is_Angry
             }
         }
 
-        private static void CastW(Obj_AI_Base target, float percent = 70)
+        private static void CastW(Obj_AI_Base target)
         {
             if (W.IsReady())
             {
                 var pred = W.GetPrediction(target);
-                if (pred.HitChancePercent >= percent && Extensions.Distance(Ball, pred.CastPosition, true) < W.RangeSquared)
+                if (pred.HitChancePercent >= HitChancePercent(W.Slot) && Extensions.Distance(Ball, pred.CastPosition, true) < W.RangeSquared)
                 {
                     myHero.Spellbook.CastSpell(W.Slot);
                 }
@@ -661,7 +645,7 @@ namespace The_Ball_Is_Angry
                 foreach (Obj_AI_Base obj in list.Where(obj => Extensions.Distance(obj.ServerPosition, Ball, true) <= W.RangeSquared * 2.25f))
                 {
                     var pred = W.GetPrediction(obj);
-                    if (pred.HitChancePercent >= 70 && Extensions.Distance(Ball, pred.CastPosition, true) <= W.RangeSquared)
+                    if (pred.HitChancePercent >= HitChancePercent(W.Slot) && Extensions.Distance(Ball, pred.CastPosition, true) <= W.RangeSquared)
                     {
                         count++;
                     }
@@ -677,7 +661,7 @@ namespace The_Ball_Is_Angry
                 foreach (AIHeroClient obj in HeroManager.Enemies.Where(o => o.IsValidTarget() && Extensions.Distance(Ball, o, true) <= R.RangeSquared * 1.96f))
                 {
                     var pred = R.GetPrediction(obj);
-                    if (pred.HitChancePercent >= 70 && Extensions.Distance(Ball, pred.CastPosition, true) <= R.RangeSquared)
+                    if (pred.HitChancePercent >= HitChancePercent(R.Slot) && Extensions.Distance(Ball, pred.CastPosition, true) <= R.RangeSquared)
                     {
                         count++;
                     }
@@ -695,7 +679,7 @@ namespace The_Ball_Is_Angry
             foreach (AIHeroClient enemy in HeroManager.Enemies.Where(o => o.IsValidTarget(Q.Range + R.Range)))
             {
                 var pred = Q.GetPrediction(enemy);
-                if (pred.HitChancePercent >= 60)
+                if (pred.HitChancePercent >= HitChancePercent(R.Slot))
                 {
                     Positions.Add(pred.CastPosition.To2D());
                 }
@@ -760,7 +744,7 @@ namespace The_Ball_Is_Angry
                     var info = obj.ServerPosition.To2D().ProjectOn(StartPos.To2D(), EndPos.To2D());
                     if (info.IsOnSegment && Extensions.Distance(obj.ServerPosition.To2D(), info.SegmentPoint, true) <= Math.Pow(Q.Width * 1.5f + obj.BoundingRadius / 2, 2))
                     {
-                        var hitchancepercent = obj.Type == myHero.Type ? 70 : 30;
+                        var hitchancepercent = obj.Type == myHero.Type ? HitChancePercent(Q.Slot) : 30;
                         var pred = Q.GetPrediction(obj);
                         if (pred.HitChancePercent >= hitchancepercent)
                         {
@@ -790,7 +774,8 @@ namespace The_Ball_Is_Angry
                 foreach (Obj_AI_Base obj in list.Where(o => o.IsValidTarget(Q.Range + Q.Width)))
                 {
                     var pred = Q.GetPrediction(obj);
-                    var hitchancepercent = obj.Type == myHero.Type ? 70 : 30;
+                    var hitchancepercent = obj.Type == myHero.Type ? HitChancePercent(Q.Slot) : 30;
+                    Chat.Print(pred.HitChancePercent);
                     if (pred.HitChancePercent >= hitchancepercent)
                     {
                         var t = CountHitQ(Ball, pred.CastPosition, list, obj);
@@ -827,7 +812,7 @@ namespace The_Ball_Is_Angry
                     if (info.IsOnSegment && Extensions.Distance(obj.ServerPosition.To2D(), info.SegmentPoint, true) <= Math.Pow(E.Width * 1.5f + obj.BoundingRadius / 2, 2))
                     {
                         var pred = E.GetPrediction(obj);
-                        var hitchancepercent = obj.Type == myHero.Type ? 50 : 30;
+                        var hitchancepercent = obj.Type == myHero.Type ? HitChancePercent(E.Slot) : 30;
                         if (pred.HitChancePercent >= hitchancepercent && Extensions.Distance(pred.CastPosition, myHero, true) <= E.RangeSquared)
                         {
                             info = pred.CastPosition.To2D().ProjectOn(StartPos.To2D(), EndPos.To2D());
@@ -886,7 +871,7 @@ namespace The_Ball_Is_Angry
             if (R.IsReady())
             {
                 var pred = R.GetPrediction(target);
-                if (pred.HitChancePercent >= 70 && Extensions.Distance(Ball, pred.CastPosition, true) < R.RangeSquared)
+                if (pred.HitChancePercent >= HitChancePercent(R.Slot) && Extensions.Distance(Ball, pred.CastPosition, true) < R.RangeSquared)
                 {
                     myHero.Spellbook.CastSpell(R.Slot);
                 }
@@ -1135,6 +1120,97 @@ namespace The_Ball_Is_Angry
                 }
             }
             return new DamageInfo(false, false, false, false, 0, 0, 0);
+        }
+
+        static float HitChancePercent(SpellSlot s)
+        {
+            string slot;
+            switch (s)
+            {
+                case SpellSlot.Q:
+                    slot = "Q";
+                    break;
+                case SpellSlot.W:
+                    slot = "W";
+                    break;
+                case SpellSlot.E:
+                    slot = "E";
+                    break;
+                case SpellSlot.R:
+                    slot = "R";
+                    break;
+                default:
+                    slot = "Q";
+                    break;
+            }
+            if (IsHarass)
+            {
+                return SubMenu["Prediction"][slot + "Harass"].Cast<Slider>().CurrentValue;
+            }
+            return SubMenu["Prediction"][slot + "Combo"].Cast<Slider>().CurrentValue;
+        }
+        static float Overkill
+        {
+            get
+            {
+                return (float)((100 + SubMenu["Misc"]["Overkill"].Cast<Slider>().CurrentValue) / 100);
+            }
+        }
+        static bool IsCombo
+        {
+            get
+            {
+                return Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Combo);
+            }
+        }
+        static bool IsHarass
+        {
+            get
+            {
+                return Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Harass);
+            }
+        }
+        static bool IsClear
+        {
+            get
+            {
+                return IsLaneClear || IsJungleClear;
+            }
+        }
+        static bool IsLaneClear
+        {
+            get
+            {
+                return Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.LaneClear);
+            }
+        }
+        static bool IsJungleClear
+        {
+            get
+            {
+                return Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.JungleClear);
+            }
+        }
+        static bool IsLastHit
+        {
+            get
+            {
+                return Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.LastHit);
+            }
+        }
+        static bool IsFlee
+        {
+            get
+            {
+                return Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Flee);
+            }
+        }
+        static bool IsNone
+        {
+            get
+            {
+                return Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.None);
+            }
         }
     }
     public class DamageInfo
