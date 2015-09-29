@@ -775,7 +775,6 @@ namespace The_Ball_Is_Angry
                 {
                     var pred = Q.GetPrediction(obj);
                     var hitchancepercent = obj.Type == myHero.Type ? HitChancePercent(Q.Slot) : 30;
-                    Chat.Print(pred.HitChancePercent);
                     if (pred.HitChancePercent >= hitchancepercent)
                     {
                         var t = CountHitQ(Ball, pred.CastPosition, list, obj);
