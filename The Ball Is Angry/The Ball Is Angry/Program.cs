@@ -432,7 +432,7 @@ namespace The_Ball_Is_Angry
         {
             if (Q.IsReady())
             {
-                foreach (Obj_AI_Base minion in EntityManager.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position.To2D(), Q.Range, true).Where(o => o.Health <= 2.0f * Damage(o, Q.Slot)))
+                foreach (Obj_AI_Base minion in EntityManager.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position.To2D(), Q.Range + Q.Width, true).Where(o => o.Health <= 2.0f * Damage(o, Q.Slot)))
                 {
                     bool CanCalculate = false;
                     if (minion.IsValidTarget())
@@ -542,13 +542,13 @@ namespace The_Ball_Is_Angry
                 }
                 else
                 {
-                    if (EntityManager.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position.To2D(), Q.Range).Count > 0)
+                    if (EntityManager.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position.To2D(), Q.Range + Q.Width).Count > 0)
                     {
-                        list = EntityManager.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position.To2D(), Q.Range);
+                        list = EntityManager.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position.To2D(), Q.Range + Q.Width);
                     }
-                    else if (EntityManager.GetJungleMonsters(myHero.Position.To2D(), Q.Range).Count > 0)
+                    else if (EntityManager.GetJungleMonsters(myHero.Position.To2D(), Q.Range + Q.Width).Count > 0)
                     {
-                        list = EntityManager.GetJungleMonsters(myHero.Position.To2D(), Q.Range).ToList<Obj_AI_Base>();
+                        list = EntityManager.GetJungleMonsters(myHero.Position.To2D(), Q.Range + Q.Width).ToList<Obj_AI_Base>();
                     }
                 }
                 if (list.Count < minhits) { return; }
