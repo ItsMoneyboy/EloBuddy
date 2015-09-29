@@ -40,8 +40,8 @@ namespace Project_Zed
         {
             get
             {
-                return Game.Time - _W.LastCastTime < 0.5 && wShadow == null && IsW1 && W.IsReady();
-                //return Game.Time - _W.LastCastTime < 0.5 && wShadow == null;
+                return Game.Time - _W.LastCastTime < 0.1f && wShadow == null && IsW1 && W.IsReady();
+                //return Game.Time - _W.LastCastTime < 1.5f && wShadow == null;
             }
         }
         static bool IsW1
@@ -176,7 +176,7 @@ namespace Project_Zed
                     wFound = ObjectManager.Get<Obj_AI_Minion>().FirstOrDefault(obj => obj.Name.ToLower() == "shadow" && !obj.IsDead && obj.Team == myHero.Team && Extensions.Distance(_W.End, obj) < 100 && Extensions.Distance(rShadow, obj) > 0);
                     return wFound;
                 }
-                wFound = ObjectManager.Get<Obj_AI_Minion>().Where(obj => obj.Name.ToLower() == "shadow" && !obj.IsDead && obj.Team == myHero.Team && Extensions.Distance(_W.End, obj) < 550).OrderBy( o => Extensions.Distance(_W.End, o)).FirstOrDefault();
+                wFound = ObjectManager.Get<Obj_AI_Minion>().Where(obj => obj.Name.ToLower() == "shadow" && !obj.IsDead && obj.Team == myHero.Team && Extensions.Distance(_W.End, obj) < 550).OrderBy(o => Extensions.Distance(_W.End, o)).FirstOrDefault();
                 return wFound;
             }
         }
@@ -207,7 +207,7 @@ namespace Project_Zed
                 PassiveUsed.Add(enemy.NetworkId, false);
             }
 
-            menu = MainMenu.AddMenu(AddonName, AddonName + " by " + Author + "v1.1");
+            menu = MainMenu.AddMenu(AddonName, AddonName + " by " + Author + "v1.10");
             menu.AddLabel(AddonName + " made by " + Author);
 
             SubMenu["Combo"] = menu.AddSubMenu("Combo", "Combo");
@@ -216,7 +216,7 @@ namespace Project_Zed
             SubMenu["Combo"].Add("E", new CheckBox("Use E", true));
             SubMenu["Combo"].Add("R", new CheckBox("Use R", true));
             SubMenu["Combo"].Add("SwapDead", new CheckBox("Use W2/R2 if target will die", true));
-            SubMenu["Combo"].Add("SwapHP", new Slider("Use W2/R2 if the % of my health is less than ", 15, 0, 100));
+            SubMenu["Combo"].Add("SwapHP", new Slider("Use W2/R2 if my HealthPercent is less than", 10, 0, 100));
             SubMenu["Combo"].Add("SwapGapclose", new CheckBox("Use W2/R2 to get close to target", true));
             SubMenu["Combo"].Add("Prevent", new KeyBind("Don't use spells before R", true, KeyBind.BindTypes.PressToggle, (uint)'L'));
             SubMenu["Combo"].AddGroupLabel("Don't use R on");
@@ -258,6 +258,7 @@ namespace Project_Zed
             SubMenu["Draw"] = menu.AddSubMenu("Drawing", "Drawing");
             SubMenu["Draw"].Add("W", new CheckBox("Draw W Shadow", true));
             SubMenu["Draw"].Add("R", new CheckBox("Draw R Shadow", true));
+            SubMenu["Draw"].Add("IsDead", new CheckBox("Draw Text if target will die", true));
 
             SubMenu["Misc"] = menu.AddSubMenu("Misc", "Misc");
             SubMenu["Misc"].Add("Overkill", new Slider("Overkill % for damage prediction", 10, 0, 100));
@@ -422,46 +423,6 @@ namespace Project_Zed
             var target = TS_Target;
             if (target.IsValidTarget())
             {
-                var damageI = GetBestCombo(target);
-                if (SubMenu["Combo"]["SwapHP"].Cast<Slider>().CurrentValue >= myHero.HealthPercent)
-                {
-                    if (damageI.Damage <= target.Health || myHero.HealthPercent < target.HealthPercent)
-                    {
-                        var HeroCount = myHero.CountEnemiesInRange(400);
-                        var wCount = (wShadow != null && W.IsReady() && !IsW1) ? wShadow.CountEnemiesInRange(400) : 1000;
-                        var rCount = (rShadow != null && R.IsReady() && !IsR1) ? rShadow.CountEnemiesInRange(400) : 1000;
-                        var min = Math.Min(rCount, wCount);
-                        if (HeroCount > min)
-                        {
-                            if (min == wCount)
-                            {
-                                myHero.Spellbook.CastSpell(W.Slot);
-                            }
-                            else if (min == rCount)
-                            {
-                                myHero.Spellbook.CastSpell(R.Slot);
-                            }
-                        }
-                    }
-                }
-                if (IsDeadObject != null && SubMenu["Combo"]["SwapDead"].Cast<KeyBind>().CurrentValue)
-                {
-                    var HeroCount = myHero.CountEnemiesInRange(400);
-                    var wCount = (wShadow != null && W.IsReady() && !IsW1) ? wShadow.CountEnemiesInRange(400) : 1000;
-                    var rCount = (rShadow != null && R.IsReady() && !IsR1) ? rShadow.CountEnemiesInRange(400) : 1000;
-                    var min = Math.Min(rCount, wCount);
-                    if (HeroCount > min)
-                    {
-                        if (min == wCount)
-                        {
-                            myHero.Spellbook.CastSpell(W.Slot);
-                        }
-                        else if (min == rCount)
-                        {
-                            myHero.Spellbook.CastSpell(R.Slot);
-                        }
-                    }
-                }
                 if (SubMenu["Combo"]["R"].Cast<CheckBox>().CurrentValue && !SubMenu["Combo"][target.ChampionName].Cast<CheckBox>().CurrentValue) { CastR(target); }
                 if (SubMenu["Combo"]["Prevent"].Cast<KeyBind>().CurrentValue && R.IsReady() && IsR1 && !SubMenu["Combo"][target.ChampionName].Cast<CheckBox>().CurrentValue)
                 {
@@ -522,8 +483,8 @@ namespace Project_Zed
                     if (SubMenu["Combo"]["SwapGapclose"].Cast<CheckBox>().CurrentValue && Extensions.Distance(myHero, target) > E.Range * 1.3f)
                     {
                         var heroDistance = Extensions.Distance(myHero, target);
-                        var wShadowDistance = wShadow != null ? Extensions.Distance(myHero, wShadow) : 999999f;
-                        var rShadowDistance = rShadow != null ? Extensions.Distance(myHero, rShadow) : 999999f;
+                        var wShadowDistance = (wShadow != null && W.IsReady() && !IsW1) ? Extensions.Distance(myHero, wShadow) : 999999f;
+                        var rShadowDistance = (rShadow != null && R.IsReady() && !IsR1) ? Extensions.Distance(myHero, rShadow) : 999999f;
                         var min = Math.Min(Math.Min(wShadowDistance, rShadowDistance), heroDistance);
                         if (min <= 500 && min < heroDistance)
                         {
@@ -532,6 +493,45 @@ namespace Project_Zed
                                 myHero.Spellbook.CastSpell(W.Slot);
                             }
                             else if (min == rShadowDistance)
+                            {
+                                myHero.Spellbook.CastSpell(R.Slot);
+                            }
+                        }
+                    }
+                    if (SubMenu["Combo"]["SwapHP"].Cast<Slider>().CurrentValue >= myHero.HealthPercent)
+                    {
+                        if (damageI.Damage <= target.Health || myHero.HealthPercent < target.HealthPercent)
+                        {
+                            var HeroCount = myHero.CountEnemiesInRange(400);
+                            var wCount = (wShadow != null && W.IsReady() && !IsW1) ? wShadow.CountEnemiesInRange(400) : 1000;
+                            var rCount = (rShadow != null && R.IsReady() && !IsR1) ? rShadow.CountEnemiesInRange(400) : 1000;
+                            var min = Math.Min(rCount, wCount);
+                            if (HeroCount > min)
+                            {
+                                if (min == wCount)
+                                {
+                                    myHero.Spellbook.CastSpell(W.Slot);
+                                }
+                                else if (min == rCount)
+                                {
+                                    myHero.Spellbook.CastSpell(R.Slot);
+                                }
+                            }
+                        }
+                    }
+                    if (IsDeadObject != null && SubMenu["Combo"]["SwapDead"].Cast<KeyBind>().CurrentValue)
+                    {
+                        var HeroCount = myHero.CountEnemiesInRange(400);
+                        var wCount = (wShadow != null && W.IsReady() && !IsW1) ? wShadow.CountEnemiesInRange(400) : 1000;
+                        var rCount = (rShadow != null && R.IsReady() && !IsR1) ? rShadow.CountEnemiesInRange(400) : 1000;
+                        var min = Math.Min(rCount, wCount);
+                        if (HeroCount > min)
+                        {
+                            if (min == wCount)
+                            {
+                                myHero.Spellbook.CastSpell(W.Slot);
+                            }
+                            else if (min == rCount)
                             {
                                 myHero.Spellbook.CastSpell(R.Slot);
                             }
@@ -628,7 +628,7 @@ namespace Project_Zed
             {
                 _W.LastCastTime = Game.Time;
                 var r = W.GetPrediction(target);
-                if (r.HitChancePercent >= 30 && Game.Time - _W.LastSentTime > 0.12f)
+                if (r.HitChancePercent >= 50 && Game.Time - _W.LastSentTime > 0.15f)
                 {
                     _W.LastSentTime = Game.Time;
                     var wPos = Vector3.Zero;
@@ -723,6 +723,10 @@ namespace Project_Zed
             {
                 Circle.Draw(Color.Orange, 100, rShadow.Position);
             }
+            if (IsDeadObject != null && SubMenu["Draw"]["IsDead"].Cast<CheckBox>().CurrentValue)
+            {
+                Drawing.DrawText(Drawing.WorldToScreen(IsDeadObject.Position), System.Drawing.Color.Red, "TARGET DEAD", 200);
+            }
         }
 
 
@@ -815,6 +819,7 @@ namespace Project_Zed
         {
             _R.End = Vector3.Zero;
             rFound = null;
+            IsDeadObject = null;
         }
         static void ResetW()
         {
