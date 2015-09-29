@@ -299,7 +299,11 @@ namespace The_Ball_Is_Angry
                 {
                     if (SubMenu["Combo"]["R"].Cast<CheckBox>().CurrentValue && damageI.R && damageI.Damage >= target.Health) { CastR(target); }
                 }
-                if (SubMenu["Combo"]["Q"].Cast<CheckBox>().CurrentValue) { CastQ(target); }
+                if (SubMenu["Combo"]["Q"].Cast<CheckBox>().CurrentValue)
+                {
+                    if (Game.Time - LastGapclose < 0.2f) { return; }
+                    CastQ(target);
+                }
                 if (W.IsReady() && SubMenu["Combo"]["W"].Cast<CheckBox>().CurrentValue) { CastW(target); }
                 if (E.IsReady() && SubMenu["Combo"]["E"].Cast<Slider>().CurrentValue > 0)
                 {
@@ -531,7 +535,6 @@ namespace The_Ball_Is_Angry
                         CastE(myHero);
                     }
                 }
-                if (Game.Time - LastGapclose < 1.0f) { return; }
                 List<Obj_AI_Base> list = new List<Obj_AI_Base>();
                 if (target.Type == GameObjectType.AIHeroClient)
                 {
@@ -684,8 +687,9 @@ namespace The_Ball_Is_Angry
         }
         private static void CastQR(AIHeroClient target = null)
         {
-            Q.CastDelay = R.CastDelay;
             var qWidth = Q.Width;
+            var qDelay = Q.CastDelay;
+            Q.CastDelay = R.CastDelay;
             Q.Width = (int)R.Range;
             List<Vector2> Positions = new List<Vector2>();
             foreach (AIHeroClient enemy in HeroManager.Enemies.Where(o => o.IsValidTarget(Q.Range + R.Range)))
@@ -717,7 +721,7 @@ namespace The_Ball_Is_Angry
                 Q.Cast(bestPos.To3D());
             }
             Q.Width = qWidth;
-            Q.CastDelay = 0;
+            Q.CastDelay = qDelay;
         }
         private static void CastER(AIHeroClient target = null)
         {
