@@ -704,7 +704,7 @@ namespace The_Ball_Is_Angry
             int bestCount = 0;
             foreach (Vector2 vec in Positions)
             {
-                int count = Positions.Where(v => Extensions.Distance(vec, v, true) > 0 && Extensions.Distance(vec, v, true) < Math.Pow(R.Width + 60, 2)).ToList().Count;
+                int count = Positions.Where(v => Extensions.Distance(vec, v, true) < Math.Pow(R.Width + 60, 2)).ToList().Count;
                 if (bestPos == Vector2.Zero)
                 {
                     bestPos = vec;
