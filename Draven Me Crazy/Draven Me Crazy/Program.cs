@@ -10,6 +10,7 @@ using EloBuddy.SDK.Menu.Values;
 using EloBuddy.SDK.Rendering;
 using SharpDX;
 
+//agregar check con deletemissile
 namespace Draven_Me_Crazy
 {
     class Program
@@ -175,11 +176,20 @@ namespace Draven_Me_Crazy
                 if (sender.Name.ToLower().Contains(myHero.ChampionName.ToLower()))
                 {
                     var name = sender.Name.ToLower();
-                    if (name.Contains("q_reticle_self.troy") && Extensions.Distance(myHero, sender, true) < Math.Pow(LimitTime * myHero.MoveSpeed, 2))
+                    if (name.Contains("q_reticle_self.troy"))
                     {
                         Axes.Add(new Axe(sender, Game.Time - Game.Ping / 2000f));
-                        Core.DelayAction(delegate { RemoveAxe(sender); }, (int)(LimitTime * 1000 + 200));
+                        //Core.DelayAction(delegate { RemoveAxe(sender); }, (int)(LimitTime * 1000 + 200));
                     }
+                    else if (name.Contains("reticlecatchsuccess.troy"))
+                    {
+                        RemoveAxe(sender);
+                    }
+                    else if (name.Contains("q_tar.troy"))
+                    {
+                        //missile object
+                    }
+                    Chat.Print("Created " + sender.Name);
                 }
             }
         }
@@ -190,10 +200,11 @@ namespace Draven_Me_Crazy
                 if (sender.Name.ToLower().Contains(myHero.ChampionName.ToLower()))
                 {
                     var name = sender.Name.ToLower();
-                    if (name.Contains("q_reticle.troy"))
+                    if (name.Contains("q_reticle_self.troy"))
                     {
                         RemoveAxe(sender);
                     }
+                    Chat.Print("Deleted " + sender.Name);
                 }
             }
         }
@@ -203,7 +214,7 @@ namespace Draven_Me_Crazy
             {
                 foreach (Axe a in Axes)
                 {
-                    if (Extensions.Distance(a.Object, sender, true) < 900)
+                    if (Extensions.Distance(a.Reticle, sender, true) < 900)
                     {
                         Axes.Remove(a);
                         break;
@@ -223,7 +234,7 @@ namespace Draven_Me_Crazy
             {
                 foreach (Axe a in Axes)
                 {
-                    Circle.Draw(new ColorBGRA(0, 0, 255, 100), 120, a.Position);
+                    Circle.Draw(new ColorBGRA(0, 0, 255, 100), CatchRadius, a.Position);
                 }
             }
         }
@@ -458,15 +469,16 @@ namespace Draven_Me_Crazy
     }
     public class Axe
     {
-        public GameObject Object;
+        public GameObject Reticle;
+        public GameObject Missile;
         public float StartTime;
         public Vector3 Position
         {
-            get { return this.Object.Position; }
+            get { return this.Reticle.Position; }
         }
         public Axe(GameObject o, float s)
         {
-            this.Object = o;
+            this.Reticle = o;
             this.StartTime = s;
         }
     }
