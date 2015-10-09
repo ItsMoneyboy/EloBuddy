@@ -118,7 +118,7 @@ namespace Project_Zed
             {
                 if (!IsR1)
                 {
-                    foreach (AIHeroClient enemy in HeroManager.Enemies)
+                    foreach (AIHeroClient enemy in EntityManager.Heroes.Enemies)
                     {
                         if (enemy.IsValidTarget(TS_Range) && TargetHaveR(enemy))
                         {
@@ -130,7 +130,7 @@ namespace Project_Zed
                 if (IsDead(t))
                 {
                     AIHeroClient t2 = null;
-                    foreach (AIHeroClient enemy in HeroManager.Enemies.Where(o => o.NetworkId != t.NetworkId && o.IsValidTarget(TS_Range)))
+                    foreach (AIHeroClient enemy in EntityManager.Heroes.Enemies.Where(o => o.NetworkId != t.NetworkId && o.IsValidTarget(TS_Range)))
                     {
                         if (t2 == null) { t2 = enemy; }
                         else if (TargetSelector.GetPriority(enemy) > TargetSelector.GetPriority(t2)) { t2 = enemy; }
@@ -202,7 +202,7 @@ namespace Project_Zed
             }
             _W = new _Spell();
             _R = new _Spell();
-            foreach (AIHeroClient enemy in HeroManager.Enemies)
+            foreach (AIHeroClient enemy in EntityManager.Heroes.Enemies)
             {
                 PassiveUsed.Add(enemy.NetworkId, false);
             }
@@ -220,7 +220,7 @@ namespace Project_Zed
             SubMenu["Combo"].Add("SwapGapclose", new CheckBox("Use W2/R2 to get close to target", true));
             SubMenu["Combo"].Add("Prevent", new KeyBind("Don't use spells before R", true, KeyBind.BindTypes.PressToggle, (uint)'L'));
             SubMenu["Combo"].AddGroupLabel("Don't use R on");
-            foreach (AIHeroClient enemy in HeroManager.Enemies)
+            foreach (AIHeroClient enemy in EntityManager.Heroes.Enemies)
             {
                 SubMenu["Combo"].Add(enemy.ChampionName, new CheckBox(enemy.ChampionName, false));
             }
@@ -266,7 +266,7 @@ namespace Project_Zed
             SubMenu["Misc"].Add("SwapDead", new CheckBox("Use Auto W2/R2 if target will die", false));
             SubMenu["Misc"].AddSeparator();
             SubMenu["Misc"].Add("EvadeR1", new CheckBox("Use R1 to Evade", true));
-            foreach (AIHeroClient enemy in HeroManager.Enemies)
+            foreach (AIHeroClient enemy in EntityManager.Heroes.Enemies)
             {
                 SubMenu["Misc"].AddGroupLabel(enemy.ChampionName);
                 SubMenu["Misc"].Add(enemy.ChampionName + "Q", new CheckBox("Q", false));
@@ -389,7 +389,7 @@ namespace Project_Zed
             }
             if (SubMenu["Misc"]["AutoE"].Cast<CheckBox>().CurrentValue)
             {
-                foreach (AIHeroClient enemy in HeroManager.Enemies)
+                foreach (AIHeroClient enemy in EntityManager.Heroes.Enemies)
                 {
                     if (enemy.IsValidTarget(TS_Range))
                     {
@@ -400,7 +400,7 @@ namespace Project_Zed
         }
         static void KillSteal()
         {
-            foreach (AIHeroClient enemy in HeroManager.Enemies)
+            foreach (AIHeroClient enemy in EntityManager.Heroes.Enemies)
             {
                 if (enemy.IsValidTarget(TS_Range) && enemy.HealthPercent <= 40f && !IsDead(enemy))
                 {
@@ -558,7 +558,7 @@ namespace Project_Zed
             }
             if (SubMenu["Flee"]["E"].Cast<CheckBox>().CurrentValue && E.IsReady())
             {
-                foreach (AIHeroClient enemy in HeroManager.Enemies)
+                foreach (AIHeroClient enemy in EntityManager.Heroes.Enemies)
                 {
                     if (enemy.IsValidTarget(TS_Range) && !enemy.IsValidTarget(E.Range))
                     {
@@ -581,7 +581,7 @@ namespace Project_Zed
         {
             if (myHero.ManaPercent >= SubMenu["JungleClear"]["Mana"].Cast<Slider>().CurrentValue)
             {
-                foreach (Obj_AI_Base minion in EntityManager.GetJungleMonsters(myHero.Position.To2D(), 1000f))
+                foreach (Obj_AI_Base minion in EntityManager.MinionsAndMonsters.GetJungleMonsters(myHero.Position, 1000f))
                 {
                     if (minion.IsValidTarget() && myHero.ManaPercent >= SubMenu["JungleClear"]["Mana"].Cast<Slider>().CurrentValue)
                     {
@@ -613,6 +613,7 @@ namespace Project_Zed
                 {
                     Q.SourcePosition = wShadow.Position;
                 }
+                Q.RangeCheckSource = Q.SourcePosition;
                 var pred = Q.GetPrediction(target);
                 var hitchance = HarassType > 0 ? 85 : 70;
                 if (pred.HitChancePercent >= hitchance)
@@ -628,7 +629,7 @@ namespace Project_Zed
             {
                 _W.LastCastTime = Game.Time;
                 var r = W.GetPrediction(target);
-                if (r.HitChancePercent >= 50 && Game.Time - _W.LastSentTime > 0.15f)
+                if (r.HitChancePercent >= 50 && Game.Time - _W.LastSentTime > 0.25f)
                 {
                     _W.LastSentTime = Game.Time;
                     var wPos = Vector3.Zero;
@@ -783,7 +784,7 @@ namespace Project_Zed
                     {
                         if (SpellIsActive(unit, args.SData.Name))
                         {
-                            var target = HeroManager.Enemies.Where(o => o.IsValidTarget(R.Range)).OrderByDescending(o => TargetSelector.GetPriority(o)).First();
+                            var target = EntityManager.Heroes.Enemies.Where(o => o.IsValidTarget(R.Range)).OrderByDescending(o => TargetSelector.GetPriority(o)).First();
                             if (target.IsValidTarget())
                             {
                                 CastR(target);
@@ -1021,6 +1022,14 @@ namespace Project_Zed
                 }
             }
             return new DamageInfo(false, false, false, false, 0, 0, 0);
+        }
+        static bool GetCheckBoxValue(Menu m, string param)
+        {
+            return m[param].Cast<CheckBox>().CurrentValue;
+        }
+        static int GetSliderValue(Menu m, string param)
+        {
+            return m[param].Cast<Slider>().CurrentValue;
         }
     }
 
