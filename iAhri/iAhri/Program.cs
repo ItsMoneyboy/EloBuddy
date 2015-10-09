@@ -296,7 +296,7 @@ namespace iAhri
             if (E.IsReady() && target.IsValidTarget())
             {
                 var r = E.GetPrediction(target);
-                if (r.HitChance >= HitChance.High)
+                if (r.HitChance >= HitChance.High && target.IsEnemy)
                 {
                     E.Cast(r.CastPosition);
                 }
