@@ -22,7 +22,7 @@ namespace Draven_Me_Crazy
         public static AIHeroClient myHero { get { return ObjectManager.Player; } }
         static Vector3 mousePos { get { return Game.CursorPos; } }
         static Menu menu;
-        static Dictionary<string, Menu> SubMenu = new Dictionary<string, Menu>() { };
+        public static Dictionary<string, Menu> SubMenu = new Dictionary<string, Menu>() { };
         static Spell.Skillshot E, R;
         static Spell.Active Q, W;
         static Spell.Targeted Ignite;
@@ -399,10 +399,10 @@ namespace Draven_Me_Crazy
         {
             var CanMove = false;
             var CanAttack = false;
-            if (a.InTime && a.SourceInRadius)
+            if (a.InTime && a.SourceInRadius && !a.InTurret)
             {
                 var AxeCatchPositionFromHero = a.Position + (myHero.Position - a.Position).Normalized() * Math.Min(Axe.Radius, Extensions.Distance(myHero, a.Position));
-                //var AxeCatchPositionFromMouse = a.Position + (mousePos - a.Position).Normalized() * Math.Min(Axe.Radius, Extensions.Distance(mousePos, a.Position));
+                var AxeCatchPositionFromMouse = a.Position + (mousePos - a.Position).Normalized() * Math.Min(Axe.Radius, Extensions.Distance(mousePos, a.Position));
                 //var OrbwalkPosition = myHero.Position + (mousePos - a.Position).Normalized() * Axe.Radius;
                 var Time = a.TimeLeft - ((Extensions.Distance(myHero.Position, AxeCatchPositionFromHero) / myHero.MoveSpeed) + (myHero.AttackCastDelay));
                 if (a.HeroInReticle)
@@ -418,7 +418,7 @@ namespace Draven_Me_Crazy
                     CanAttack = false;
                 }
 
-                if (Extensions.Distance(myHero.Position, AxeCatchPositionFromHero) + Axe.Radius <= myHero.MoveSpeed * a.TimeLeft * CatchDelay)
+                if (Extensions.Distance(myHero.Position, AxeCatchPositionFromHero) + Extensions.Distance(a.Position, AxeCatchPositionFromMouse) < myHero.MoveSpeed * a.TimeLeft * CatchDelay)
                 {
                     CanMove = true;
                 }
@@ -487,7 +487,7 @@ namespace Draven_Me_Crazy
         {
             if (sender != null && sender.Name != null)
             {
-                if (sender.Name.ToLower().Contains(myHero.ChampionName.ToLower()))
+                if (sender is Obj_GeneralParticleEmitter && sender.Name.ToLower().Contains(myHero.ChampionName.ToLower()))
                 {
                     var name = sender.Name.ToLower();
                     if (name.Contains("q_reticle_self.troy"))
@@ -515,7 +515,7 @@ namespace Draven_Me_Crazy
         {
             if (sender != null && sender.Name != null)
             {
-                if (sender.Name.ToLower().Contains(myHero.ChampionName.ToLower()))
+                if (sender is Obj_GeneralParticleEmitter && sender.Name.ToLower().Contains(myHero.ChampionName.ToLower()))
                 {
                     var name = sender.Name.ToLower();
                     if (name.Contains("q_reticle_self.troy"))
@@ -818,7 +818,7 @@ namespace Draven_Me_Crazy
         public MissileClient Missile;
         public float StartTime;
         public bool MoveSent = false;
-        public static float LimitTime = 1.25f;
+        public static float LimitTime = 1.20f;
         public static float Radius = 100f;
         public float Speed
         {
@@ -866,7 +866,13 @@ namespace Draven_Me_Crazy
             get
             {
                 if (this.Position != Vector3.Zero)
-                    return EntityManager.Turrets.Enemies.Where(m => m.GetAutoAttackRange(Program.myHero) <= Extensions.Distance(m.Position, this.Position)).Count() > 0;
+                {
+                    var turret = EntityManager.Turrets.Enemies.Where(m => m.GetAutoAttackRange(Program.myHero) >= Extensions.Distance(m.Position, this.Position)).FirstOrDefault();
+                    if (turret != null)
+                    {
+                        return EntityManager.Heroes.Enemies.Where(m => turret.IsInAutoAttackRange(m)).Count() > 0 && Program.SubMenu["Axes"]["Turret"].Cast<CheckBox>().CurrentValue;
+                    }
+                }
                 return false;
             }
         }
