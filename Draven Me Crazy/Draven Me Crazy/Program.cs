@@ -73,12 +73,12 @@ namespace Draven_Me_Crazy
             {
                 Ignite = new Spell.Targeted(slot, 600);
             }
-            menu = MainMenu.AddMenu(AddonName, AddonName + " by " + Author + " v1.0");
+            menu = MainMenu.AddMenu(AddonName, AddonName + " by " + Author + " v1.000");
             menu.AddLabel(AddonName + " made by " + Author);
 
             SubMenu["Axes"] = menu.AddSubMenu("Axes", "Axes");
             SubMenu["Axes"].AddGroupLabel("Keys");
-            SubMenu["Axes"].Add("Catch", new KeyBind("Catch Axes (Toggle)", true, KeyBind.BindTypes.PressToggle, (uint)'Z'));
+            SubMenu["Axes"].Add("Catch", new KeyBind("Catch Axes (Toggle)", true, KeyBind.BindTypes.PressToggle, (uint)'L'));
             SubMenu["Axes"].AddGroupLabel("Settings");
             SubMenu["Axes"].Add("W", new CheckBox("Use W to Catch (Smart)", true));
             SubMenu["Axes"].Add("Turret", new CheckBox("Don't catch under turret", true));
@@ -165,7 +165,7 @@ namespace Draven_Me_Crazy
             {
                 if (TryingToCatch && !IsNone && (args.Slot == R.Slot || args.Slot == E.Slot))
                 {
-                    args.Process = false;
+                    //args.Process = false;
                 }
             }
         }
