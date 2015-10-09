@@ -27,6 +27,7 @@ namespace Draven_Me_Crazy
         static Spell.Active Q, W;
         static Spell.Targeted Ignite;
         static List<Axe> Axes = new List<Axe>();
+        static bool TryingToCatch = false;
         static int AxesCount
         {
             get
@@ -143,9 +144,10 @@ namespace Draven_Me_Crazy
             SubMenu["Flee"].Add("E", new CheckBox("Use E", true));
 
             SubMenu["Misc"] = menu.AddSubMenu("Misc", "Misc");
-            SubMenu["Misc"].Add("Overkill", new Slider("Overkill % for damage prediction", 10, 0, 100));
             SubMenu["Misc"].Add("GapCloser", new CheckBox("Use E to Interrupt GapClosers", true));
             SubMenu["Misc"].Add("Interrupter", new CheckBox("Use E to Interrupt Channeling Spells", true));
+            SubMenu["Misc"].Add("Overkill", new Slider("Overkill % for damage prediction", 10, 0, 100));
+            SubMenu["Misc"].Add("RRange", new Slider("R Range", 1800, 300, 6000));
 
             Game.OnTick += Game_OnTick;
             GameObject.OnCreate += GameObject_OnCreate;
@@ -153,11 +155,25 @@ namespace Draven_Me_Crazy
             Drawing.OnDraw += Drawing_OnDraw;
             Interrupter.OnInterruptableSpell += Interrupter_OnInterruptableSpell;
             Gapcloser.OnGapcloser += Gapcloser_OnGapcloser;
+            Spellbook.OnCastSpell += Spellbook_OnCastSpell;
         }
 
+        private static void Spellbook_OnCastSpell(Spellbook sender, SpellbookCastSpellEventArgs args)
+        {
+
+            if (sender.Owner.IsMe)
+            {
+                if (TryingToCatch && !IsNone && (args.Slot == R.Slot || args.Slot == E.Slot))
+                {
+                    args.Process = false;
+                }
+            }
+        }
 
         private static void Game_OnTick(EventArgs args)
         {
+            R = new Spell.Skillshot(R.Slot, (uint)GetSlider(SubMenu["Misc"], "RRange"), R.Type, R.CastDelay, R.Speed, R.Width);
+            R.AllowedCollisionCount = int.MaxValue;
             CatchReticles();
             KillSteal();
             if (IsCombo)
@@ -372,7 +388,11 @@ namespace Draven_Me_Crazy
         {
             if (R.IsReady() && target.IsValidTarget())
             {
-                R.Cast(target);
+                var pred = R.GetPrediction(target);
+                if (pred.HitChancePercent >= 65)
+                {
+                    R.Cast(pred.CastPosition);
+                }
             }
         }
         private static Tuple<bool, bool> GetAxeStatus(Axe a)
@@ -381,10 +401,10 @@ namespace Draven_Me_Crazy
             var CanAttack = false;
             if (a.InTime && a.SourceInRadius)
             {
-                var AxeCatchPositionFromHero = a.Position + (myHero.Position - a.Position).Normalized() * Math.Min(Axe.Radius, Extensions.Distance(myHero.Position.To2D(), a.Position.To2D()));
-                //var AxeCatchPositionFromMouse = a.Position + (mousePos - a.Position).Normalized() * Math.Min(Axe.Radius, Extensions.Distance(mousePos.To2D(), a.Position.To2D()));
+                var AxeCatchPositionFromHero = a.Position + (myHero.Position - a.Position).Normalized() * Math.Min(Axe.Radius, Extensions.Distance(myHero, a.Position));
+                //var AxeCatchPositionFromMouse = a.Position + (mousePos - a.Position).Normalized() * Math.Min(Axe.Radius, Extensions.Distance(mousePos, a.Position));
                 //var OrbwalkPosition = myHero.Position + (mousePos - a.Position).Normalized() * Axe.Radius;
-                var Time = a.TimeLeft - ((Extensions.Distance(myHero.Position.To2D(), AxeCatchPositionFromHero.To2D()) / myHero.MoveSpeed) + (myHero.AttackCastDelay));
+                var Time = a.TimeLeft - ((Extensions.Distance(myHero.Position, AxeCatchPositionFromHero) / myHero.MoveSpeed) + (myHero.AttackCastDelay));
                 if (a.HeroInReticle)
                 {
                     CanAttack = true;
@@ -398,7 +418,7 @@ namespace Draven_Me_Crazy
                     CanAttack = false;
                 }
 
-                if (Extensions.Distance(myHero.Position.To2D(), AxeCatchPositionFromHero.To2D()) + Axe.Radius <= myHero.MoveSpeed * a.TimeLeft * CatchDelay)
+                if (Extensions.Distance(myHero.Position, AxeCatchPositionFromHero) + Axe.Radius <= myHero.MoveSpeed * a.TimeLeft * CatchDelay)
                 {
                     CanMove = true;
                 }
@@ -416,9 +436,9 @@ namespace Draven_Me_Crazy
         }
         private static void CatchReticles()
         {
+            TryingToCatch = false;
             if (Axes.Count > 0)
             {
-
                 if (CanCatch)
                 {
                     bool CanMove = true;
@@ -434,10 +454,11 @@ namespace Draven_Me_Crazy
                     if (!CanMove)
                     {
                         var BestAxe = Axes.Where(m => m.SourceInRadius).OrderBy(m => m.TimeLeft).FirstOrDefault();
-                        if (BestAxe != null)
+                        if (BestAxe != null && !BestAxe.HeroInReticle)
                         {
                             if (Orbwalker.CanMove)
                             {
+                                TryingToCatch = true;
                                 Orbwalker.DisableMovement = false;
                                 if (!BestAxe.MoveSent)
                                 {
@@ -516,7 +537,7 @@ namespace Draven_Me_Crazy
             {
                 foreach (Axe a in Axes.Where(m => m.Reticle == null))
                 {
-                    if (Game.Time + Game.Ping / 2000 - a.StartTime < 0.5f && Extensions.Distance(sender.Position.To2D(), a.Missile.EndPosition.To2D(), true) < 50 * 50)
+                    if (Game.Time + Game.Ping / 2000 - a.StartTime < 0.25f && Extensions.Distance(sender.Position.To2D(), a.Missile.EndPosition.To2D(), true) < 100 * 100)
                     {
                         a.AddReticle(sender);
                     }
@@ -548,14 +569,14 @@ namespace Draven_Me_Crazy
                     var color = new ColorBGRA(255, 0, 0, 255);
                     if (a.InTime)
                     {
-                        var AxeCatchPositionFromHero = a.Position + (myHero.Position - a.Position).Normalized() * Math.Min(Axe.Radius, Extensions.Distance(myHero.Position.To2D(), a.Position.To2D()));
-                        var Time = a.TimeLeft - ((Extensions.Distance(myHero.Position.To2D(), AxeCatchPositionFromHero.To2D()) / myHero.MoveSpeed) + (myHero.AttackCastDelay));
+                        var AxeCatchPositionFromHero = a.Position + (myHero.Position - a.Position).Normalized() * Math.Min(Axe.Radius, Extensions.Distance(myHero, a.Position));
+                        var Time = a.TimeLeft - ((Extensions.Distance(myHero.Position, AxeCatchPositionFromHero) / myHero.MoveSpeed) + (myHero.AttackCastDelay));
                         if (Time > 0 || a.HeroInReticle)
                         {
                             color = new ColorBGRA(0, 180, 0, 255);
                         }
+                        Circle.Draw(color, CatchRadius, 5, a.Position);
                     }
-                    Circle.Draw(color, CatchRadius, 5, a.Position);
                     //Circle.Draw(new ColorBGRA(0, 0, 255, 100), 150, a.Missile.Position);
                 }
             }
@@ -599,7 +620,7 @@ namespace Draven_Me_Crazy
                 }
                 else if (slot == SpellSlot.R)
                 {
-                    return myHero.CalculateDamageOnUnit(target, DamageType.Physical, (float)100 * R.Level + 75 + 1.1f * myHero.FlatPhysicalDamageMod);
+                    return 2 * myHero.CalculateDamageOnUnit(target, DamageType.Physical, (float)100 * R.Level + 75 + 1.1f * myHero.FlatPhysicalDamageMod);
                 }
             }
             return myHero.GetSpellDamage(target, slot);
@@ -797,7 +818,7 @@ namespace Draven_Me_Crazy
         public MissileClient Missile;
         public float StartTime;
         public bool MoveSent = false;
-        public static float LimitTime = 1.2f;
+        public static float LimitTime = 1.25f;
         public static float Radius = 100f;
         public float Speed
         {
@@ -823,7 +844,7 @@ namespace Draven_Me_Crazy
             get
             {
                 if (this.Position != Vector3.Zero)
-                    return Extensions.Distance(Program.CatchSource.To2D(), this.Position.To2D(), true) <= Program.CatchRadius * Program.CatchRadius;
+                    return Extensions.Distance(Program.CatchSource, this.Position, true) < Program.CatchRadius * Program.CatchRadius;
                 return false;
             }
         }
@@ -832,7 +853,7 @@ namespace Draven_Me_Crazy
             get
             {
                 if (this.Position != Vector3.Zero)
-                    return Extensions.Distance(Program.myHero.Position.To2D(), this.Position.To2D(), true) <= Math.Pow(Radius, 2);
+                    return Extensions.Distance(Program.myHero.Position, this.Position, true) < Math.Pow(Radius, 2);
                 return false;
             }
         }
@@ -845,7 +866,7 @@ namespace Draven_Me_Crazy
             get
             {
                 if (this.Position != Vector3.Zero)
-                    return EntityManager.Turrets.Enemies.Where(m => m.GetAutoAttackRange(Program.myHero) <= Extensions.Distance(m.Position.To2D(), this.Position.To2D())).Count() > 0;
+                    return EntityManager.Turrets.Enemies.Where(m => m.GetAutoAttackRange(Program.myHero) <= Extensions.Distance(m.Position, this.Position)).Count() > 0;
                 return false;
             }
         }
