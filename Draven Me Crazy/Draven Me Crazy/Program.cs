@@ -562,7 +562,7 @@ namespace Draven_Me_Crazy
         private static void Drawing_OnDraw(EventArgs args)
         {
             if (myHero.IsDead) { return; }
-            if (GetCheckBox(SubMenu["Axes"], "Draw") && CanCatch)
+            if (GetCheckBox(SubMenu["Axes"], "Draw"))
             {
                 foreach (Axe a in Axes)
                 {
