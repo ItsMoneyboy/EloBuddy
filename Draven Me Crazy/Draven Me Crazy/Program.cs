@@ -19,16 +19,14 @@ namespace Draven_Me_Crazy
         static string AddonName = "Draven Me Crazy";
         static float RefreshTime = 0.4f;
         static Dictionary<int, DamageInfo> PredictedDamage = new Dictionary<int, DamageInfo>() { };
-        static AIHeroClient myHero { get { return ObjectManager.Player; } }
+        public static AIHeroClient myHero { get { return ObjectManager.Player; } }
         static Vector3 mousePos { get { return Game.CursorPos; } }
         static Menu menu;
         static Dictionary<string, Menu> SubMenu = new Dictionary<string, Menu>() { };
         static Spell.Skillshot E, R;
         static Spell.Active Q, W;
         static Spell.Targeted Ignite;
-        static float LimitTime = 1.2f;
         static List<Axe> Axes = new List<Axe>();
-        //hacer bool cancatch
         static int AxesCount
         {
             get
@@ -42,7 +40,7 @@ namespace Draven_Me_Crazy
         }
         static bool CanCatch { get { return GetKeyBind(SubMenu["Axes"], "Catch") && ((GetSlider(SubMenu["Axes"], "CatchMode") == 0 && !IsNone) || GetSlider(SubMenu["Axes"], "CatchMode") == 1); } }
         static float CatchDelay { get { return GetSlider(SubMenu["Axes"], "Delay") / 100.0f; } }
-        static float CatchRadius
+        public static float CatchRadius
         {
             get
             {
@@ -53,7 +51,7 @@ namespace Draven_Me_Crazy
                 return GetSlider(SubMenu["Axes"], "Clear");
             }
         }
-        static Vector3 CatchSource { get { return GetSlider(SubMenu["Axes"], "OrbwalkMode") == 1 ? mousePos : myHero.Position; } }
+        public static Vector3 CatchSource { get { return GetSlider(SubMenu["Axes"], "OrbwalkMode") == 1 ? mousePos : myHero.Position; } }
         static void Main(string[] args)
         {
             Loading.OnLoadingComplete += Loading_OnLoadingComplete;
@@ -106,11 +104,6 @@ namespace Draven_Me_Crazy
             SubMenu["Axes"].AddGroupLabel("Drawings");
             SubMenu["Axes"].Add("Draw", new CheckBox("Draw catch radius", true));
 
-            SubMenu["Prediction"] = menu.AddSubMenu("Prediction", "Prediction");
-            SubMenu["Prediction"].AddGroupLabel("E Settings");
-            SubMenu["Prediction"].Add("ECombo", new Slider("Combo HitChancePercent", 45, 0, 100));
-            SubMenu["Prediction"].Add("EHarass", new Slider("Harass HitChancePercent", 60, 0, 100));
-
             SubMenu["Combo"] = menu.AddSubMenu("Combo", "Combo");
             SubMenu["Combo"].Add("Q", new Slider("Use Q to have X spinning axes", 2, 0, 2));
             SubMenu["Combo"].Add("W", new CheckBox("Use W", true));
@@ -142,7 +135,7 @@ namespace Draven_Me_Crazy
             SubMenu["KillSteal"] = menu.AddSubMenu("KillSteal", "KillSteal");
             SubMenu["KillSteal"].Add("Q", new CheckBox("Use Q", true));
             SubMenu["KillSteal"].Add("E", new CheckBox("Use E", true));
-            SubMenu["KillSteal"].Add("R", new CheckBox("Use R", false));
+            SubMenu["KillSteal"].Add("R", new CheckBox("Use R", true));
             SubMenu["KillSteal"].Add("Ignite", new CheckBox("Use Ignite", true));
 
             SubMenu["Flee"] = menu.AddSubMenu("Flee", "Flee");
@@ -158,16 +151,316 @@ namespace Draven_Me_Crazy
             GameObject.OnCreate += GameObject_OnCreate;
             GameObject.OnDelete += GameObject_OnDelete;
             Drawing.OnDraw += Drawing_OnDraw;
-            Obj_AI_Base.OnBasicAttack += Obj_AI_Base_OnBasicAttack;
-            Obj_AI_Base.OnProcessSpellCast += Obj_AI_Base_OnProcessSpellCast;
             Interrupter.OnInterruptableSpell += Interrupter_OnInterruptableSpell;
-            Gapcloser.OnGapcloser += Gapcloser_OnGapcloser; ;
+            Gapcloser.OnGapcloser += Gapcloser_OnGapcloser;
         }
 
 
         private static void Game_OnTick(EventArgs args)
         {
+            CatchReticles();
+            KillSteal();
+            if (IsCombo)
+            {
+                Combo();
+            }
+            else if (IsHarass)
+            {
+                Harass();
+            }
+            else if (IsClear)
+            {
+                if (IsJungleClear)
+                {
+                    JungleClear();
+                }
+                if (IsLaneClear)
+                {
+                    LaneClear();
+                }
+            }
+            else if (IsLastHit)
+            {
+                LastHit();
+            }
+            if (IsFlee)
+            {
+                Flee();
+            }
+        }
 
+
+        private static void KillSteal()
+        {
+            foreach (AIHeroClient enemy in EntityManager.Heroes.Enemies)
+            {
+                if (enemy.IsValidTarget(E.Range) && enemy.HealthPercent <= 40)
+                {
+                    var damageI = GetBestCombo(enemy);
+                    var menu = SubMenu["KillSteal"];
+                    if (damageI.Damage >= enemy.Health)
+                    {
+                        if (GetCheckBox(menu, "Q") && (Damage(enemy, Q.Slot) >= enemy.Health || damageI.Q)) { CastQ(enemy); }
+                        if (GetCheckBox(menu, "W") && (Damage(enemy, W.Slot) >= enemy.Health || damageI.W)) { CastW(enemy); }
+                        if (GetCheckBox(menu, "E") && (Damage(enemy, E.Slot) >= enemy.Health || damageI.E)) { CastE(enemy); }
+                        if (GetCheckBox(menu, "R") && (Damage(enemy, R.Slot) >= enemy.Health || damageI.R)) { CastR(enemy); }
+                    }
+                    if (Ignite != null && GetCheckBox(menu, "Ignite") && Ignite.IsReady() && myHero.GetSummonerSpellDamage(enemy, DamageLibrary.SummonerSpells.Ignite) >= enemy.Health)
+                    {
+                        Ignite.Cast(enemy);
+                    }
+                }
+            }
+        }
+        static void Combo()
+        {
+            var menu = SubMenu["Combo"];
+            var target = TargetSelector.GetTarget(E.Range, DamageType.Physical);
+            if (target.IsValidTarget())
+            {
+                var damageI = GetBestCombo(target);
+                CastQ(target, GetSlider(menu, "Q"));
+                if (GetCheckBox(menu, "R") && damageI.Damage >= target.Health && damageI.R) { CastR(target); }
+                if (GetCheckBox(menu, "E")) { CastE(target); }
+                if (GetCheckBox(menu, "W")) { CastW(target); }
+            }
+        }
+        static void Harass()
+        {
+            var menu = SubMenu["Harass"];
+            if (GetSlider(menu, "Mana") <= myHero.ManaPercent)
+            {
+                var target = TargetSelector.GetTarget(E.Range, DamageType.Physical);
+                if (target.IsValidTarget())
+                {
+                    CastQ(target, GetSlider(menu, "Q"));
+                    var minion = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position, myHero.AttackRange + myHero.BoundingRadius, true).FirstOrDefault();
+                    if (minion != null && minion.IsValidTarget())
+                    {
+                        CastQ(minion, GetSlider(menu, "Q"));
+                    }
+                    if (GetCheckBox(menu, "E")) { CastE(target); }
+                    if (GetCheckBox(menu, "W")) { CastW(target); }
+                    if (GetCheckBox(menu, "AA"))
+                    {
+
+                        if (myHero.HasBuff("dravenspinningattack"))
+                        {
+                            var buff = myHero.GetBuff("dravenspinningattack");
+                            if (Orbwalker.CanAutoAttack)
+                            {
+                                if (buff.EndTime - Game.Time <= 0.8f + myHero.AttackCastDelay)
+                                {
+                                    Obj_AI_Base BestTarget = null;
+                                    AIHeroClient target2 = TargetSelector.GetTarget(myHero.GetAutoAttackRange() + 60, DamageType.Physical);
+                                    if (target2 != null && target2.IsValidTarget())
+                                    {
+                                        BestTarget = target2;
+                                    }
+                                    else
+                                    {
+                                        Obj_AI_Base BestMinion = EntityManager.MinionsAndMonsters.EnemyMinions.Where(m => m.IsValidTarget() && myHero.IsInAutoAttackRange(m) && (Prediction.Health.GetPrediction(m, 2 * 1000 * (int)(myHero.AttackDelay + myHero.AttackCastDelay + Extensions.Distance(myHero, m) / myHero.BasicAttack.MissileSpeed - 0.07f)) > 2 * myHero.GetAutoAttackDamage(m) || Prediction.Health.GetPrediction(m, 1000 * (int)(myHero.AttackCastDelay + Extensions.Distance(myHero, m) / myHero.BasicAttack.MissileSpeed - 0.07f)) == m.Health)).OrderBy(m => m.HealthPercent).LastOrDefault();
+                                        if (BestMinion != null && BestMinion.IsValidTarget())
+                                        {
+                                            BestTarget = BestMinion;
+                                        }
+                                        else
+                                        {
+                                            BestMinion = EntityManager.MinionsAndMonsters.EnemyMinions.Where(m => m.IsValidTarget() && myHero.IsInAutoAttackRange(m)).OrderBy(m => m.HealthPercent).LastOrDefault();
+                                            if (BestMinion != null && BestMinion.IsValidTarget())
+                                            {
+                                                BestTarget = BestMinion;
+                                            }
+                                        }
+                                    }
+                                    Orbwalker.ForcedTarget = BestTarget;
+                                }
+                                else
+                                {
+                                    Orbwalker.ForcedTarget = null;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        private static void LaneClear()
+        {
+            var menu = SubMenu["LaneClear"];
+            if (myHero.ManaPercent >= GetSlider(menu, "Mana"))
+            {
+                foreach (Obj_AI_Base minion in EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position, 1000f))
+                {
+                    if (minion.IsValidTarget() && myHero.ManaPercent >= GetSlider(menu, "Mana"))
+                    {
+                        CastQ(minion, GetSlider(menu, "Q"));
+                    }
+                }
+            }
+        }
+        private static void JungleClear()
+        {
+            var menu = SubMenu["JungleClear"];
+            if (myHero.ManaPercent >= GetSlider(menu, "Mana"))
+            {
+                foreach (Obj_AI_Base minion in EntityManager.MinionsAndMonsters.GetJungleMonsters(myHero.Position, 1000f))
+                {
+                    if (minion.IsValidTarget() && myHero.ManaPercent >= GetSlider(menu, "Mana"))
+                    {
+                        CastQ(minion, GetSlider(menu, "Q"));
+                        if (GetCheckBox(menu, "E")) { CastE(minion); }
+                        if (GetCheckBox(menu, "W")) { CastW(minion); }
+                    }
+                }
+            }
+        }
+        private static void LastHit()
+        {
+            var menu = SubMenu["LastHit"];
+            if (myHero.ManaPercent >= GetSlider(menu, "Mana"))
+            {
+                foreach (Obj_AI_Base minion in EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position, 1000f))
+                {
+                    if (minion.IsValidTarget() && myHero.ManaPercent >= GetSlider(menu, "Mana"))
+                    {
+                        CastQ(minion, GetSlider(menu, "Q"));
+                    }
+                }
+            }
+        }
+        private static void Flee()
+        {
+            if (W.IsReady() && GetCheckBox(SubMenu["Flee"], "W"))
+            {
+                myHero.Spellbook.CastSpell(W.Slot);
+            }
+            if (E.IsReady() && GetCheckBox(SubMenu["Flee"], "E"))
+            {
+                var target = EntityManager.Heroes.Enemies.Where(e => e.IsValidTarget(E.Range)).OrderBy(d => Extensions.Distance(myHero, d)).FirstOrDefault();
+                if (target.IsValidTarget())
+                {
+                    CastE(target);
+                }
+            }
+        }
+        private static void CastQ(Obj_AI_Base target, int count = 2)
+        {
+            if (Q.IsReady() && target.IsValidTarget(Q.Range) && AxesCount < 2 && Orbwalker.CanAutoAttack)
+            {
+                if (AxesCount < count)
+                {
+                    myHero.Spellbook.CastSpell(Q.Slot);
+                }
+            }
+        }
+        private static void CastW(Obj_AI_Base target)
+        {
+            if (W.IsReady() && target.IsValidTarget(W.Range) && !myHero.HasBuff("dravenfurybuff"))
+            {
+                myHero.Spellbook.CastSpell(W.Slot);
+            }
+        }
+        private static void CastE(Obj_AI_Base target)
+        {
+            if (E.IsReady() && target.IsValidTarget())
+            {
+                E.Cast(target);
+            }
+        }
+        private static void CastR(Obj_AI_Base target)
+        {
+            if (R.IsReady() && target.IsValidTarget())
+            {
+                R.Cast(target);
+            }
+        }
+        private static Tuple<bool, bool> GetAxeStatus(Axe a)
+        {
+            var CanMove = false;
+            var CanAttack = false;
+            if (a.InTime && a.SourceInRadius)
+            {
+                var AxeCatchPositionFromHero = a.Position + (myHero.Position - a.Position).Normalized() * Math.Min(Axe.Radius, Extensions.Distance(myHero.Position.To2D(), a.Position.To2D()));
+                //var AxeCatchPositionFromMouse = a.Position + (mousePos - a.Position).Normalized() * Math.Min(Axe.Radius, Extensions.Distance(mousePos.To2D(), a.Position.To2D()));
+                //var OrbwalkPosition = myHero.Position + (mousePos - a.Position).Normalized() * Axe.Radius;
+                var Time = a.TimeLeft - ((Extensions.Distance(myHero.Position.To2D(), AxeCatchPositionFromHero.To2D()) / myHero.MoveSpeed) + (myHero.AttackCastDelay));
+                if (a.HeroInReticle)
+                {
+                    CanAttack = true;
+                }
+                else if (Time > 0f && Orbwalker.CanAutoAttack)
+                {
+                    CanAttack = true;
+                }
+                else
+                {
+                    CanAttack = false;
+                }
+
+                if (Extensions.Distance(myHero.Position.To2D(), AxeCatchPositionFromHero.To2D()) + Axe.Radius <= myHero.MoveSpeed * a.TimeLeft * CatchDelay)
+                {
+                    CanMove = true;
+                }
+                else
+                {
+                    CanMove = false;
+                }
+            }
+            else
+            {
+                CanMove = true;
+                CanAttack = true;
+            }
+            return new Tuple<bool, bool>(CanMove, CanAttack);
+        }
+        private static void CatchReticles()
+        {
+            if (Axes.Count > 0)
+            {
+
+                if (CanCatch)
+                {
+                    bool CanMove = true;
+                    bool CanAttack = true;
+                    foreach (Axe a in Axes)
+                    {
+                        var status = GetAxeStatus(a);
+                        if (!status.Item1) { CanMove = false; }
+                        if (!status.Item2) { CanAttack = false; }
+                    }
+                    Orbwalker.DisableAttacking = !CanAttack;
+                    Orbwalker.DisableMovement = !CanMove;
+                    if (!CanMove)
+                    {
+                        var BestAxe = Axes.Where(m => m.SourceInRadius).OrderBy(m => m.TimeLeft).FirstOrDefault();
+                        if (BestAxe != null)
+                        {
+                            if (Orbwalker.CanMove)
+                            {
+                                Orbwalker.DisableMovement = false;
+                                if (!BestAxe.MoveSent)
+                                {
+                                    Player.IssueOrder(GameObjectOrder.MoveTo, BestAxe.Position);
+                                    BestAxe.MoveSent = true;
+                                }
+                                Orbwalker.MoveTo(BestAxe.Position);
+                                Orbwalker.DisableMovement = true;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    Orbwalker.DisableAttacking = false;
+                    Orbwalker.DisableMovement = false;
+                }
+            }
+            else
+            {
+                Orbwalker.DisableAttacking = false;
+                Orbwalker.DisableMovement = false;
+            }
         }
         private static void GameObject_OnCreate(GameObject sender, EventArgs args)
         {
@@ -178,18 +471,22 @@ namespace Draven_Me_Crazy
                     var name = sender.Name.ToLower();
                     if (name.Contains("q_reticle_self.troy"))
                     {
-                        Axes.Add(new Axe(sender, Game.Time - Game.Ping / 2000f));
-                        //Core.DelayAction(delegate { RemoveAxe(sender); }, (int)(LimitTime * 1000 + 200));
+                        AddAxe(sender);
+                        Core.DelayAction(delegate { RemoveAxe(sender); }, (int)(Axe.LimitTime * 1000 + 200));
                     }
                     else if (name.Contains("reticlecatchsuccess.troy"))
                     {
                         RemoveAxe(sender);
                     }
-                    else if (name.Contains("q_tar.troy"))
+                    //Chat.Print("Created " + sender.Name);
+                }
+                if (sender is MissileClient)
+                {
+                    var missile = sender as MissileClient;
+                    if (missile.SpellCaster.IsMe && missile.SData.Name.ToLower().Contains("dravenspinningreturncatch"))
                     {
-                        //missile object
+                        Axes.Add(new Axe(missile));
                     }
-                    Chat.Print("Created " + sender.Name);
                 }
             }
         }
@@ -204,7 +501,25 @@ namespace Draven_Me_Crazy
                     {
                         RemoveAxe(sender);
                     }
-                    Chat.Print("Deleted " + sender.Name);
+                    if (name.Contains("q_reticle.troy"))
+                    {
+                        RemoveAxe(sender);
+                    }
+                    //Chat.Print("Deleted " + sender.Name);
+                }
+            }
+        }
+        private static void AddAxe(GameObject sender)
+        {
+
+            if (Axes.Count > 0)
+            {
+                foreach (Axe a in Axes.Where(m => m.Reticle == null))
+                {
+                    if (Game.Time + Game.Ping / 2000 - a.StartTime < 0.5f && Extensions.Distance(sender.Position.To2D(), a.Missile.EndPosition.To2D(), true) < 50 * 50)
+                    {
+                        a.AddReticle(sender);
+                    }
                 }
             }
         }
@@ -212,19 +527,15 @@ namespace Draven_Me_Crazy
         {
             if (Axes.Count > 0)
             {
-                foreach (Axe a in Axes)
+                foreach (Axe a in Axes.OrderBy(m => Extensions.Distance(m.Position, sender, true)))
                 {
-                    if (Extensions.Distance(a.Reticle, sender, true) < 900)
+                    if (Extensions.Distance(a.Reticle.Position.To2D(), sender.Position.To2D(), true) < 30 * 30)
                     {
                         Axes.Remove(a);
                         break;
                     }
                 }
             }
-        }
-        private static void Obj_AI_Base_OnBasicAttack(Obj_AI_Base sender, GameObjectProcessSpellCastEventArgs args)
-        {
-
         }
 
         private static void Drawing_OnDraw(EventArgs args)
@@ -234,48 +545,61 @@ namespace Draven_Me_Crazy
             {
                 foreach (Axe a in Axes)
                 {
-                    Circle.Draw(new ColorBGRA(0, 0, 255, 100), CatchRadius, a.Position);
+                    var color = new ColorBGRA(255, 0, 0, 255);
+                    if (a.InTime)
+                    {
+                        var AxeCatchPositionFromHero = a.Position + (myHero.Position - a.Position).Normalized() * Math.Min(Axe.Radius, Extensions.Distance(myHero.Position.To2D(), a.Position.To2D()));
+                        var Time = a.TimeLeft - ((Extensions.Distance(myHero.Position.To2D(), AxeCatchPositionFromHero.To2D()) / myHero.MoveSpeed) + (myHero.AttackCastDelay));
+                        if (Time > 0 || a.HeroInReticle)
+                        {
+                            color = new ColorBGRA(0, 180, 0, 255);
+                        }
+                    }
+                    Circle.Draw(color, CatchRadius, 5, a.Position);
+                    //Circle.Draw(new ColorBGRA(0, 0, 255, 100), 150, a.Missile.Position);
                 }
             }
         }
 
         private static void Gapcloser_OnGapcloser(AIHeroClient sender, Gapcloser.GapcloserEventArgs e)
         {
-
+            if (GetCheckBox(SubMenu["Misc"], "Gapcloser"))
+            {
+                if (sender.IsEnemy && sender.IsValidTarget())
+                {
+                    CastE(e.Sender);
+                }
+            }
         }
 
         private static void Interrupter_OnInterruptableSpell(Obj_AI_Base sender, Interrupter.InterruptableSpellEventArgs e)
         {
 
+            if (GetCheckBox(SubMenu["Misc"], "Interrupter"))
+            {
+                if (sender.IsEnemy && sender.IsValidTarget())
+                {
+                    CastE(e.Sender);
+                }
+            }
         }
-
-        private static void Obj_AI_Base_OnProcessSpellCast(Obj_AI_Base sender, GameObjectProcessSpellCastEventArgs args)
-        {
-
-        }
-
-
 
 
         static float Damage(Obj_AI_Base target, SpellSlot slot)
         {
             if (target.IsValidTarget())
             {
-                if (slot == SpellSlot.Q)
+                if (slot == SpellSlot.W)
                 {
-                    return myHero.CalculateDamageOnUnit(target, DamageType.Magical, (float)30 * Q.Level + 30 + 0.5f * myHero.FlatMagicDamageMod);
-                }
-                else if (slot == SpellSlot.W)
-                {
-                    return myHero.CalculateDamageOnUnit(target, DamageType.Magical, (float)45 * W.Level + 25 + 0.7f * myHero.FlatMagicDamageMod);
+                    return myHero.GetAutoAttackDamage(target, true) * 2;
                 }
                 else if (slot == SpellSlot.E)
                 {
-                    return myHero.CalculateDamageOnUnit(target, DamageType.Magical, (float)30 * E.Level + 30 + 0.3f * myHero.FlatMagicDamageMod);
+                    return myHero.CalculateDamageOnUnit(target, DamageType.Physical, (float)35 * E.Level + 35 + 0.5f * myHero.FlatPhysicalDamageMod);
                 }
                 else if (slot == SpellSlot.R)
                 {
-                    return myHero.CalculateDamageOnUnit(target, DamageType.Magical, (float)75 * R.Level + 75 + 0.7f * myHero.FlatMagicDamageMod);
+                    return myHero.CalculateDamageOnUnit(target, DamageType.Physical, (float)100 * R.Level + 75 + 1.1f * myHero.FlatPhysicalDamageMod);
                 }
             }
             return myHero.GetSpellDamage(target, slot);
@@ -407,7 +731,7 @@ namespace Draven_Me_Crazy
         {
             get
             {
-                return (float)((100 + SubMenu["Misc"]["Overkill"].Cast<Slider>().CurrentValue) / 100);
+                return (float)((100 + GetSlider(SubMenu["Misc"], "Overkill")) / 100);
             }
         }
         static bool IsCombo
@@ -470,17 +794,81 @@ namespace Draven_Me_Crazy
     public class Axe
     {
         public GameObject Reticle;
-        public GameObject Missile;
+        public MissileClient Missile;
         public float StartTime;
+        public bool MoveSent = false;
+        public static float LimitTime = 1.2f;
+        public static float Radius = 100f;
+        public float Speed
+        {
+            get
+            {
+                if (this.Missile != null)
+                    return this.Missile.SData.MissileSpeed;
+                return 700;
+            }
+        }
+        public float TimeLeft
+        {
+            get
+            {
+
+                if (this.Missile != null)
+                    return Axe.LimitTime - (Game.Time + Game.Ping / 2000 - this.StartTime);//2 * Extensions.Distance(this.Reticle.Position.To2D(), this.Missile.Position.To2D()) / this.Speed; //
+                return float.MaxValue;
+            }
+        }
+        public bool SourceInRadius
+        {
+            get
+            {
+                if (this.Position != Vector3.Zero)
+                    return Extensions.Distance(Program.CatchSource.To2D(), this.Position.To2D(), true) <= Program.CatchRadius * Program.CatchRadius;
+                return false;
+            }
+        }
+        public bool HeroInReticle
+        {
+            get
+            {
+                if (this.Position != Vector3.Zero)
+                    return Extensions.Distance(Program.myHero.Position.To2D(), this.Position.To2D(), true) <= Math.Pow(Radius, 2);
+                return false;
+            }
+        }
+        public bool InTime
+        {
+            get { return Game.Time + Game.Ping / 2000f - this.StartTime <= LimitTime; }
+        }
+        public bool InTurret
+        {
+            get
+            {
+                if (this.Position != Vector3.Zero)
+                    return EntityManager.Turrets.Enemies.Where(m => m.GetAutoAttackRange(Program.myHero) <= Extensions.Distance(m.Position.To2D(), this.Position.To2D())).Count() > 0;
+                return false;
+            }
+        }
         public Vector3 Position
         {
-            get { return this.Reticle.Position; }
+            get
+            {
+                if (this.Reticle != null)
+                    return this.Reticle.Position;
+                return Vector3.Zero;
+            }
         }
-        public Axe(GameObject o, float s)
+        public Axe(MissileClient missile)
         {
-            this.Reticle = o;
-            this.StartTime = s;
+            this.Missile = missile;
+            this.StartTime = Game.Time - Game.Ping / 2000f;
         }
+        public void AddReticle(GameObject reticle)
+        {
+            this.Reticle = reticle;
+            this.StartTime = Game.Time - Game.Ping / 2000f;
+        }
+
     }
     public class DamageInfo
     {
