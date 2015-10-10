@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using EloBuddy;
@@ -74,14 +74,14 @@ namespace Draven_Me_Crazy
             {
                 Ignite = new Spell.Targeted(slot, 600);
             }
-            menu = MainMenu.AddMenu(AddonName, AddonName + " by " + Author + " v1.000");
+            menu = MainMenu.AddMenu(AddonName, AddonName + " by " + Author + " v1.10");
             menu.AddLabel(AddonName + " made by " + Author);
 
             SubMenu["Axes"] = menu.AddSubMenu("Axes", "Axes");
             SubMenu["Axes"].AddGroupLabel("Keys");
             SubMenu["Axes"].Add("Catch", new KeyBind("Catch Axes (Toggle)", true, KeyBind.BindTypes.PressToggle, (uint)'L'));
             SubMenu["Axes"].AddGroupLabel("Settings");
-            SubMenu["Axes"].Add("Click", new CheckBox("Use left click to disable the catch on clicked axe", true));
+            SubMenu["Axes"].Add("Click", new CheckBox("Use left click to disable catching the current axe", true));
             SubMenu["Axes"].AddSeparator(5);
             SubMenu["Axes"].Add("W", new CheckBox("Use W to Catch (Smart)", true));
             SubMenu["Axes"].Add("Turret", new CheckBox("Don't catch under turret", true));
@@ -166,7 +166,8 @@ namespace Draven_Me_Crazy
         {
             if (args.Msg == (uint)WindowMessages.LeftButtonDown && GetCheckBox(SubMenu["Axes"], "Click"))
             {
-                var axe = Axes.Where(a => Extensions.Distance(mousePos, a.Position, true) < CatchRadius * CatchRadius).OrderBy(a => Extensions.Distance(a.Position, mousePos, true)).FirstOrDefault();
+                var axe = Axes.Where(m => m.SourceInRadius).OrderBy(m => m.TimeLeft).FirstOrDefault();
+                //var axe = Axes.Where(a => Extensions.Distance(mousePos, a.Position, true) < CatchRadius * CatchRadius).OrderBy(a => Extensions.Distance(a.Position, mousePos, true)).FirstOrDefault();
                 if (axe != null)
                 {
                     Axes.Remove(axe);
@@ -506,7 +507,7 @@ namespace Draven_Me_Crazy
                     if (!CanMove)
                     {
                         var BestAxe = Axes.Where(m => m.SourceInRadius).OrderBy(m => m.TimeLeft).FirstOrDefault();
-                        if (BestAxe != null && !BestAxe.HeroInReticle)
+                        if (BestAxe != null)
                         {
                             if (Orbwalker.CanMove)
                             {
@@ -587,12 +588,10 @@ namespace Draven_Me_Crazy
 
             if (Axes.Count > 0)
             {
-                foreach (Axe a in Axes.Where(m => m.Reticle == null).OrderBy(m => Extensions.Distance(sender.Position.To2D(), m.Missile.EndPosition.To2D(), true)))
-                {
-                    if (Game.Time - a.StartTime < 0.25f && Extensions.Distance(sender.Position.To2D(), a.Missile.EndPosition.To2D(), true) < Math.Pow(350, 2))
-                    {
-                        a.AddReticle(sender);
-                    }
+                var a = Axes.Where(m => Game.Time - m.StartTime < 0.25f && m.Reticle == null).OrderBy(m => Extensions.Distance(sender.Position.To2D(), m.Missile.EndPosition.To2D(), true)).FirstOrDefault();
+                if (a != null) {
+
+                    a.AddReticle(sender);
                 }
             }
         }
@@ -922,8 +921,7 @@ namespace Draven_Me_Crazy
         {
             get
             {
-
-                return this.Missile != null && this.Missile.IsValid && !this.Missile.IsDead;//Game.Time - this.StartTime <= LimitTime; 
+                return Game.Time - this.StartTime <= LimitTime + 0.2f; 
             }
         }
         public bool InTurret
@@ -932,7 +930,7 @@ namespace Draven_Me_Crazy
             {
                 if (this.Position != Vector3.Zero)
                 {
-                    var turret = EntityManager.Turrets.Enemies.Where(m => m.IsValid && !m.IsDead && m.GetAutoAttackRange(Program.myHero) >= Extensions.Distance(m.Position, this.Position)).FirstOrDefault();
+                    var turret = EntityManager.Turrets.Enemies.Where(m => !m.IsDead && m.AttackRange + m.BoundingRadius + Program.myHero.BoundingRadius >= Extensions.Distance(m.Position, this.Position)).FirstOrDefault();
                     if (turret != null)
                     {
                         return true;
