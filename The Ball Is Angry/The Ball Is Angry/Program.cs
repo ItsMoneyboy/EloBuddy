@@ -360,7 +360,7 @@ namespace The_Ball_Is_Angry
             {
                 if (E.IsReady() && SubMenu["LaneClear"]["E"].Cast<Slider>().CurrentValue > 0)
                 {
-                    var minions = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position, E.Range, true);
+                    var minions = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position, E.Range, true).ToList<Obj_AI_Base>();
                     if (minions.Count >= SubMenu["LaneClear"]["E"].Cast<Slider>().CurrentValue)
                     {
                         var info = BestHitE(minions);
@@ -377,7 +377,7 @@ namespace The_Ball_Is_Angry
                 }
                 if (Q.IsReady() && SubMenu["LaneClear"]["Q"].Cast<Slider>().CurrentValue > 0)
                 {
-                    var minions = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position, Q.Range, true);
+                    var minions = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position, Q.Range, true).ToList<Obj_AI_Base>();
                     if (minions.Count >= SubMenu["LaneClear"]["Q"].Cast<Slider>().CurrentValue)
                     {
                         var info2 = BestHitQ(minions);
@@ -392,7 +392,7 @@ namespace The_Ball_Is_Angry
                         }
                     }
                 }
-                if (W.IsReady() && SubMenu["LaneClear"]["W"].Cast<Slider>().CurrentValue > 0 && HitW(EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, Ball, W.Range, true)) >= SubMenu["LaneClear"]["Q"].Cast<Slider>().CurrentValue)
+                if (W.IsReady() && SubMenu["LaneClear"]["W"].Cast<Slider>().CurrentValue > 0 && HitW(EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, Ball, W.Range, true).ToList<Obj_AI_Base>()) >= SubMenu["LaneClear"]["Q"].Cast<Slider>().CurrentValue)
                 {
                     myHero.Spellbook.CastSpell(W.Slot);
                 }
@@ -528,7 +528,7 @@ namespace The_Ball_Is_Angry
                 {
                     if (EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position, Q.Range + Q.Width).Count > 0)
                     {
-                        list = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position, Q.Range + Q.Width);
+                        list = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position, Q.Range + Q.Width).ToList<Obj_AI_Base>();
                     }
                     else if (EntityManager.MinionsAndMonsters.GetJungleMonsters(myHero.Position, Q.Range + Q.Width).Count > 0)
                     {
@@ -580,7 +580,7 @@ namespace The_Ball_Is_Angry
                     {
                         if (EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position, Q.Range + Q.Width).Count > 0)
                         {
-                            list = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position, Q.Range + Q.Width);
+                            list = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position, Q.Range + Q.Width).ToList<Obj_AI_Base>();
                         }
                         else if (EntityManager.MinionsAndMonsters.GetJungleMonsters(myHero.Position, Q.Range + Q.Width).Count > 0)
                         {
