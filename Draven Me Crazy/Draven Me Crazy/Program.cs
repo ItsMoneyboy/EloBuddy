@@ -192,7 +192,6 @@ namespace Draven_Me_Crazy
             R.AllowedCollisionCount = int.MaxValue;
             foreach (Axe a in Axes)
             {
-                Chat.Print(a.Missile.Position.Z);
                 if (!a.InTime)
                 {
                     Axes.Remove(a);
