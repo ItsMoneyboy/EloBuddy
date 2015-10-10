@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using EloBuddy;
@@ -39,7 +39,8 @@ namespace Draven_Me_Crazy
                 return Axes.Count;
             }
         }
-        static bool CanCatch { get { return GetKeyBind(SubMenu["Axes"], "Catch") && ((GetSlider(SubMenu["Axes"], "CatchMode") == 0 && !IsNone) || GetSlider(SubMenu["Axes"], "CatchMode") == 1); } }
+        static bool CatchEnabled { get { return GetKeyBind(SubMenu["Axes"], "Catch"); } }
+        static bool CanCatch { get { return CatchEnabled && ((GetSlider(SubMenu["Axes"], "CatchMode") == 0 && !IsNone) || GetSlider(SubMenu["Axes"], "CatchMode") == 1); } }
         static float CatchDelay { get { return GetSlider(SubMenu["Axes"], "Delay") / 100.0f; } }
         public static float CatchRadius
         {
@@ -80,6 +81,8 @@ namespace Draven_Me_Crazy
             SubMenu["Axes"].AddGroupLabel("Keys");
             SubMenu["Axes"].Add("Catch", new KeyBind("Catch Axes (Toggle)", true, KeyBind.BindTypes.PressToggle, (uint)'L'));
             SubMenu["Axes"].AddGroupLabel("Settings");
+            SubMenu["Axes"].Add("Click", new CheckBox("Use left click to disable the catch on clicked axe", true));
+            SubMenu["Axes"].AddSeparator(5);
             SubMenu["Axes"].Add("W", new CheckBox("Use W to Catch (Smart)", true));
             SubMenu["Axes"].Add("Turret", new CheckBox("Don't catch under turret", true));
             SubMenu["Axes"].Add("Delay", new Slider("% of delay to catch the axe", 100, 0, 100));
@@ -156,6 +159,19 @@ namespace Draven_Me_Crazy
             Interrupter.OnInterruptableSpell += Interrupter_OnInterruptableSpell;
             Gapcloser.OnGapcloser += Gapcloser_OnGapcloser;
             Spellbook.OnCastSpell += Spellbook_OnCastSpell;
+            Game.OnWndProc += Game_OnWndProc;
+        }
+
+        private static void Game_OnWndProc(WndEventArgs args)
+        {
+            if (args.Msg == (uint)WindowMessages.LeftButtonDown && GetCheckBox(SubMenu["Axes"], "Click"))
+            {
+                var axe = Axes.Where(a => Extensions.Distance(mousePos, a.Position, true) < CatchRadius * CatchRadius).OrderBy(a => Extensions.Distance(a.Position, mousePos, true)).FirstOrDefault();
+                if (axe != null)
+                {
+                    Axes.Remove(axe);
+                }
+            }
         }
 
         private static void Spellbook_OnCastSpell(Spellbook sender, SpellbookCastSpellEventArgs args)
@@ -174,6 +190,14 @@ namespace Draven_Me_Crazy
         {
             R = new Spell.Skillshot(R.Slot, (uint)GetSlider(SubMenu["Misc"], "RRange"), R.Type, R.CastDelay, R.Speed, R.Width);
             R.AllowedCollisionCount = int.MaxValue;
+            foreach (Axe a in Axes)
+            {
+                Chat.Print(a.Missile.Position.Z);
+                if (!a.InTime)
+                {
+                    Axes.Remove(a);
+                }
+            }
             CatchReticles();
             KillSteal();
             if (IsCombo)
@@ -381,7 +405,11 @@ namespace Draven_Me_Crazy
         {
             if (E.IsReady() && target.IsValidTarget())
             {
-                E.Cast(target);
+                var pred = E.GetPrediction(target);
+                if (pred.HitChancePercent >= 70)
+                {
+                    E.Cast(pred.CastPosition);
+                }
             }
         }
         private static void CastR(Obj_AI_Base target)
@@ -404,12 +432,19 @@ namespace Draven_Me_Crazy
                 var AxeCatchPositionFromHero = a.Position + (myHero.Position - a.Position).Normalized() * Math.Min(Axe.Radius, Extensions.Distance(myHero, a.Position));
                 var AxeCatchPositionFromMouse = a.Position + (mousePos - a.Position).Normalized() * Math.Min(Axe.Radius, Extensions.Distance(mousePos, a.Position));
                 //var OrbwalkPosition = myHero.Position + (mousePos - a.Position).Normalized() * Axe.Radius;
-                var Time = a.TimeLeft - ((Extensions.Distance(myHero.Position, AxeCatchPositionFromHero) / myHero.MoveSpeed) + (myHero.AttackCastDelay));
+                var TimeAttack = a.TimeLeft - ((Extensions.Distance(myHero.Position, AxeCatchPositionFromHero) / myHero.MoveSpeed) + (myHero.AttackCastDelay));
+                var TimeMoveWithDelay = a.TimeLeft * CatchDelay - (Extensions.Distance(myHero.Position, AxeCatchPositionFromHero) + Extensions.Distance(a.Position, AxeCatchPositionFromMouse)) / myHero.MoveSpeed;
+                var TimeMove = a.TimeLeft - (Extensions.Distance(myHero.Position, AxeCatchPositionFromHero) + 120f) / myHero.MoveSpeed;
+                var Time2 = 0f;
+                foreach (Axe a1 in Axes.Where(m => m.TimeLeft < a.TimeLeft && m.SourceInRadius))
+                {
+                    Time2 += a1.TimeLeft;
+                }
                 if (a.HeroInReticle)
                 {
                     CanAttack = true;
                 }
-                else if (Time > 0f && Orbwalker.CanAutoAttack)
+                else if (TimeAttack > 0f)
                 {
                     CanAttack = true;
                 }
@@ -418,13 +453,31 @@ namespace Draven_Me_Crazy
                     CanAttack = false;
                 }
 
-                if (Extensions.Distance(myHero.Position, AxeCatchPositionFromHero) + Extensions.Distance(a.Position, AxeCatchPositionFromMouse) < myHero.MoveSpeed * a.TimeLeft * CatchDelay)
+                if (TimeMoveWithDelay > 0f)
                 {
                     CanMove = true;
                 }
                 else
                 {
                     CanMove = false;
+                }
+                if (Time2 > 0f)
+                {
+                    if (CanAttack)
+                    {
+                        if (TimeAttack - Time2 <= 0)
+                        {
+                            CanAttack = false;
+                        }
+                    }
+                    if (CanMove)
+                    {
+
+                        if (TimeMove - Time2 <= 0)
+                        {
+                            CanMove = false;
+                        }
+                    }
                 }
             }
             else
@@ -493,7 +546,7 @@ namespace Draven_Me_Crazy
                     if (name.Contains("q_reticle_self.troy"))
                     {
                         AddAxe(sender);
-                        Core.DelayAction(delegate { RemoveAxe(sender); }, (int)(Axe.LimitTime * 1000 + 200));
+                        Core.DelayAction(delegate { RemoveAxe(sender); }, (int)(Axe.LimitTime * 1000 + 600));
                     }
                     else if (name.Contains("reticlecatchsuccess.troy"))
                     {
@@ -535,9 +588,9 @@ namespace Draven_Me_Crazy
 
             if (Axes.Count > 0)
             {
-                foreach (Axe a in Axes.Where(m => m.Reticle == null))
+                foreach (Axe a in Axes.Where(m => m.Reticle == null).OrderBy(m => Extensions.Distance(sender.Position.To2D(), m.Missile.EndPosition.To2D(), true)))
                 {
-                    if (Game.Time + Game.Ping / 2000 - a.StartTime < 0.25f && Extensions.Distance(sender.Position.To2D(), a.Missile.EndPosition.To2D(), true) < 100 * 100)
+                    if (Game.Time - a.StartTime < 0.25f && Extensions.Distance(sender.Position.To2D(), a.Missile.EndPosition.To2D(), true) < Math.Pow(350, 2))
                     {
                         a.AddReticle(sender);
                     }
@@ -562,7 +615,7 @@ namespace Draven_Me_Crazy
         private static void Drawing_OnDraw(EventArgs args)
         {
             if (myHero.IsDead) { return; }
-            if (GetCheckBox(SubMenu["Axes"], "Draw"))
+            if (GetCheckBox(SubMenu["Axes"], "Draw") && CatchEnabled)
             {
                 foreach (Axe a in Axes)
                 {
@@ -814,12 +867,21 @@ namespace Draven_Me_Crazy
     }
     public class Axe
     {
-        public GameObject Reticle;
-        public MissileClient Missile;
+        public GameObject Reticle = null;
+        public MissileClient Missile = null;
         public float StartTime;
         public bool MoveSent = false;
         public static float LimitTime = 1.20f;
         public static float Radius = 100f;
+        public float Gravity
+        {
+            get
+            {
+                if (this.Missile != null)
+                    return this.Missile.SData.MissileGravity;
+                return 26;
+            }
+        }
         public float Speed
         {
             get
@@ -835,7 +897,7 @@ namespace Draven_Me_Crazy
             {
 
                 if (this.Missile != null)
-                    return Axe.LimitTime - (Game.Time + Game.Ping / 2000 - this.StartTime);//2 * Extensions.Distance(this.Reticle.Position.To2D(), this.Missile.Position.To2D()) / this.Speed; //
+                    return LimitTime - (Game.Time - this.StartTime);//2 * Extensions.Distance(this.Reticle.Position, this.Missile.Position) / this.Speed; //
                 return float.MaxValue;
             }
         }
@@ -859,7 +921,11 @@ namespace Draven_Me_Crazy
         }
         public bool InTime
         {
-            get { return Game.Time + Game.Ping / 2000f - this.StartTime <= LimitTime; }
+            get
+            {
+
+                return this.Missile != null && this.Missile.IsValid && !this.Missile.IsDead;//Game.Time - this.StartTime <= LimitTime; 
+            }
         }
         public bool InTurret
         {
@@ -867,10 +933,11 @@ namespace Draven_Me_Crazy
             {
                 if (this.Position != Vector3.Zero)
                 {
-                    var turret = EntityManager.Turrets.Enemies.Where(m => m.GetAutoAttackRange(Program.myHero) >= Extensions.Distance(m.Position, this.Position)).FirstOrDefault();
+                    var turret = EntityManager.Turrets.Enemies.Where(m => m.IsValid && !m.IsDead && m.GetAutoAttackRange(Program.myHero) >= Extensions.Distance(m.Position, this.Position)).FirstOrDefault();
                     if (turret != null)
                     {
-                        return EntityManager.Heroes.Enemies.Where(m => turret.IsInAutoAttackRange(m)).Count() > 0 && Program.SubMenu["Axes"]["Turret"].Cast<CheckBox>().CurrentValue;
+                        return true;
+                        //return EntityManager.Heroes.Enemies.Where(m => turret.IsInAutoAttackRange(m)).Count() > 0 && Program.SubMenu["Axes"]["Turret"].Cast<CheckBox>().CurrentValue;
                     }
                 }
                 return false;
@@ -888,12 +955,11 @@ namespace Draven_Me_Crazy
         public Axe(MissileClient missile)
         {
             this.Missile = missile;
-            this.StartTime = Game.Time - Game.Ping / 2000f;
+            this.StartTime = Game.Time;
         }
         public void AddReticle(GameObject reticle)
         {
             this.Reticle = reticle;
-            this.StartTime = Game.Time - Game.Ping / 2000f;
         }
 
     }
