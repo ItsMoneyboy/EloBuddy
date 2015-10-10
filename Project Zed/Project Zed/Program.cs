@@ -29,13 +29,7 @@ namespace Project_Zed
         static GameObject IsDeadObject = null;
         static Dictionary<int, bool> PassiveUsed = new Dictionary<int, bool>();
         static bool Combo1Pressed, Combo2Pressed, Harass1Pressed, Harass2Pressed = false;
-        static float Overkill
-        {
-            get
-            {
-                return (float)((100 + SubMenu["Misc"]["Overkill"].Cast<Slider>().CurrentValue) / 100);
-            }
-        }
+        static List<Obj_AI_Minion> Shadows = new List<Obj_AI_Minion>();
         static bool IsWaitingShadow
         {
             get
@@ -155,7 +149,7 @@ namespace Project_Zed
                 {
                     return rFound;
                 }
-                rFound = ObjectManager.Get<Obj_AI_Minion>().FirstOrDefault(obj => obj.Name.ToLower() == "shadow" && !obj.IsDead && obj.Team == myHero.Team && Extensions.Distance(_R.End, obj) < 60);
+                rFound = Shadows.FirstOrDefault(obj => !obj.IsDead && obj.Team == myHero.Team && Extensions.Distance(_R.End, obj) < 60);
                 return rFound;
             }
         }
@@ -173,10 +167,10 @@ namespace Project_Zed
                 }
                 if (rShadow != null)
                 {
-                    wFound = ObjectManager.Get<Obj_AI_Minion>().FirstOrDefault(obj => obj.Name.ToLower() == "shadow" && !obj.IsDead && obj.Team == myHero.Team && Extensions.Distance(_W.End, obj) < 100 && Extensions.Distance(rShadow, obj) > 0);
+                    wFound = Shadows.FirstOrDefault(obj => !obj.IsDead && obj.Team == myHero.Team && Extensions.Distance(_W.End, obj) < 100 && Extensions.Distance(rShadow, obj) > 0);
                     return wFound;
                 }
-                wFound = ObjectManager.Get<Obj_AI_Minion>().Where(obj => obj.Name.ToLower() == "shadow" && !obj.IsDead && obj.Team == myHero.Team && Extensions.Distance(_W.End, obj) < 550).OrderBy(o => Extensions.Distance(_W.End, o)).FirstOrDefault();
+                wFound = Shadows.Where(obj => !obj.IsDead && obj.Team == myHero.Team && Extensions.Distance(_W.End, obj) < 550).OrderBy(o => Extensions.Distance(_W.End, o)).FirstOrDefault();
                 return wFound;
             }
         }
@@ -210,6 +204,11 @@ namespace Project_Zed
             menu = MainMenu.AddMenu(AddonName, AddonName + " by " + Author + "v1.10");
             menu.AddLabel(AddonName + " made by " + Author);
 
+            SubMenu["Prediction"] = menu.AddSubMenu("Prediction", "Prediction");
+            SubMenu["Prediction"].AddGroupLabel("Q Settings");
+            SubMenu["Prediction"].Add("QCombo", new Slider("Combo HitChancePercent", 60, 0, 100));
+            SubMenu["Prediction"].Add("QHarass", new Slider("Harass HitChancePercent", 75, 0, 100));
+
             SubMenu["Combo"] = menu.AddSubMenu("Combo", "Combo");
             SubMenu["Combo"].Add("Q", new CheckBox("Use Q", true));
             SubMenu["Combo"].Add("W", new CheckBox("Use W", true));
@@ -232,18 +231,29 @@ namespace Project_Zed
             SubMenu["Harass"].Add("Q", new CheckBox("Use Q on Harass 1", true));
             SubMenu["Harass"].Add("W", new CheckBox("Use W on Harass 1", false));
             SubMenu["Harass"].Add("E", new CheckBox("Use E on Harass 1", true));
-            SubMenu["Harass"].Add("Mana", new Slider("Min. Mana Percent:", 20, 0, 100));
+            SubMenu["Harass"].Add("Mana", new Slider("Min. Energy Percent:", 20, 0, 100));
             SubMenu["Harass"].AddGroupLabel("Harass 2");
             SubMenu["Harass"].Add("Q2", new CheckBox("Use Q on Harass 2", true));
             SubMenu["Harass"].Add("W2", new CheckBox("Use W on Harass 2", true));
             SubMenu["Harass"].Add("E2", new CheckBox("Use E on Harass 2", true));
-            SubMenu["Harass"].Add("Mana2", new Slider("Min. Mana Percent:", 20, 0, 100));
+            SubMenu["Harass"].Add("Mana2", new Slider("Min. Energy Percent:", 20, 0, 100));
+
+            SubMenu["LaneClear"] = menu.AddSubMenu("LaneClear", "LaneClear");
+            SubMenu["LaneClear"].Add("E", new Slider("Use E if Hit >= ", 3, 0, 10));
+            SubMenu["LaneClear"].AddGroupLabel("Unkillable minions");
+            SubMenu["LaneClear"].Add("Q2", new CheckBox("Use Q", true));
+            SubMenu["LaneClear"].Add("Mana", new Slider("Min. Energy Percent:", 50, 0, 100));
+
+            SubMenu["LastHit"] = menu.AddSubMenu("LastHit", "LastHit");
+            SubMenu["LastHit"].AddGroupLabel("Unkillable minions");
+            SubMenu["LastHit"].Add("Q", new CheckBox("Use Q", true));
+            SubMenu["LastHit"].Add("Mana", new Slider("Min. Energy Percent:", 50, 0, 100));
 
             SubMenu["JungleClear"] = menu.AddSubMenu("JungleClear", "JungleClear");
             SubMenu["JungleClear"].Add("Q", new CheckBox("Use Q", true));
             SubMenu["JungleClear"].Add("W", new CheckBox("Use W", true));
             SubMenu["JungleClear"].Add("E", new CheckBox("Use E", true));
-            SubMenu["JungleClear"].Add("Mana", new Slider("Min. Mana Percent:", 20, 0, 100));
+            SubMenu["JungleClear"].Add("Mana", new Slider("Min. Energy Percent:", 20, 0, 100));
 
             SubMenu["KillSteal"] = menu.AddSubMenu("KillSteal", "KillSteal");
             SubMenu["KillSteal"].Add("Q", new CheckBox("Use Q", true));
@@ -289,11 +299,22 @@ namespace Project_Zed
             Game.OnWndProc += OnWndProc;
             Drawing.OnDraw += OnDraw;
             Obj_AI_Base.OnProcessSpellCast += OnProcessSpell;
-            AttackableUnit.OnDamage += OnDamage;
+            Obj_AI_Base.OnPlayAnimation += Obj_AI_Base_OnPlayAnimation;
         }
 
-        private static void OnDamage(AttackableUnit sender, AttackableUnitDamageEventArgs args)
+        private static void Obj_AI_Base_OnPlayAnimation(Obj_AI_Base sender, GameObjectPlayAnimationEventArgs args)
         {
+            if (args.Animation.ToLower().Contains("death"))
+            {
+
+                foreach (Obj_AI_Minion o in Shadows)
+                {
+                    if (o.NetworkId == sender.NetworkId)
+                    {
+                        Shadows.Remove(o);
+                    }
+                }
+            }
         }
 
         private static void OnWndProc(WndEventArgs args)
@@ -360,11 +381,11 @@ namespace Project_Zed
                 Q.AllowedCollisionCount = int.MaxValue;
                 W.AllowedCollisionCount = int.MaxValue;
             }
-            if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Combo))
+            if (IsCombo)
             {
                 Combo();
             }
-            else if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Harass))
+            else if (IsHarass)
             {
                 if (HarassType == 1)
                 {
@@ -375,15 +396,23 @@ namespace Project_Zed
                     Harass2();
                 }
             }
-            else if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.JungleClear) || Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.LaneClear))
+            else if (IsClear)
             {
-                if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.JungleClear))
+                if (IsJungleClear)
                 {
                     JungleClear();
                 }
+                if (IsLaneClear)
+                {
+                    LaneClear();
+                }
+            }
+            else if (IsLastHit)
+            {
+                LastHit();
             }
 
-            if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Flee))
+            if (IsFlee)
             {
                 Flee();
             }
@@ -463,8 +492,8 @@ namespace Project_Zed
                 if (IsDeadObject != null && SubMenu["Misc"]["SwapDead"].Cast<KeyBind>().CurrentValue)
                 {
                     var HeroCount = myHero.CountEnemiesInRange(400);
-                    var wCount = (wShadow != null && W.IsReady() && !IsW1) ? wShadow.CountEnemiesInRange(400) : 1000;
-                    var rCount = (rShadow != null && R.IsReady() && !IsR1) ? rShadow.CountEnemiesInRange(400) : 1000;
+                    var wCount = (wShadow != null && W.IsReady()) ? wShadow.CountEnemiesInRange(400) : 1000;
+                    var rCount = (rShadow != null && R.IsReady()) ? rShadow.CountEnemiesInRange(400) : 1000;
                     var min = Math.Min(rCount, wCount);
                     if (HeroCount > min)
                     {
@@ -478,13 +507,13 @@ namespace Project_Zed
                         }
                     }
                 }
-                if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Combo))
+                if (IsCombo)
                 {
                     if (SubMenu["Combo"]["SwapGapclose"].Cast<CheckBox>().CurrentValue && Extensions.Distance(myHero, target) > E.Range * 1.3f)
                     {
                         var heroDistance = Extensions.Distance(myHero, target);
-                        var wShadowDistance = (wShadow != null && W.IsReady() && !IsW1) ? Extensions.Distance(myHero, wShadow) : 999999f;
-                        var rShadowDistance = (rShadow != null && R.IsReady() && !IsR1) ? Extensions.Distance(myHero, rShadow) : 999999f;
+                        var wShadowDistance = (wShadow != null && W.IsReady()) ? Extensions.Distance(target, wShadow) : 999999f;
+                        var rShadowDistance = (rShadow != null && R.IsReady()) ? Extensions.Distance(target, rShadow) : 999999f;
                         var min = Math.Min(Math.Min(wShadowDistance, rShadowDistance), heroDistance);
                         if (min <= 500 && min < heroDistance)
                         {
@@ -503,8 +532,8 @@ namespace Project_Zed
                         if (damageI.Damage <= target.Health || myHero.HealthPercent < target.HealthPercent)
                         {
                             var HeroCount = myHero.CountEnemiesInRange(400);
-                            var wCount = (wShadow != null && W.IsReady() && !IsW1) ? wShadow.CountEnemiesInRange(400) : 1000;
-                            var rCount = (rShadow != null && R.IsReady() && !IsR1) ? rShadow.CountEnemiesInRange(400) : 1000;
+                            var wCount = (wShadow != null && W.IsReady()) ? wShadow.CountEnemiesInRange(400) : 1000;
+                            var rCount = (rShadow != null && R.IsReady()) ? rShadow.CountEnemiesInRange(400) : 1000;
                             var min = Math.Min(rCount, wCount);
                             if (HeroCount > min)
                             {
@@ -522,8 +551,8 @@ namespace Project_Zed
                     if (IsDeadObject != null && SubMenu["Combo"]["SwapDead"].Cast<KeyBind>().CurrentValue)
                     {
                         var HeroCount = myHero.CountEnemiesInRange(400);
-                        var wCount = (wShadow != null && W.IsReady() && !IsW1) ? wShadow.CountEnemiesInRange(400) : 1000;
-                        var rCount = (rShadow != null && R.IsReady() && !IsR1) ? rShadow.CountEnemiesInRange(400) : 1000;
+                        var wCount = (wShadow != null && W.IsReady()) ? wShadow.CountEnemiesInRange(400) : 1000;
+                        var rCount = (rShadow != null && R.IsReady()) ? rShadow.CountEnemiesInRange(400) : 1000;
                         var min = Math.Min(rCount, wCount);
                         if (HeroCount > min)
                         {
@@ -571,9 +600,31 @@ namespace Project_Zed
         }
         static void LaneClear()
         {
-            foreach (Obj_AI_Base minion in EntityManager.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position.To2D(), 1000f))
+            var m = SubMenu["LaneClear"];
+            if (myHero.ManaPercent >= GetSlider(m, "Mana"))
             {
-
+                if (GetCheckBox(m, "Q2"))
+                {
+                    LastHitSpell(Q);
+                }
+                if (GetSlider(m, "E") > 0 && E.IsReady())
+                {
+                    if (GetSlider(m, "E") <= EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position, E.Range).Count)
+                    {
+                        myHero.Spellbook.CastSpell(E.Slot);
+                    }
+                }
+            }
+        }
+        static void LastHit()
+        {
+            var m = SubMenu["LastHit"];
+            if (myHero.ManaPercent >= GetSlider(m, "Mana"))
+            {
+                if (GetCheckBox(m, "Q"))
+                {
+                    LastHitSpell(Q);
+                }
             }
         }
 
@@ -615,7 +666,7 @@ namespace Project_Zed
                 }
                 Q.RangeCheckSource = Q.SourcePosition;
                 var pred = Q.GetPrediction(target);
-                var hitchance = HarassType > 0 ? 85 : 70;
+                var hitchance = HitChancePercent(Q.Slot);
                 if (pred.HitChancePercent >= hitchance)
                 {
                     Q.Cast(pred.CastPosition);
@@ -682,10 +733,70 @@ namespace Project_Zed
             }
         }
 
-
+        private static void LastHitSpell(Spell.Skillshot s)
+        {
+            if (s.IsReady())
+            {
+                foreach (Obj_AI_Base minion in EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position, s.Range + s.Width, true).Where(o => o.Health <= 2.0f * Damage(o, s.Slot)))
+                {
+                    bool CanCalculate = false;
+                    if (minion.IsValidTarget())
+                    {
+                        if (!Orbwalker.CanAutoAttack)
+                        {
+                            if (Orbwalker.CanMove && Orbwalker.LastTarget != null && Orbwalker.LastTarget.NetworkId != minion.NetworkId)
+                            {
+                                CanCalculate = true;
+                            }
+                        }
+                        else
+                        {
+                            if (myHero.GetAutoAttackRange(minion) <= Extensions.Distance(myHero, minion))
+                            {
+                                CanCalculate = true;
+                            }
+                            else
+                            {
+                                var speed = myHero.BasicAttack.MissileSpeed;
+                                var time = (int)(1000 * Extensions.Distance(myHero, minion) / speed + myHero.AttackCastDelay * 1000 + Game.Ping - 100);
+                                var predHealth = Prediction.Health.GetPrediction(minion, time);
+                                if (predHealth <= 0)
+                                {
+                                    CanCalculate = true;
+                                }
+                                /**
+                                if (!Orbwalker.CanBeLastHitted(minion))
+                                {
+                                    CanCalculate = true;
+                                }**/
+                            }
+                        }
+                    }
+                    if (CanCalculate)
+                    {
+                        var dmg = Damage(minion, s.Slot);
+                        var time = (int)(1000 * Extensions.Distance(s.SourcePosition.Value, minion) / s.Speed + s.CastDelay - 70);
+                        var predHealth = Prediction.Health.GetPrediction(minion, time);
+                        if (time > 0 && predHealth == minion.Health) { return; }
+                        if (dmg > predHealth && predHealth > 0)
+                        {
+                            CastQ(minion);
+                        }
+                    }
+                }
+            }
+        }
         static void OnCreateObj(GameObject sender, EventArgs args)
         {
-            if (sender.Name.ToLower().Contains(myHero.ChampionName.ToLower()))
+            if (sender is Obj_AI_Minion)
+            {
+                if (sender.Name.ToLower() == "shadow" && !sender.IsDead && sender.Team == myHero.Team)
+                {
+                    var s = sender as Obj_AI_Minion;
+                    Shadows.Add(s);
+                }
+            }
+            if (sender is Obj_GeneralParticleEmitter && sender.Name.ToLower().Contains(myHero.ChampionName.ToLower()))
             {
                 if (sender.Name.ToLower().Contains("base_r") && sender.Name.ToLower().Contains("buf_tell") && TS_Target != null && Extensions.Distance(TS_Target, sender) < 200)
                 {
@@ -707,7 +818,15 @@ namespace Project_Zed
         }
         static void OnDeleteObj(GameObject sender, EventArgs args)
         {
-            if (sender.Name.ToLower().Contains(myHero.ChampionName.ToLower()) && sender.Name.ToLower().Contains("base_r") && sender.Name.ToLower().Contains("buf_tell"))
+            if (sender is Obj_AI_Minion)
+            {
+                if (sender.Name.ToLower() == "shadow" && !sender.IsDead && sender.Team == myHero.Team)
+                {
+                    var s = sender as Obj_AI_Minion;
+                    Shadows.Remove(s);
+                }
+            }
+            if (sender is Obj_GeneralParticleEmitter && sender.Name.ToLower().Contains(myHero.ChampionName.ToLower()) && sender.Name.ToLower().Contains("base_r") && sender.Name.ToLower().Contains("buf_tell"))
             {
                 IsDeadObject = null;
             }
@@ -1023,13 +1142,107 @@ namespace Project_Zed
             }
             return new DamageInfo(false, false, false, false, 0, 0, 0);
         }
-        static bool GetCheckBoxValue(Menu m, string param)
+        static float HitChancePercent(SpellSlot s)
         {
-            return m[param].Cast<CheckBox>().CurrentValue;
+            string slot;
+            switch (s)
+            {
+                case SpellSlot.Q:
+                    slot = "Q";
+                    break;
+                case SpellSlot.W:
+                    slot = "W";
+                    break;
+                case SpellSlot.E:
+                    slot = "E";
+                    break;
+                case SpellSlot.R:
+                    slot = "R";
+                    break;
+                default:
+                    slot = "Q";
+                    break;
+            }
+            if (IsHarass)
+            {
+                return SubMenu["Prediction"][slot + "Harass"].Cast<Slider>().CurrentValue;
+            }
+            return SubMenu["Prediction"][slot + "Combo"].Cast<Slider>().CurrentValue;
         }
-        static int GetSliderValue(Menu m, string param)
+        static int GetSlider(Menu m, string s)
         {
-            return m[param].Cast<Slider>().CurrentValue;
+            return m[s].Cast<Slider>().CurrentValue;
+        }
+        static bool GetCheckBox(Menu m, string s)
+        {
+            return m[s].Cast<CheckBox>().CurrentValue;
+        }
+        static bool GetKeyBind(Menu m, string s)
+        {
+            return m[s].Cast<KeyBind>().CurrentValue;
+        }
+        static float Overkill
+        {
+            get
+            {
+                return (float)((100 + GetSlider(SubMenu["Misc"], "Overkill")) / 100);
+            }
+        }
+        static bool IsCombo
+        {
+            get
+            {
+                return Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Combo);
+            }
+        }
+        static bool IsHarass
+        {
+            get
+            {
+                return Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Harass);
+            }
+        }
+        static bool IsClear
+        {
+            get
+            {
+                return IsLaneClear || IsJungleClear;
+            }
+        }
+        static bool IsLaneClear
+        {
+            get
+            {
+                return Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.LaneClear);
+            }
+        }
+        static bool IsJungleClear
+        {
+            get
+            {
+                return Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.JungleClear);
+            }
+        }
+        static bool IsLastHit
+        {
+            get
+            {
+                return Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.LastHit);
+            }
+        }
+        static bool IsFlee
+        {
+            get
+            {
+                return Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Flee);
+            }
+        }
+        static bool IsNone
+        {
+            get
+            {
+                return !IsFlee && !IsLastHit && !IsClear && !IsHarass && !IsCombo;
+            }
         }
     }
 
