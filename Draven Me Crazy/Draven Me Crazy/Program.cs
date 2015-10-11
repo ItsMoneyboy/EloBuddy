@@ -27,6 +27,7 @@ namespace Draven_Me_Crazy
         static Spell.Active Q, W;
         static Spell.Targeted Ignite;
         static List<Axe> Axes = new List<Axe>();
+        public static List<Obj_AI_Turret> Turrets = new List<Obj_AI_Turret>();
         static bool TryingToCatch = false;
         static int AxesCount
         {
@@ -109,7 +110,7 @@ namespace Draven_Me_Crazy
             SubMenu["Axes"].Add("Draw", new CheckBox("Draw catch radius", true));
 
             SubMenu["Combo"] = menu.AddSubMenu("Combo", "Combo");
-            SubMenu["Combo"].Add("Q", new Slider("Use Q to have X spinning axes", 2, 0, 2));
+            SubMenu["Combo"].Add("Q", new Slider("Use Q to have X spinning axes", 3, 0, 3));
             SubMenu["Combo"].Add("W", new CheckBox("Use W", true));
             SubMenu["Combo"].Add("E", new CheckBox("Use E", true));
             SubMenu["Combo"].Add("R", new CheckBox("Use R if killable", true));
@@ -151,6 +152,8 @@ namespace Draven_Me_Crazy
             SubMenu["Misc"].Add("Interrupter", new CheckBox("Use E to Interrupt Channeling Spells", true));
             SubMenu["Misc"].Add("Overkill", new Slider("Overkill % for damage prediction", 10, 0, 100));
             SubMenu["Misc"].Add("RRange", new Slider("R Range", 1800, 300, 6000));
+
+            Turrets = ObjectManager.Get<Obj_AI_Turret>().Where(m => m.HealthPercent > 0 && m.IsEnemy).ToList();
 
             Game.OnTick += Game_OnTick;
             GameObject.OnCreate += GameObject_OnCreate;
@@ -386,7 +389,7 @@ namespace Draven_Me_Crazy
         }
         private static void CastQ(Obj_AI_Base target, int count = 2)
         {
-            if (Q.IsReady() && target.IsValidTarget(Q.Range) && AxesCount < 2 && Orbwalker.CanAutoAttack)
+            if (Q.IsReady() && target.IsValidTarget(Q.Range) && Orbwalker.CanAutoAttack)
             {
                 if (AxesCount < count)
                 {
@@ -398,7 +401,12 @@ namespace Draven_Me_Crazy
         {
             if (W.IsReady() && target.IsValidTarget(W.Range) && !myHero.HasBuff("dravenfurybuff"))
             {
-                myHero.Spellbook.CastSpell(W.Slot);
+                var pred = E.GetPrediction(target);
+                var damageI = GetBestCombo(target);
+                if (pred.HitChancePercent >= 20f && ((damageI.IsKillable(target) && Extensions.Distance(myHero, target, true) < Extensions.Distance(myHero, pred.CastPosition, true)) || Extensions.Distance(myHero, target) >= 0.75f))
+                {
+                    myHero.Spellbook.CastSpell(W.Slot);
+                }
             }
         }
         private static void CastE(Obj_AI_Base target)
@@ -432,13 +440,20 @@ namespace Draven_Me_Crazy
                 var AxeCatchPositionFromHero = a.Position + (myHero.Position - a.Position).Normalized() * Math.Min(Axe.Radius, Extensions.Distance(myHero, a.Position));
                 var AxeCatchPositionFromMouse = a.Position + (mousePos - a.Position).Normalized() * Math.Min(Axe.Radius, Extensions.Distance(mousePos, a.Position));
                 //var OrbwalkPosition = myHero.Position + (mousePos - a.Position).Normalized() * Axe.Radius;
-                var TimeAttack = a.TimeLeft - ((Extensions.Distance(myHero.Position, AxeCatchPositionFromHero) / myHero.MoveSpeed) + (myHero.AttackCastDelay));
-                var TimeMoveWithDelay = a.TimeLeft * CatchDelay - (Extensions.Distance(myHero.Position, AxeCatchPositionFromHero) + Extensions.Distance(a.Position, AxeCatchPositionFromMouse)) / myHero.MoveSpeed;
-                var TimeMove = a.TimeLeft - (Extensions.Distance(myHero.Position, AxeCatchPositionFromHero) + 120f) / myHero.MoveSpeed;
-                var Time2 = 0f;
+                var TimeAttack = a.TimeLeft - ((Extensions.Distance(myHero.Position, AxeCatchPositionFromHero) / myHero.MoveSpeed) + (myHero.AttackCastDelay + 0.07f));
+                var TimeMoveWithDelay = a.TimeLeft * CatchDelay - (Extensions.Distance(myHero.Position, AxeCatchPositionFromHero) + 110f) / myHero.MoveSpeed;
+                var TimeMove = a.TimeLeft - (Extensions.Distance(myHero.Position, AxeCatchPositionFromHero) + 110f) / myHero.MoveSpeed;
+                var TimeLefts = 0f;
                 foreach (Axe a1 in Axes.Where(m => m.TimeLeft < a.TimeLeft && m.SourceInRadius))
                 {
-                    Time2 += a1.TimeLeft;
+                    TimeLefts += a1.TimeLeft;
+                }
+                if (TimeMove < 0f && TimeLefts > 0f)
+                {
+                    if (GetCheckBox(SubMenu["Axes"], "W") && !myHero.HasBuff("dravenfurybuff"))
+                    {
+                        if (W.IsReady()) { myHero.Spellbook.CastSpell(W.Slot); }
+                    }
                 }
                 if (a.HeroInReticle)
                 {
@@ -461,11 +476,11 @@ namespace Draven_Me_Crazy
                 {
                     CanMove = false;
                 }
-                if (Time2 > 0f)
+                if (TimeLefts > 0f)
                 {
                     if (CanAttack)
                     {
-                        if (TimeAttack - Time2 <= 0)
+                        if (TimeAttack - TimeLefts <= 0)
                         {
                             CanAttack = false;
                         }
@@ -473,7 +488,7 @@ namespace Draven_Me_Crazy
                     if (CanMove)
                     {
 
-                        if (TimeMove - Time2 <= 0)
+                        if (TimeMove - TimeLefts <= 0)
                         {
                             CanMove = false;
                         }
@@ -498,10 +513,14 @@ namespace Draven_Me_Crazy
                     bool CanAttack = true;
                     foreach (Axe a in Axes)
                     {
-                        var status = GetAxeStatus(a);
-                        if (!status.Item1) { CanMove = false; }
-                        if (!status.Item2) { CanAttack = false; }
+                        if (a.InTime)
+                        {
+                            var status = GetAxeStatus(a);
+                            if (!status.Item1) { CanMove = false; }
+                            if (!status.Item2) { CanAttack = false; }
+                        }
                     }
+
                     Orbwalker.DisableAttacking = !CanAttack;
                     Orbwalker.DisableMovement = !CanMove;
                     if (!CanMove)
@@ -546,7 +565,6 @@ namespace Draven_Me_Crazy
                     if (name.Contains("q_reticle_self.troy"))
                     {
                         AddAxe(sender);
-                        Core.DelayAction(delegate { RemoveAxe(sender); }, (int)(Axe.LimitTime * 1000 + 600));
                     }
                     else if (name.Contains("reticlecatchsuccess.troy"))
                     {
@@ -560,6 +578,7 @@ namespace Draven_Me_Crazy
                     if (missile.SpellCaster.IsMe && missile.SData.Name.ToLower().Contains("dravenspinningreturncatch"))
                     {
                         Axes.Add(new Axe(missile));
+                        Core.DelayAction(delegate { RemoveAxe(sender); }, (int)(Axe.LimitTime * 1000 + 600));
                     }
                 }
             }
@@ -575,10 +594,6 @@ namespace Draven_Me_Crazy
                     {
                         RemoveAxe(sender);
                     }
-                    if (name.Contains("q_reticle.troy"))
-                    {
-                        RemoveAxe(sender);
-                    }
                     //Chat.Print("Deleted " + sender.Name);
                 }
             }
@@ -588,9 +603,9 @@ namespace Draven_Me_Crazy
 
             if (Axes.Count > 0)
             {
-                var a = Axes.Where(m => Game.Time - m.StartTime < 0.25f && m.Reticle == null).OrderBy(m => Extensions.Distance(sender.Position.To2D(), m.Missile.EndPosition.To2D(), true)).FirstOrDefault();
-                if (a != null) {
-
+                var a = Axes.Where(m => Game.Time - m.StartTime < 0.35f && m.Reticle == null).OrderBy(m => Extensions.Distance(sender.Position.To2D(), m.Missile.EndPosition.To2D(), true)).FirstOrDefault();
+                if (a != null)
+                {
                     a.AddReticle(sender);
                 }
             }
@@ -863,103 +878,6 @@ namespace Draven_Me_Crazy
             }
         }
     }
-    public class Axe
-    {
-        public GameObject Reticle = null;
-        public MissileClient Missile = null;
-        public float StartTime;
-        public bool MoveSent = false;
-        public static float LimitTime = 1.20f;
-        public static float Radius = 100f;
-        public float Gravity
-        {
-            get
-            {
-                if (this.Missile != null)
-                    return this.Missile.SData.MissileGravity;
-                return 26;
-            }
-        }
-        public float Speed
-        {
-            get
-            {
-                if (this.Missile != null)
-                    return this.Missile.SData.MissileSpeed;
-                return 700;
-            }
-        }
-        public float TimeLeft
-        {
-            get
-            {
-
-                if (this.Missile != null)
-                    return LimitTime - (Game.Time - this.StartTime);//2 * Extensions.Distance(this.Reticle.Position, this.Missile.Position) / this.Speed; //
-                return float.MaxValue;
-            }
-        }
-        public bool SourceInRadius
-        {
-            get
-            {
-                if (this.Position != Vector3.Zero)
-                    return Extensions.Distance(Program.CatchSource, this.Position, true) < Program.CatchRadius * Program.CatchRadius;
-                return false;
-            }
-        }
-        public bool HeroInReticle
-        {
-            get
-            {
-                if (this.Position != Vector3.Zero)
-                    return Extensions.Distance(Program.myHero.Position, this.Position, true) < Math.Pow(Radius, 2);
-                return false;
-            }
-        }
-        public bool InTime
-        {
-            get
-            {
-                return Game.Time - this.StartTime <= LimitTime + 0.2f; 
-            }
-        }
-        public bool InTurret
-        {
-            get
-            {
-                if (this.Position != Vector3.Zero)
-                {
-                    var turret = EntityManager.Turrets.Enemies.Where(m => !m.IsDead && m.AttackRange + m.BoundingRadius + Program.myHero.BoundingRadius >= Extensions.Distance(m.Position, this.Position)).FirstOrDefault();
-                    if (turret != null)
-                    {
-                        return true;
-                        //return EntityManager.Heroes.Enemies.Where(m => turret.IsInAutoAttackRange(m)).Count() > 0 && Program.SubMenu["Axes"]["Turret"].Cast<CheckBox>().CurrentValue;
-                    }
-                }
-                return false;
-            }
-        }
-        public Vector3 Position
-        {
-            get
-            {
-                if (this.Reticle != null)
-                    return this.Reticle.Position;
-                return Vector3.Zero;
-            }
-        }
-        public Axe(MissileClient missile)
-        {
-            this.Missile = missile;
-            this.StartTime = Game.Time;
-        }
-        public void AddReticle(GameObject reticle)
-        {
-            this.Reticle = reticle;
-        }
-
-    }
     public class DamageInfo
     {
         public bool Q;
@@ -984,6 +902,10 @@ namespace Draven_Me_Crazy
         {
             this.Damage = Damage;
             this.Mana = Mana;
+        }
+        public bool IsKillable(Obj_AI_Base target)
+        {
+            return this.Damage >= target.Health;
         }
     }
 }
