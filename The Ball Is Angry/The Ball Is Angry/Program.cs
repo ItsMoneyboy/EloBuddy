@@ -398,7 +398,7 @@ namespace The_Ball_Is_Angry
                 }
                 if (SubMenu["LaneClear"]["Q2"].Cast<CheckBox>().CurrentValue)
                 {
-                    QLastHit();
+                    LastHitSpell(Q);
                 }
             }
         }
@@ -408,15 +408,15 @@ namespace The_Ball_Is_Angry
             {
                 if (SubMenu["LastHit"]["Q"].Cast<CheckBox>().CurrentValue)
                 {
-                    QLastHit();
+                    LastHitSpell(Q);
                 }
             }
         }
-        private static void QLastHit()
+        private static void LastHitSpell(Spell.Skillshot s)
         {
-            if (Q.IsReady())
+            if (s.IsReady())
             {
-                foreach (Obj_AI_Base minion in EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position, Q.Range + Q.Width, true).Where(o => o.Health <= 2.0f * Damage(o, Q.Slot)))
+                foreach (Obj_AI_Base minion in EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position, s.Range + s.Width, true).Where(o => o.Health <= 2.0f * Damage(o, s.Slot)))
                 {
                     bool CanCalculate = false;
                     if (minion.IsValidTarget())
@@ -453,8 +453,8 @@ namespace The_Ball_Is_Angry
                     }
                     if (CanCalculate)
                     {
-                        var dmg = Damage(minion, Q.Slot);
-                        var time = (int)(1000 * Extensions.Distance(Q.SourcePosition.Value, minion) / Q.Speed + Q.CastDelay - 70);
+                        var dmg = Damage(minion, s.Slot);
+                        var time = (int)(1000 * Extensions.Distance(s.SourcePosition.Value, minion) / s.Speed + s.CastDelay - 70);
                         var predHealth = Prediction.Health.GetPrediction(minion, time);
                         if (time > 0 && predHealth == minion.Health) { return; }
                         if (dmg > predHealth && predHealth > 0)
@@ -464,7 +464,6 @@ namespace The_Ball_Is_Angry
                     }
                 }
             }
-
         }
         private static void JungleClear()
         {
@@ -520,7 +519,7 @@ namespace The_Ball_Is_Angry
                     }
                 }
                 List<Obj_AI_Base> list = new List<Obj_AI_Base>();
-                if (target.Type == GameObjectType.AIHeroClient)
+                if (target.Type == myHero.Type)
                 {
                     list = EntityManager.Heroes.Enemies.Where(o => o.IsValidTarget(Q.Range + Q.Width)).ToList<Obj_AI_Base>();
                 }
@@ -572,7 +571,7 @@ namespace The_Ball_Is_Angry
                 else
                 {
                     List<Obj_AI_Base> list = new List<Obj_AI_Base>();
-                    if (target.Type == GameObjectType.AIHeroClient)
+                    if (target.Type == myHero.Type)
                     {
                         list = EntityManager.Heroes.Enemies.ToList<Obj_AI_Base>();
                     }
@@ -1148,11 +1147,23 @@ namespace The_Ball_Is_Angry
             return new DamageInfo(false, false, false, false, 0, 0, 0);
         }
 
+        static int GetSlider(Menu m, string s)
+        {
+            return m[s].Cast<Slider>().CurrentValue;
+        }
+        static bool GetCheckBox(Menu m, string s)
+        {
+            return m[s].Cast<CheckBox>().CurrentValue;
+        }
+        static bool GetKeyBind(Menu m, string s)
+        {
+            return m[s].Cast<KeyBind>().CurrentValue;
+        }
         static float Overkill
         {
             get
             {
-                return (float)((100 + SubMenu["Misc"]["Overkill"].Cast<Slider>().CurrentValue) / 100);
+                return (float)((100 + GetSlider(SubMenu["Misc"], "Overkill")) / 100);
             }
         }
         static bool IsCombo
@@ -1208,36 +1219,11 @@ namespace The_Ball_Is_Angry
         {
             get
             {
-                return Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.None);
+                return !IsFlee && !IsLastHit && !IsClear && !IsHarass && !IsCombo;
             }
         }
     }
-    public class DamageInfo
-    {
-        public bool Q;
-        public bool W;
-        public bool E;
-        public bool R;
-        public float Damage;
-        public float Mana;
-        public float Time;
 
-        public DamageInfo(bool Q, bool W, bool E, bool R, float Damage, float Mana, float Time)
-        {
-            this.Q = Q;
-            this.W = W;
-            this.E = E;
-            this.R = R;
-            this.Damage = Damage;
-            this.Mana = Mana;
-            this.Time = Time;
-        }
-        public DamageInfo(float Damage, float Mana)
-        {
-            this.Damage = Damage;
-            this.Mana = Mana;
-        }
-    }
     public class _Spell
     {
         public float LastCastTime = 0;
