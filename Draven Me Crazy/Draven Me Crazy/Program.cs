@@ -443,17 +443,11 @@ namespace Draven_Me_Crazy
                 var TimeAttack = a.TimeLeft - ((Extensions.Distance(myHero.Position, AxeCatchPositionFromHero) / myHero.MoveSpeed) + (myHero.AttackCastDelay + 0.07f));
                 var TimeMoveWithDelay = a.TimeLeft * CatchDelay - (Extensions.Distance(myHero.Position, AxeCatchPositionFromHero) + 110f) / myHero.MoveSpeed;
                 var TimeMove = a.TimeLeft - (Extensions.Distance(myHero.Position, AxeCatchPositionFromHero) + 110f) / myHero.MoveSpeed;
+                var TimeMove2 = a.TimeLeft - (Extensions.Distance(myHero.Position, AxeCatchPositionFromHero)) / myHero.MoveSpeed;
                 var TimeLefts = 0f;
                 foreach (Axe a1 in Axes.Where(m => m.TimeLeft < a.TimeLeft && m.SourceInRadius))
                 {
                     TimeLefts += a1.TimeLeft;
-                }
-                if (TimeMove < 0f && TimeLefts > 0f)
-                {
-                    if (GetCheckBox(SubMenu["Axes"], "W") && !myHero.HasBuff("dravenfurybuff"))
-                    {
-                        if (W.IsReady()) { myHero.Spellbook.CastSpell(W.Slot); }
-                    }
                 }
                 if (a.HeroInReticle)
                 {
@@ -491,6 +485,13 @@ namespace Draven_Me_Crazy
                         if (TimeMove - TimeLefts <= 0)
                         {
                             CanMove = false;
+                            if (TimeMove2 - TimeLefts <= 0)
+                            {
+                                if (GetCheckBox(SubMenu["Axes"], "W") && !myHero.HasBuff("dravenfurybuff"))
+                                {
+                                    if (W.IsReady()) { myHero.Spellbook.CastSpell(W.Slot); }
+                                }
+                            }
                         }
                     }
                 }
@@ -652,7 +653,7 @@ namespace Draven_Me_Crazy
         {
             if (GetCheckBox(SubMenu["Misc"], "Gapcloser"))
             {
-                if (sender.IsEnemy && sender.IsValidTarget())
+                if (e.Sender.IsEnemy && e.Sender.IsValidTarget())
                 {
                     CastE(e.Sender);
                 }
@@ -664,7 +665,7 @@ namespace Draven_Me_Crazy
 
             if (GetCheckBox(SubMenu["Misc"], "Interrupter"))
             {
-                if (sender.IsEnemy && sender.IsValidTarget())
+                if (e.Sender.IsEnemy && e.Sender.IsValidTarget())
                 {
                     CastE(e.Sender);
                 }
