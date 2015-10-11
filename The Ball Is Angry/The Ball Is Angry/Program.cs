@@ -8,6 +8,7 @@ using EloBuddy.SDK.Events;
 using EloBuddy.SDK.Menu;
 using EloBuddy.SDK.Menu.Values;
 using EloBuddy.SDK.Rendering;
+using EloBuddy.SDK.Constants;
 using SharpDX;
 
 namespace The_Ball_Is_Angry
@@ -24,6 +25,7 @@ namespace The_Ball_Is_Angry
         static Dictionary<string, Menu> SubMenu = new Dictionary<string, Menu>() { };
         static Spell.Skillshot Q, W, E, R;
         static Spell.Targeted Ignite;
+        static List<MissileClient> missiles = new List<MissileClient>();
         static GameObject E_Target = null;
         static float Q_LastRequest = 0f;
         static float E_LastRequest = 0f;
@@ -50,11 +52,11 @@ namespace The_Ball_Is_Angry
             Chat.Print(AddonName + " made by " + Author + " loaded, have fun!.");
             Q = new Spell.Skillshot(SpellSlot.Q, 815, SkillShotType.Circular, 0, 1200, 130);
             Q.AllowedCollisionCount = int.MaxValue;
-            W = new Spell.Skillshot(SpellSlot.W, 255, SkillShotType.Circular, 250, int.MaxValue, 50);
+            W = new Spell.Skillshot(SpellSlot.W, 250, SkillShotType.Circular, 250, int.MaxValue, 50);
             W.AllowedCollisionCount = int.MaxValue;
             E = new Spell.Skillshot(SpellSlot.E, 1095, SkillShotType.Circular, 0, 1800, 85);
             E.AllowedCollisionCount = int.MaxValue;
-            R = new Spell.Skillshot(SpellSlot.R, 400, SkillShotType.Circular, 500, int.MaxValue, 50);
+            R = new Spell.Skillshot(SpellSlot.R, 380, SkillShotType.Circular, 500, int.MaxValue, 50);
             R.AllowedCollisionCount = int.MaxValue;
             var slot = myHero.GetSpellSlotFromName("summonerdot");
             if (slot != SpellSlot.Unknown)
@@ -83,6 +85,7 @@ namespace The_Ball_Is_Angry
             SubMenu["Combo"].AddGroupLabel("Common Logic");
             SubMenu["Combo"].Add("Q", new CheckBox("Use Q On Target", true));
             SubMenu["Combo"].Add("W", new CheckBox("Use W On Target", true));
+            SubMenu["Combo"].Add("Shield", new CheckBox("Use Shield On Enemy Missiles", true));
             SubMenu["Combo"].Add("E", new Slider("Use E If Hit", 1, 1, 5));
             SubMenu["Combo"].Add("E2", new Slider("Use E If HealthPercent <=", 50, 0, 100));
             SubMenu["Combo"].AddGroupLabel("1 vs 1 Logic");
@@ -95,6 +98,7 @@ namespace The_Ball_Is_Angry
             SubMenu["Harass"] = menu.AddSubMenu("Harass", "Harass");
             SubMenu["Harass"].Add("Q", new CheckBox("Use Q", true));
             SubMenu["Harass"].Add("W", new CheckBox("Use W", true));
+            SubMenu["Harass"].Add("Shield", new CheckBox("Use Shield On Enemy Missiles", true));
             SubMenu["Harass"].Add("E", new Slider("Use E If Hit", 1, 1, 5));
             SubMenu["Harass"].Add("E2", new Slider("Use E If HealthPercent <=", 40, 0, 100));
             SubMenu["Harass"].Add("Mana", new Slider("Min. Mana Percent:", 20, 0, 100));
@@ -142,11 +146,12 @@ namespace The_Ball_Is_Angry
             SubMenu["Misc"].Add("BlockR", new CheckBox("Block R if will not hit", true));
             SubMenu["Misc"].Add("R", new CheckBox("Use R to Interrupt Channeling", true));
             SubMenu["Misc"].Add("E", new CheckBox("Use E to Initiate", true));
+            SubMenu["Misc"].Add("Shield", new CheckBox("Use Shield On Enemy Missiles", false));
             SubMenu["Misc"].Add("W2", new Slider("Use W if Hit", 3, 1, 5));
             SubMenu["Misc"].Add("R2", new Slider("Use R if Hit", 4, 1, 5));
 
             Game.OnTick += OnTick;
-            GameObject.OnCreate += OnCreateObj;
+            GameObject.OnCreate += OnCreate;
             GameObject.OnDelete += OnDelete;
             Drawing.OnDraw += OnDraw;
             Obj_AI_Base.OnProcessSpellCast += OnProcessSpell;
@@ -154,7 +159,27 @@ namespace The_Ball_Is_Angry
             Interrupter.OnInterruptableSpell += OnInterruptableSpell;
             Gapcloser.OnGapcloser += OnGapcloser;
             Spellbook.OnCastSpell += OnCastSpell;
-            BallObject = ObjectManager.Get<GameObject>().FirstOrDefault(obj => obj.Name != null && obj.IsValid && obj.Name.ToLower().Contains("doomball"));
+            Obj_AI_Base.OnBasicAttack += Obj_AI_Base_OnBasicAttack;
+            BallObject = ObjectManager.Get<GameObject>().FirstOrDefault(obj => obj.Name != null && !obj.IsDead && obj.IsValid && obj.Name.ToLower().Contains("doomball"));
+        }
+
+        private static void Obj_AI_Base_OnBasicAttack(Obj_AI_Base sender, GameObjectProcessSpellCastEventArgs args)
+        {
+            if (sender.Team != myHero.Team && args.Target.IsMe && (GetCheckBox(SubMenu["Misc"], "Shield") || (IsCombo && GetCheckBox(SubMenu["Combo"], "Shield")) || (IsHarass && GetCheckBox(SubMenu["Harass"], "Shield"))) )
+            {
+                if (sender is AIHeroClient)
+                {
+                    var hero = sender as AIHeroClient;
+                    if (hero.IsMelee)
+                    {
+                        CastE(myHero);
+                    }
+                }
+                else if (sender is Obj_AI_Turret)
+                {
+                    CastE(myHero);
+                }
+            }
         }
 
         private static void OnCastSpell(Spellbook sender, SpellbookCastSpellEventArgs args)
@@ -183,6 +208,10 @@ namespace The_Ball_Is_Angry
             W.RangeCheckSource = Ball;
             R.SourcePosition = Ball;
             R.RangeCheckSource = Ball;
+            if (GetCheckBox(SubMenu["Misc"], "Shield"))
+            {
+                CheckMissiles();
+            }
             if (R.IsReady() && SubMenu["Misc"]["R2"].Cast<Slider>().CurrentValue <= HitR())
             {
                 myHero.Spellbook.CastSpell(SpellSlot.R);
@@ -246,6 +275,10 @@ namespace The_Ball_Is_Angry
 
         private static void Combo()
         {
+            if (E.IsReady() && GetCheckBox(SubMenu["Combo"], "Shield"))
+            {
+                CheckMissiles();
+            }
             AIHeroClient target = TargetSelector.GetTarget(Q.Range + Q.Width, DamageType.Magical);
             if (target.IsValidTarget())
             {
@@ -321,36 +354,43 @@ namespace The_Ball_Is_Angry
         private static void Harass()
         {
             AIHeroClient target = TargetSelector.GetTarget(Q.Range + Q.Width, DamageType.Magical);
-            if (target.IsValidTarget() && myHero.ManaPercent >= SubMenu["Harass"]["Mana"].Cast<Slider>().CurrentValue)
+            if (myHero.ManaPercent >= SubMenu["Harass"]["Mana"].Cast<Slider>().CurrentValue)
             {
-                var damageI = GetBestCombo(target);
-                if (SubMenu["Harass"]["Q"].Cast<CheckBox>().CurrentValue) { CastQ(target); }
-                if (W.IsReady() && SubMenu["Harass"]["W"].Cast<CheckBox>().CurrentValue) { CastW(target); }
-                if (E.IsReady() && SubMenu["Harass"]["E"].Cast<Slider>().CurrentValue > 0)
+                if (target.IsValidTarget())
                 {
-                    List<Obj_AI_Base> list = EntityManager.Heroes.Enemies.Where<Obj_AI_Base>(o => o.IsValidTarget(E.Range)).ToList();
-                    if (list.Count >= SubMenu["Harass"]["E"].Cast<Slider>().CurrentValue)
+                    var damageI = GetBestCombo(target);
+                    if (SubMenu["Harass"]["Q"].Cast<CheckBox>().CurrentValue) { CastQ(target); }
+                    if (W.IsReady() && SubMenu["Harass"]["W"].Cast<CheckBox>().CurrentValue) { CastW(target); }
+                    if (E.IsReady() && SubMenu["Harass"]["E"].Cast<Slider>().CurrentValue > 0)
                     {
-                        var info = BestHitE(list);
-                        if (info.Item1 != null && info.Item2 > 0)
+                        List<Obj_AI_Base> list = EntityManager.Heroes.Enemies.Where<Obj_AI_Base>(o => o.IsValidTarget(E.Range)).ToList();
+                        if (list.Count >= SubMenu["Harass"]["E"].Cast<Slider>().CurrentValue)
                         {
-                            Obj_AI_Base bestAlly = info.Item1;
-                            if (info.Item2 > SubMenu["Harass"]["E"].Cast<Slider>().CurrentValue && bestAlly.IsValid)
+                            var info = BestHitE(list);
+                            if (info.Item1 != null && info.Item2 > 0)
                             {
-                                CastE(bestAlly);
+                                Obj_AI_Base bestAlly = info.Item1;
+                                if (info.Item2 > SubMenu["Harass"]["E"].Cast<Slider>().CurrentValue && bestAlly.IsValid)
+                                {
+                                    CastE(bestAlly);
+                                }
+                            }
+                        }
+                    }
+                    if (E.IsReady() && SubMenu["Harass"]["E2"].Cast<Slider>().CurrentValue > myHero.HealthPercent && myHero.HealthPercent < target.HealthPercent)
+                    {
+                        foreach (AIHeroClient enemy in EntityManager.Heroes.Enemies.Where(o => o.IsValidTarget(E.Range)))
+                        {
+                            if (enemy.GetAutoAttackRange(myHero) < Extensions.Distance(myHero, enemy))
+                            {
+                                CastE(myHero);
                             }
                         }
                     }
                 }
-                if (E.IsReady() && SubMenu["Harass"]["E2"].Cast<Slider>().CurrentValue > myHero.HealthPercent && myHero.HealthPercent < target.HealthPercent)
+                if (E.IsReady() && GetCheckBox(SubMenu["Harass"], "Shield"))
                 {
-                    foreach (AIHeroClient enemy in EntityManager.Heroes.Enemies.Where(o => o.IsValidTarget(E.Range)))
-                    {
-                        if (enemy.GetAutoAttackRange(myHero) < Extensions.Distance(myHero, enemy))
-                        {
-                            CastE(myHero);
-                        }
-                    }
+                    CheckMissiles();
                 }
             }
         }
@@ -360,7 +400,7 @@ namespace The_Ball_Is_Angry
             {
                 if (E.IsReady() && SubMenu["LaneClear"]["E"].Cast<Slider>().CurrentValue > 0)
                 {
-                    var minions = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position, E.Range, true).ToList<Obj_AI_Base>();
+                    var minions = EntityManager.MinionsAndMonsters.Get(EntityManager.MinionsAndMonsters.EntityType.Minion, EntityManager.UnitTeam.Enemy, myHero.Position, E.Range, true).ToList<Obj_AI_Base>();
                     if (minions.Count >= SubMenu["LaneClear"]["E"].Cast<Slider>().CurrentValue)
                     {
                         var info = BestHitE(minions);
@@ -377,7 +417,7 @@ namespace The_Ball_Is_Angry
                 }
                 if (Q.IsReady() && SubMenu["LaneClear"]["Q"].Cast<Slider>().CurrentValue > 0)
                 {
-                    var minions = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position, Q.Range, true).ToList<Obj_AI_Base>();
+                    var minions = EntityManager.MinionsAndMonsters.Get(EntityManager.MinionsAndMonsters.EntityType.Minion, EntityManager.UnitTeam.Enemy, myHero.Position, Q.Range + Q.Width).ToList<Obj_AI_Base>();
                     if (minions.Count >= SubMenu["LaneClear"]["Q"].Cast<Slider>().CurrentValue)
                     {
                         var info2 = BestHitQ(minions);
@@ -392,7 +432,7 @@ namespace The_Ball_Is_Angry
                         }
                     }
                 }
-                if (W.IsReady() && SubMenu["LaneClear"]["W"].Cast<Slider>().CurrentValue > 0 && HitW(EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, Ball, W.Range, true).ToList<Obj_AI_Base>()) >= SubMenu["LaneClear"]["Q"].Cast<Slider>().CurrentValue)
+                if (W.IsReady() && SubMenu["LaneClear"]["W"].Cast<Slider>().CurrentValue > 0 && HitW(EntityManager.MinionsAndMonsters.Get(EntityManager.MinionsAndMonsters.EntityType.Minion, EntityManager.UnitTeam.Enemy, Ball, W.Range, true).ToList<Obj_AI_Base>()) >= SubMenu["LaneClear"]["Q"].Cast<Slider>().CurrentValue)
                 {
                     myHero.Spellbook.CastSpell(W.Slot);
                 }
@@ -416,7 +456,7 @@ namespace The_Ball_Is_Angry
         {
             if (s.IsReady())
             {
-                foreach (Obj_AI_Base minion in EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position, s.Range + s.Width, true).Where(o => o.Health <= 2.0f * Damage(o, s.Slot)))
+                foreach (Obj_AI_Base minion in EntityManager.MinionsAndMonsters.Get(EntityManager.MinionsAndMonsters.EntityType.Minion, EntityManager.UnitTeam.Enemy, myHero.Position, s.Range + s.Width, true).Where(o => o.Health <= 2.0f * Damage(o, s.Slot)))
                 {
                     bool CanCalculate = false;
                     if (minion.IsValidTarget())
@@ -469,7 +509,7 @@ namespace The_Ball_Is_Angry
         {
             if (myHero.ManaPercent >= SubMenu["JungleClear"]["Mana"].Cast<Slider>().CurrentValue)
             {
-                foreach (Obj_AI_Base minion in EntityManager.MinionsAndMonsters.GetJungleMonsters(myHero.Position, 1000f))
+                foreach (Obj_AI_Base minion in EntityManager.MinionsAndMonsters.Get(EntityManager.MinionsAndMonsters.EntityType.Monster, EntityManager.UnitTeam.Enemy, myHero.Position, E.Range, true))
                 {
                     if (minion.IsValidTarget() && myHero.ManaPercent >= SubMenu["JungleClear"]["Mana"].Cast<Slider>().CurrentValue)
                     {
@@ -505,6 +545,35 @@ namespace The_Ball_Is_Angry
                 }
             }
         }
+
+        private static void CheckMissiles()
+        {
+            if (E.IsReady())
+            {
+                foreach (MissileClient m in missiles.Where(a => a.IsValidMissile()))
+                {
+                    var CanCalculate = false;
+                    if (m.Target != null)
+                    {
+                        CanCalculate = m.Target.IsMe;
+                    }
+                    if (m.EndPosition != null && m.SData.LineWidth != null && m.SData.LineWidth > 0f)
+                    {
+                        var multiplier = 1.15f;
+                        var width = (m.SData.LineWidth + myHero.BoundingRadius) * multiplier;
+                        var width_sqrt = width * width;
+                        var startpos = m.StartPosition != null ? m.StartPosition : m.SpellCaster.Position;
+                        var extendedendpos = m.EndPosition + (m.EndPosition - startpos).Normalized() * width;
+                        var info = myHero.Position.To2D().ProjectOn(startpos.To2D(), extendedendpos.To2D());
+                        CanCalculate = info.IsOnSegment && Extensions.Distance(info.SegmentPoint, myHero.Position.To2D(), true) <= width_sqrt;
+                    }
+                    if (CanCalculate)
+                    {
+                        CastE(myHero);
+                    }
+                }
+            }
+        }
         private static void CastQ(Obj_AI_Base target, int minhits = 1)
         {
             if (Q.IsReady() && target.IsValidTarget(Q.Range + Q.Width))
@@ -525,13 +594,15 @@ namespace The_Ball_Is_Angry
                 }
                 else
                 {
-                    if (EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position, Q.Range + Q.Width).Count > 0)
+                    var enemyminions = EntityManager.MinionsAndMonsters.Get(EntityManager.MinionsAndMonsters.EntityType.Minion, EntityManager.UnitTeam.Enemy, myHero.Position, Q.Range + Q.Width);
+                    var jungleminions = EntityManager.MinionsAndMonsters.Get(EntityManager.MinionsAndMonsters.EntityType.Monster, EntityManager.UnitTeam.Enemy, myHero.Position, Q.Range + Q.Width);
+                    if (enemyminions.Count > 0)
                     {
-                        list = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position, Q.Range + Q.Width).ToList<Obj_AI_Base>();
+                        list = enemyminions.ToList<Obj_AI_Base>();
                     }
-                    else if (EntityManager.MinionsAndMonsters.GetJungleMonsters(myHero.Position, Q.Range + Q.Width).Count > 0)
+                    else if (jungleminions.Count > 0)
                     {
-                        list = EntityManager.MinionsAndMonsters.GetJungleMonsters(myHero.Position, Q.Range + Q.Width).ToList<Obj_AI_Base>();
+                        list = jungleminions.ToList<Obj_AI_Base>();
                     }
                 }
                 if (list.Count < minhits) { return; }
@@ -577,13 +648,15 @@ namespace The_Ball_Is_Angry
                     }
                     else
                     {
-                        if (EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position, Q.Range + Q.Width).Count > 0)
+                        var enemyminions = EntityManager.MinionsAndMonsters.Get(EntityManager.MinionsAndMonsters.EntityType.Minion, EntityManager.UnitTeam.Enemy, myHero.Position, Q.Range + Q.Width);
+                        var jungleminions = EntityManager.MinionsAndMonsters.Get(EntityManager.MinionsAndMonsters.EntityType.Monster, EntityManager.UnitTeam.Enemy, myHero.Position, Q.Range + Q.Width);
+                        if (enemyminions.Count > 0)
                         {
-                            list = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position, Q.Range + Q.Width).ToList<Obj_AI_Base>();
+                            list = enemyminions.ToList<Obj_AI_Base>();
                         }
-                        else if (EntityManager.MinionsAndMonsters.GetJungleMonsters(myHero.Position, Q.Range + Q.Width).Count > 0)
+                        else if (jungleminions.Count > 0)
                         {
-                            list = EntityManager.MinionsAndMonsters.GetJungleMonsters(myHero.Position, Q.Range + Q.Width).ToList<Obj_AI_Base>();
+                            list = jungleminions.ToList<Obj_AI_Base>();
                         }
                     }
                     if (list.Count > 0)
@@ -740,14 +813,15 @@ namespace The_Ball_Is_Angry
             {
                 foreach (Obj_AI_Base obj in list.Where(o => o.IsValidTarget(Q.Range + Q.Width) && target.NetworkId != o.NetworkId))
                 {
-                    var info = obj.ServerPosition.To2D().ProjectOn(StartPos.To2D(), EndPos.To2D());
+                    var extendedendpos = EndPos + (EndPos - StartPos).Normalized() * Q.Width;
+                    var info = obj.ServerPosition.To2D().ProjectOn(StartPos.To2D(), extendedendpos.To2D());
                     if (info.IsOnSegment && Extensions.Distance(obj.ServerPosition.To2D(), info.SegmentPoint, true) <= Math.Pow(Q.Width * 1.5f + obj.BoundingRadius / 2, 2))
                     {
                         var hitchancepercent = obj.Type == myHero.Type ? HitChancePercent(Q.Slot) : 30;
                         var pred = Q.GetPrediction(obj);
                         if (pred.HitChancePercent >= hitchancepercent)
                         {
-                            info = pred.CastPosition.To2D().ProjectOn(StartPos.To2D(), EndPos.To2D());
+                            info = pred.CastPosition.To2D().ProjectOn(StartPos.To2D(), extendedendpos.To2D());
                             if (info.IsOnSegment && Extensions.Distance(pred.CastPosition.To2D(), info.SegmentPoint, true) <= Math.Pow(Q.Width + obj.BoundingRadius / 2, 2))
                             {
                                 counted[obj.NetworkId] = true;
@@ -950,19 +1024,28 @@ namespace The_Ball_Is_Angry
             }
         }
 
-        private static void OnCreateObj(GameObject sender, EventArgs args)
+        private static void OnCreate(GameObject sender, EventArgs args)
         {
             if (sender != null && sender.Name != null)
             {
-                if (sender.Name.ToLower().Contains("missile"))
+                if (sender is MissileClient)
                 {
-                    var missile = (MissileClient)sender;
+                    var missile = sender as MissileClient;
                     if (missile.SpellCaster.IsMe && (missile.SData.Name.ToLower().Contains("orianaizuna") || missile.SData.Name.ToLower().Contains("orianaredact")))
                     {
                         BallObject = sender;
                     }
+                    if (GetCheckBox(SubMenu["Combo"], "Shield") || GetCheckBox(SubMenu["Harass"], "Shield"))
+                    {
+                        var spellCaster = missile.SpellCaster as Obj_AI_Base;
+                        if (spellCaster.Type != GameObjectType.LevelPropAI && myHero.Team != missile.SpellCaster.Team && Extensions.Distance(myHero, sender, true) < E.RangeSquared * 1.5f)//(missile.SpellCaster.Type == GameObjectType.AIHeroClient && missile.SpellCaster.Type == GameObjectType.obj_AI_Turret) &&
+                        {
+                            missiles.Add(missile);
+                            //Core.DelayAction(delegate { missiles.Remove(missile); }, 1000 * (int)(1.25f * Extensions.Distance(missile.Position, missile.EndPosition) / missile.SData.MissileSpeed));
+                        }
+                    }
                 }
-                else if (sender.Name.ToLower().Contains(myHero.ChampionName.ToLower()))
+                else if (sender is Obj_GeneralParticleEmitter && sender.Name.ToLower().Contains(myHero.ChampionName.ToLower()))
                 {
                     if (sender.Name.ToLower().Contains("yomu") && sender.Name.ToLower().Contains("green"))
                     {
@@ -975,12 +1058,30 @@ namespace The_Ball_Is_Angry
         {
             if (sender != null && sender.Name != null)
             {
-                if (sender.Name.ToLower().Contains("missile"))
+                if (sender is MissileClient)
                 {
-                    var missile = (MissileClient)sender;
+                    var missile = sender as MissileClient;
                     if (missile.SpellCaster.IsMe && missile.SData.Name.ToLower().Contains("orianaredact"))
                     {
                         BallObject = E_Target;
+                    }
+                    if (GetCheckBox(SubMenu["Combo"], "Shield") || GetCheckBox(SubMenu["Harass"], "Shield"))
+                    {
+                        var spellCaster = missile.SpellCaster as Obj_AI_Base;
+                        if (spellCaster.Type != GameObjectType.LevelPropAI && myHero.Team != missile.SpellCaster.Team)//(missile.SpellCaster.Type == GameObjectType.AIHeroClient && missile.SpellCaster.Type == GameObjectType.obj_AI_Turret) &&
+                        {
+                            if (missiles.Count > 0)
+                            {
+                                foreach (MissileClient m in missiles)
+                                {
+                                    if (m.NetworkId == missile.NetworkId || Extensions.Distance(m, missile, true) == 0f)
+                                    {
+                                        missiles.Remove(m);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
