@@ -63,22 +63,22 @@ namespace The_Ball_Is_Angry
             {
                 Ignite = new Spell.Targeted(slot, 600);
             }
-            menu = MainMenu.AddMenu(AddonName, AddonName + " by " + Author + " v1.4");
+            menu = MainMenu.AddMenu(AddonName, AddonName + " by " + Author + " v1.40");
             menu.AddLabel(AddonName + " made by " + Author);
 
             SubMenu["Prediction"] = menu.AddSubMenu("Prediction", "Prediction");
             SubMenu["Prediction"].AddGroupLabel("Q Settings");
             SubMenu["Prediction"].Add("QCombo", new Slider("Combo HitChancePercent", 60, 0, 100));
-            SubMenu["Prediction"].Add("QHarass", new Slider("Harass HitChancePercent", 75, 0, 100));
+            SubMenu["Prediction"].Add("QHarass", new Slider("Harass HitChancePercent", 70, 0, 100));
             SubMenu["Prediction"].AddGroupLabel("W Settings");
             SubMenu["Prediction"].Add("WCombo", new Slider("Combo HitChancePercent", 60, 0, 100));
-            SubMenu["Prediction"].Add("WHarass", new Slider("Harass HitChancePercent", 75, 0, 100));
+            SubMenu["Prediction"].Add("WHarass", new Slider("Harass HitChancePercent", 70, 0, 100));
             SubMenu["Prediction"].AddGroupLabel("E Settings");
             SubMenu["Prediction"].Add("ECombo", new Slider("Combo HitChancePercent", 45, 0, 100));
             SubMenu["Prediction"].Add("EHarass", new Slider("Harass HitChancePercent", 60, 0, 100));
             SubMenu["Prediction"].AddGroupLabel("R Settings");
             SubMenu["Prediction"].Add("RCombo", new Slider("Combo HitChancePercent", 60, 0, 100));
-            SubMenu["Prediction"].Add("RHarass", new Slider("Harass HitChancePercent", 75, 0, 100));
+            SubMenu["Prediction"].Add("RHarass", new Slider("Harass HitChancePercent", 70, 0, 100));
 
             SubMenu["Combo"] = menu.AddSubMenu("Combo", "Combo");
             SubMenu["Combo"].Add("TF", new Slider("Use TeamFight Logic if enemies near >=", 3, 1, 5));
@@ -165,7 +165,7 @@ namespace The_Ball_Is_Angry
 
         private static void Obj_AI_Base_OnBasicAttack(Obj_AI_Base sender, GameObjectProcessSpellCastEventArgs args)
         {
-            if (sender.Team != myHero.Team && args.Target.IsMe && (GetCheckBox(SubMenu["Misc"], "Shield") || (IsCombo && GetCheckBox(SubMenu["Combo"], "Shield")) || (IsHarass && GetCheckBox(SubMenu["Harass"], "Shield"))) )
+            if (sender.Team != myHero.Team && args.Target.IsMe && (GetCheckBox(SubMenu["Misc"], "Shield") || (IsCombo && GetCheckBox(SubMenu["Combo"], "Shield")) || (IsHarass && GetCheckBox(SubMenu["Harass"], "Shield"))))
             {
                 if (sender is AIHeroClient)
                 {
@@ -552,10 +552,10 @@ namespace The_Ball_Is_Angry
             {
                 foreach (MissileClient m in missiles.Where(a => a.IsValidMissile()))
                 {
-                    var CanCalculate = false;
+                    var CanCast = false;
                     if (m.Target != null)
                     {
-                        CanCalculate = m.Target.IsMe;
+                        CanCast = m.Target.IsMe;
                     }
                     if (m.EndPosition != null && m.SData.LineWidth != null && m.SData.LineWidth > 0f)
                     {
@@ -565,9 +565,9 @@ namespace The_Ball_Is_Angry
                         var startpos = m.StartPosition != null ? m.StartPosition : m.SpellCaster.Position;
                         var extendedendpos = m.EndPosition + (m.EndPosition - startpos).Normalized() * width;
                         var info = myHero.Position.To2D().ProjectOn(startpos.To2D(), extendedendpos.To2D());
-                        CanCalculate = info.IsOnSegment && Extensions.Distance(info.SegmentPoint, myHero.Position.To2D(), true) <= width_sqrt;
+                        CanCast = info.IsOnSegment && Extensions.Distance(info.SegmentPoint, myHero.Position.To2D(), true) <= width_sqrt;
                     }
-                    if (CanCalculate)
+                    if (CanCast)
                     {
                         CastE(myHero);
                     }
@@ -714,7 +714,7 @@ namespace The_Ball_Is_Angry
             int count = 0;
             if (W.IsReady())
             {
-                foreach (Obj_AI_Base obj in list.Where(obj => Extensions.Distance(obj.ServerPosition, Ball, true) <= W.RangeSquared * 2.25f))
+                foreach (Obj_AI_Base obj in list.Where(obj => obj.IsValidTarget() && Extensions.Distance(obj.ServerPosition, Ball, true) <= W.RangeSquared * 2.25f))
                 {
                     var pred = W.GetPrediction(obj);
                     if (pred.HitChancePercent >= HitChancePercent(W.Slot) && Extensions.Distance(Ball, pred.CastPosition, true) <= W.RangeSquared)
@@ -1035,7 +1035,7 @@ namespace The_Ball_Is_Angry
                     {
                         BallObject = sender;
                     }
-                    if (GetCheckBox(SubMenu["Combo"], "Shield") || GetCheckBox(SubMenu["Harass"], "Shield"))
+                    if (GetCheckBox(SubMenu["Combo"], "Shield") || GetCheckBox(SubMenu["Harass"], "Shield") || GetCheckBox(SubMenu["Misc"], "Shield"))
                     {
                         var spellCaster = missile.SpellCaster as Obj_AI_Base;
                         if (spellCaster.Type != GameObjectType.LevelPropAI && myHero.Team != missile.SpellCaster.Team && Extensions.Distance(myHero, sender, true) < E.RangeSquared * 1.5f)//(missile.SpellCaster.Type == GameObjectType.AIHeroClient && missile.SpellCaster.Type == GameObjectType.obj_AI_Turret) &&
@@ -1065,7 +1065,7 @@ namespace The_Ball_Is_Angry
                     {
                         BallObject = E_Target;
                     }
-                    if (GetCheckBox(SubMenu["Combo"], "Shield") || GetCheckBox(SubMenu["Harass"], "Shield"))
+                    if (GetCheckBox(SubMenu["Combo"], "Shield") || GetCheckBox(SubMenu["Harass"], "Shield") || GetCheckBox(SubMenu["Misc"], "Shield"))
                     {
                         var spellCaster = missile.SpellCaster as Obj_AI_Base;
                         if (spellCaster.Type != GameObjectType.LevelPropAI && myHero.Team != missile.SpellCaster.Team)//(missile.SpellCaster.Type == GameObjectType.AIHeroClient && missile.SpellCaster.Type == GameObjectType.obj_AI_Turret) &&
@@ -1198,13 +1198,13 @@ namespace The_Ball_Is_Angry
                                 };
                         var bestdmg = 0f;
                         var bestmana = 0f;
-                        foreach (bool q1 in q)
+                        foreach (bool r1 in r)
                         {
-                            foreach (bool w1 in w)
+                            foreach (bool q1 in q)
                             {
-                                foreach (bool e1 in e)
+                                foreach (bool w1 in w)
                                 {
-                                    foreach (bool r1 in r)
+                                    foreach (bool e1 in e)
                                     {
                                         DamageInfo damageI2 = GetComboDamage(target, q1, w1, e1, r1);
                                         float d = damageI2.Damage;
