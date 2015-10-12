@@ -152,6 +152,7 @@ namespace Draven_Me_Crazy
             SubMenu["Misc"].Add("Interrupter", new CheckBox("Use E to Interrupt Channeling Spells", true));
             SubMenu["Misc"].Add("Overkill", new Slider("Overkill % for damage prediction", 10, 0, 100));
             SubMenu["Misc"].Add("RRange", new Slider("R Range", 1800, 300, 6000));
+            SubMenu["Misc"].Add("ERange", new Slider("E Range", 1050, 100, 1050));
 
             Turrets = ObjectManager.Get<Obj_AI_Turret>().Where(m => m.HealthPercent > 0 && m.IsEnemy).ToList();
 
@@ -194,6 +195,8 @@ namespace Draven_Me_Crazy
         {
             R = new Spell.Skillshot(R.Slot, (uint)GetSlider(SubMenu["Misc"], "RRange"), R.Type, R.CastDelay, R.Speed, R.Width);
             R.AllowedCollisionCount = int.MaxValue;
+            E = new Spell.Skillshot(E.Slot, (uint)GetSlider(SubMenu["Misc"], "ERange"), E.Type, E.CastDelay, E.Speed, E.Width);
+            E.AllowedCollisionCount = int.MaxValue;
             foreach (Axe a in Axes)
             {
                 if (!a.InTime)
@@ -414,7 +417,7 @@ namespace Draven_Me_Crazy
             if (E.IsReady() && target.IsValidTarget())
             {
                 var pred = E.GetPrediction(target);
-                if (pred.HitChancePercent >= 70)
+                if (pred.HitChance == HitChance.High)
                 {
                     E.Cast(pred.CastPosition);
                 }
@@ -425,7 +428,7 @@ namespace Draven_Me_Crazy
             if (R.IsReady() && target.IsValidTarget())
             {
                 var pred = R.GetPrediction(target);
-                if (pred.HitChancePercent >= 65)
+                if (pred.HitChance == HitChance.High)
                 {
                     R.Cast(pred.CastPosition);
                 }
