@@ -16,7 +16,6 @@ namespace LeeSin
     {
         public static string Author = "iCreative";
         public static string AddonName = "Master the enemy";
-        public static Obj_AI_Base QTarget = null;
         static void Main(string[] args)
         {
             Loading.OnLoadingComplete += Loading_OnLoadingComplete;
@@ -30,22 +29,50 @@ namespace LeeSin
             MenuManager.Init();
             ModeManager.Init();
             WardManager.Init();
-            TargetSelector.Init(SpellManager.Q2.Range, DamageType.Physical);
+            Q_Spell.Init();
+            TargetSelector.Init(SpellManager.Q2.Range + 200, DamageType.Physical);
             LoadCallbacks();
         }
-
         private static void LoadCallbacks()
         {
             Game.OnTick += Game_OnTick;
-
-            Obj_AI_Base.OnBuffGain += Obj_AI_Base_OnBuffGain;
-            Obj_AI_Base.OnBuffLose += Obj_AI_Base_OnBuffLose;
+            TargetSelector.Range = 1300f;
+            if (!SpellSlot.Q.IsFirstSpell() && Q_Spell.Target != null)
+            {
+                TargetSelector.Range = 1500f;
+            }
 
             Drawing.OnDraw += Drawing_OnDraw;
 
             Interrupter.OnInterruptableSpell += Interrupter_OnInterruptableSpell;
         }
 
+        public static Obj_AI_Base GetBestObjectFarFrom(Vector3 Position)
+        {
+            var minion = AllyMinionManager.GetFurthestTo(Position);
+            var ally = AllyHeroManager.GetFurthestTo(Position);
+            var ward = WardManager.GetFurthestTo(Position);
+            var miniondistance = minion != null ? Extensions.Distance(Position, minion, true) : 0;
+            var allydistance = ally != null ? Extensions.Distance(Position, ally, true) : 0;
+            var warddistance = ward != null ? Extensions.Distance(Position, ward, true) : 0;
+            var best = Math.Max(miniondistance, Math.Max(allydistance, warddistance));
+            if (best > 0f)
+            {
+                if (best == allydistance)
+                {
+                    return ally;
+                }
+                else if (best == miniondistance)
+                {
+                    return minion;
+                }
+                else if (best == warddistance)
+                {
+                    return ward;
+                }
+            }
+            return null;
+        }
         public static Obj_AI_Base GetBestObjectNearTo(Vector3 Position)
         {
             var minion = AllyMinionManager.GetNearestTo(Position);
@@ -79,33 +106,7 @@ namespace LeeSin
                 Util.myHero.Spellbook.CastSpell(SpellSlot.W, target);
             }
         }
-        private static void Obj_AI_Base_OnBuffLose(Obj_AI_Base sender, Obj_AI_BaseBuffLoseEventArgs args)
-        {
-            if (args.Buff.Caster.IsMe)
-            {
-                if (args.Buff.Name.ToLower().Contains("blindmonkqone"))
-                {
-                    QTarget = sender;
-                }
-            }
-        }
 
-        private static void Obj_AI_Base_OnBuffGain(Obj_AI_Base sender, Obj_AI_BaseBuffGainEventArgs args)
-        {
-
-            if (args.Buff.Caster.IsMe)
-            {
-                if (args.Buff.Name.ToLower().Contains("blindmonkqone"))
-                {
-                    QTarget = null;
-                }
-            }
-        }
-
-        public static bool HaveQ(this Obj_AI_Base unit)
-        {
-            return unit.IsValidTarget() && QTarget != null && unit.NetworkId == QTarget.NetworkId;
-        }
 
         private static void Game_OnTick(EventArgs args)
         {

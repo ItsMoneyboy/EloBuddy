@@ -20,6 +20,7 @@ namespace LeeSin
         public static Spell.Active Q2, W2;
         public static Spell.Targeted Ignite, Smite;
         public static Spell.Skillshot Flash;
+        public static float W_Range = 700f;
         public static float W_ExtraRange = 150f;
         public static void Init()
         {
@@ -28,19 +29,24 @@ namespace LeeSin
             Q1.AllowedCollisionCount = 0;
             Q2 = new Spell.Active(SpellSlot.Q, 1300);
 
-            W1 = new Spell.Skillshot(SpellSlot.W, 700, SkillShotType.Circular, 0, 1500, 150);
+            W1 = new Spell.Skillshot(SpellSlot.W, 900, SkillShotType.Linear, 0, 1500, 150);
             W1.AllowedCollisionCount = int.MaxValue;
+
             W2 = new Spell.Active(SpellSlot.W, 700);
 
-            E1 = new Spell.Skillshot(SpellSlot.E, 350, SkillShotType.Circular, 250, 2500, 150);
+            E1 = new Spell.Skillshot(SpellSlot.E, 350, SkillShotType.Linear, 250, 2500, 150);
             E1.AllowedCollisionCount = int.MaxValue;
-            E2 = new Spell.Skillshot(SpellSlot.E, 675, SkillShotType.Circular, 250, 2500, 150);
+            E2 = new Spell.Skillshot(SpellSlot.E, 675, SkillShotType.Linear, 250, 2500, 150);
             E2.AllowedCollisionCount = int.MaxValue;
 
             R = new Spell.Targeted(SpellSlot.R, 375);
             RKick = new Spell.Skillshot(SpellSlot.R, 650, SkillShotType.Linear, 250, 600, 100);
             RKick.AllowedCollisionCount = int.MaxValue;
 
+            Ignite = new Spell.Targeted(Util.myHero.GetSpellSlotFromName("summonerdot"), 600);
+            Smite = new Spell.Targeted(Util.myHero.GetSpellSlotFromName("smite"), 780);
+            Flash = new Spell.Skillshot(Util.myHero.GetSpellSlotFromName("flash"), 400, SkillShotType.Circular);
+            /*
             var slot = Util.myHero.GetSpellSlotFromName("summonerdot");
             if (slot != SpellSlot.Unknown)
             {
@@ -55,7 +61,7 @@ namespace LeeSin
             if (slot != SpellSlot.Unknown)
             {
                 Smite = new Spell.Targeted(slot, 780);
-            }
+            }*/
         }
         public static bool IsReady(this SpellSlot slot)
         {

@@ -14,6 +14,13 @@ namespace LeeSin
 {
     public static class MenuManager
     {
+        public static Menu InsecMenu
+        {
+            get
+            {
+                return GetSubMenu("Insec");
+            }
+        }
         public static Menu AddonMenu;
         public static Dictionary<string, Menu> SubMenu = new Dictionary<string, Menu>() { };
         public static void Init()
@@ -51,6 +58,7 @@ namespace LeeSin
 
             SubMenu["Flee"] = AddonMenu.AddSubMenu("Flee", "Flee");
             SubMenu["Flee"].Add("WardJump", new CheckBox("Use WardJump", true));
+            SubMenu["Flee"].Add("W", new CheckBox("Use W on objects near mouse", true));
         }
         public static int GetSliderValue(this Menu m, string s)
         {
@@ -76,14 +84,14 @@ namespace LeeSin
         }
         public static Menu GetSubMenu(string s)
         {
-            return SubMenu[s];
-        }
-        public static Menu InsecMenu
-        {
-            get
+            foreach (KeyValuePair<string, Menu> t in SubMenu)
             {
-                return GetSubMenu("Insec");
+                if (t.Key.Equals(s))
+                {
+                    return t.Value;
+                }
             }
+            return null;
         }
         public static Menu FleeMenu
         {
@@ -111,6 +119,27 @@ namespace LeeSin
             get
             {
                 return GetSubMenu("Misc");
+            }
+        }
+        public static Menu LaneClearMenu
+        {
+            get
+            {
+                return GetSubMenu("LaneClear");
+            }
+        }
+        public static Menu LastHitMenu
+        {
+            get
+            {
+                return GetSubMenu("LastHit");
+            }
+        }
+        public static Menu JungleClear
+        {
+            get
+            {
+                return GetSubMenu("JungleClear");
             }
         }
         public static Menu PredictionMenu

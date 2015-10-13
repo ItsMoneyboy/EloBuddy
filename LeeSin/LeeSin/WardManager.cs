@@ -28,7 +28,7 @@ namespace LeeSin
 
             GameObject.OnCreate += Obj_Ward_OnCreate;
             GameObject.OnDelete += Obj_Ward_OnDelete;
-            WardsAvailable = ObjectManager.Get<Obj_AI_Minion>().Where(m => m.IsValid && m.IsWard() && !m.IsDead).ToList();
+            WardsAvailable = ObjectManager.Get<Obj_AI_Minion>().Where(m => m.IsWard() && m.IsValid && !m.IsDead).ToList();
         }
         public static void CastWardTo(Vector3 Position)
         {
@@ -71,12 +71,12 @@ namespace LeeSin
         }
         private static void Obj_AI_Base_OnProcessSpellCast(Obj_AI_Base sender, GameObjectProcessSpellCastEventArgs args)
         {
-            if (args.SData.Name.Equals(Util.myHero.Spellbook.GetSpell(SpellSlot.W).SData.Name) && args.SData.Name.ToLower().Contains("one"))
+            if (args.SData.Name.Equals(SpellSlot.W.GetSpellDataInst().SData.Name) && args.SData.Name.ToLower().Contains("one"))
             {
                 LastWardJumpVector = Vector3.Zero;
             }
         }
-        private static bool IsWard(this GameObject sender)
+        public static bool IsWard(this GameObject sender)
         {
             return sender is Obj_AI_Minion && (sender.Name.ToLower().Contains("sightward") || sender.Name.ToLower().Contains("visionward")) && sender.Team == Util.myHero.Team;
         }
@@ -109,11 +109,11 @@ namespace LeeSin
         }
         public static Obj_AI_Minion GetNearestTo(Vector3 position)
         {
-            return WardsAvailable.Where(m => m.IsValid && !m.IsDead && Extensions.Distance(Util.myHero, m, true) <= Math.Pow(SpellManager.W1.Range + SpellManager.W_ExtraRange, 2)).OrderBy(m => Extensions.Distance(Util.myHero, position, true)).FirstOrDefault();
+            return WardsAvailable.Where(m => m.IsValid && !m.IsDead && Extensions.Distance(Util.myHero, m, true) <= Math.Pow(SpellManager.W_Range + SpellManager.W_ExtraRange, 2)).OrderBy(m => Extensions.Distance(Util.myHero, position, true)).FirstOrDefault();
         }
         public static Obj_AI_Minion GetFurthestTo(Vector3 position)
         {
-            return WardsAvailable.Where(m => m.IsValid && !m.IsDead && Extensions.Distance(Util.myHero, m, true) <= Math.Pow(SpellManager.W1.Range + SpellManager.W_ExtraRange, 2)).OrderBy(m => Extensions.Distance(Util.myHero, position, true)).LastOrDefault();
+            return WardsAvailable.Where(m => m.IsValid && !m.IsDead && Extensions.Distance(Util.myHero, m, true) <= Math.Pow(SpellManager.W_Range + SpellManager.W_ExtraRange, 2)).OrderBy(m => Extensions.Distance(Util.myHero, position, true)).LastOrDefault();
         }
         public static bool IsTryingToJump
         {

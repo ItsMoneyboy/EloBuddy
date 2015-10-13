@@ -18,16 +18,19 @@ namespace LeeSin
     {
         public static void Execute()
         {
-            if (MenuManager.FleeMenu.GetCheckBoxValue("WardJump"))
+            if (SpellManager.CanCastW1)
             {
                 var obj = Champion.GetBestObjectNearTo(Util.mousePos);
-                if (obj != null)
+                if (obj != null && MenuManager.FleeMenu.GetCheckBoxValue("W"))
                 {
                     Champion.JumpTo(obj);
                 }
-                else if (WardManager.CanCastWard)
+                else if (MenuManager.FleeMenu.GetCheckBoxValue("WardJump"))
                 {
-                    WardManager.CastWardTo(Util.mousePos);
+                    if (WardManager.CanCastWard)
+                    {
+                        WardManager.CastWardTo(Util.mousePos);
+                    }
                 }
             }
         }
