@@ -52,11 +52,11 @@ namespace The_Ball_Is_Angry
             Chat.Print(AddonName + " made by " + Author + " loaded, have fun!.");
             Q = new Spell.Skillshot(SpellSlot.Q, 815, SkillShotType.Circular, 0, 1200, 130);
             Q.AllowedCollisionCount = int.MaxValue;
-            W = new Spell.Skillshot(SpellSlot.W, 250, SkillShotType.Circular, 250, int.MaxValue, 50);
+            W = new Spell.Skillshot(SpellSlot.W, 255, SkillShotType.Linear, 250, int.MaxValue, 50);
             W.AllowedCollisionCount = int.MaxValue;
             E = new Spell.Skillshot(SpellSlot.E, 1095, SkillShotType.Circular, 0, 1800, 85);
             E.AllowedCollisionCount = int.MaxValue;
-            R = new Spell.Skillshot(SpellSlot.R, 380, SkillShotType.Circular, 500, int.MaxValue, 50);
+            R = new Spell.Skillshot(SpellSlot.R, 410, SkillShotType.Linear, 500, int.MaxValue, 50);
             R.AllowedCollisionCount = int.MaxValue;
             var slot = myHero.GetSpellSlotFromName("summonerdot");
             if (slot != SpellSlot.Unknown)
@@ -152,7 +152,6 @@ namespace The_Ball_Is_Angry
 
             Game.OnTick += OnTick;
             GameObject.OnCreate += OnCreate;
-            GameObject.OnDelete += OnDelete;
             Drawing.OnDraw += OnDraw;
             Obj_AI_Base.OnProcessSpellCast += OnProcessSpell;
             Obj_AI_Base.OnPlayAnimation += OnPlayAnimation;
@@ -161,7 +160,11 @@ namespace The_Ball_Is_Angry
             Spellbook.OnCastSpell += OnCastSpell;
             Obj_AI_Base.OnBasicAttack += Obj_AI_Base_OnBasicAttack;
             BallObject = ObjectManager.Get<GameObject>().FirstOrDefault(obj => obj.Name != null && !obj.IsDead && obj.IsValid && obj.Name.ToLower().Contains("doomball"));
+            MissileClient.OnCreate += MissileClient_OnCreate;
+            MissileClient.OnDelete += MissileClient_OnDelete;
         }
+
+
 
         private static void Obj_AI_Base_OnBasicAttack(Obj_AI_Base sender, GameObjectProcessSpellCastEventArgs args)
         {
@@ -214,11 +217,11 @@ namespace The_Ball_Is_Angry
             }
             if (R.IsReady() && SubMenu["Misc"]["R2"].Cast<Slider>().CurrentValue <= HitR())
             {
-                myHero.Spellbook.CastSpell(SpellSlot.R);
+                myHero.Spellbook.CastSpell(R.Slot);
             }
             if (W.IsReady() && SubMenu["Misc"]["W2"].Cast<Slider>().CurrentValue <= HitW(EntityManager.Heroes.Enemies.ToList<Obj_AI_Base>()))
             {
-                myHero.Spellbook.CastSpell(SpellSlot.W);
+                myHero.Spellbook.CastSpell(W.Slot);
             }
             KillSteal();
             if (IsCombo)
@@ -815,14 +818,14 @@ namespace The_Ball_Is_Angry
                 {
                     var extendedendpos = EndPos + (EndPos - StartPos).Normalized() * Q.Width;
                     var info = obj.ServerPosition.To2D().ProjectOn(StartPos.To2D(), extendedendpos.To2D());
-                    if (info.IsOnSegment && Extensions.Distance(obj.ServerPosition.To2D(), info.SegmentPoint, true) <= Math.Pow(Q.Width * 1.5f + obj.BoundingRadius / 2, 2))
+                    if (info.IsOnSegment && Extensions.Distance(obj.ServerPosition.To2D(), info.SegmentPoint, true) <= Math.Pow(Q.Width * 1.5f + obj.BoundingRadius / 3, 2))
                     {
                         var hitchancepercent = obj.Type == myHero.Type ? HitChancePercent(Q.Slot) : 30;
                         var pred = Q.GetPrediction(obj);
                         if (pred.HitChancePercent >= hitchancepercent)
                         {
                             info = pred.CastPosition.To2D().ProjectOn(StartPos.To2D(), extendedendpos.To2D());
-                            if (info.IsOnSegment && Extensions.Distance(pred.CastPosition.To2D(), info.SegmentPoint, true) <= Math.Pow(Q.Width + obj.BoundingRadius / 2, 2))
+                            if (info.IsOnSegment && Extensions.Distance(pred.CastPosition.To2D(), info.SegmentPoint, true) <= Math.Pow(Q.Width + obj.BoundingRadius / 3, 2))
                             {
                                 counted[obj.NetworkId] = true;
                             }
@@ -881,14 +884,14 @@ namespace The_Ball_Is_Angry
                 foreach (Obj_AI_Base obj in list.Where(o => o.IsValidTarget(E.Range)))
                 {
                     var info = obj.ServerPosition.To2D().ProjectOn(StartPos.To2D(), EndPos.To2D());
-                    if (info.IsOnSegment && Extensions.Distance(obj.ServerPosition.To2D(), info.SegmentPoint, true) <= Math.Pow(E.Width * 1.5f + obj.BoundingRadius / 2, 2))
+                    if (info.IsOnSegment && Extensions.Distance(obj.ServerPosition.To2D(), info.SegmentPoint, true) <= Math.Pow(E.Width * 1.5f + obj.BoundingRadius / 3, 2))
                     {
                         var pred = E.GetPrediction(obj);
                         var hitchancepercent = obj.Type == myHero.Type ? HitChancePercent(E.Slot) : 30;
                         if (pred.HitChancePercent >= hitchancepercent && Extensions.Distance(pred.CastPosition, myHero, true) <= E.RangeSquared)
                         {
                             info = pred.CastPosition.To2D().ProjectOn(StartPos.To2D(), EndPos.To2D());
-                            if (info.IsOnSegment && Extensions.Distance(pred.CastPosition.To2D(), info.SegmentPoint, true) <= Math.Pow(E.Width + obj.BoundingRadius / 2, 2))
+                            if (info.IsOnSegment && Extensions.Distance(pred.CastPosition.To2D(), info.SegmentPoint, true) <= Math.Pow(E.Width + obj.BoundingRadius / 3, 2))
                             {
                                 count++;
                                 counted[obj.NetworkId] = true;
@@ -953,12 +956,12 @@ namespace The_Ball_Is_Angry
 
         private static void OnGapcloser(AIHeroClient sender, Gapcloser.GapcloserEventArgs e)
         {
-            if (e.Sender.Team == myHero.Team)
+            if (sender.Team == myHero.Team)
             {
                 var target = TargetSelector.GetTarget(E.Range, DamageType.Magical, myHero.Position);
                 if (SubMenu["Misc"]["E"].Cast<CheckBox>().CurrentValue && target.IsValidTarget())
                 {
-                    CastE(e.Sender);
+                    CastE(sender);
                     LastGapclose = Game.Time;
                 }
             }
@@ -1028,24 +1031,7 @@ namespace The_Ball_Is_Angry
         {
             if (sender != null && sender.Name != null)
             {
-                if (sender is MissileClient)
-                {
-                    var missile = sender as MissileClient;
-                    if (missile.SpellCaster.IsMe && (missile.SData.Name.ToLower().Contains("orianaizuna") || missile.SData.Name.ToLower().Contains("orianaredact")))
-                    {
-                        BallObject = sender;
-                    }
-                    if (GetCheckBox(SubMenu["Combo"], "Shield") || GetCheckBox(SubMenu["Harass"], "Shield") || GetCheckBox(SubMenu["Misc"], "Shield"))
-                    {
-                        var spellCaster = missile.SpellCaster as Obj_AI_Base;
-                        if (spellCaster.Type != GameObjectType.LevelPropAI && myHero.Team != missile.SpellCaster.Team && Extensions.Distance(myHero, sender, true) < E.RangeSquared * 1.5f)//(missile.SpellCaster.Type == GameObjectType.AIHeroClient && missile.SpellCaster.Type == GameObjectType.obj_AI_Turret) &&
-                        {
-                            missiles.Add(missile);
-                            //Core.DelayAction(delegate { missiles.Remove(missile); }, 1000 * (int)(1.25f * Extensions.Distance(missile.Position, missile.EndPosition) / missile.SData.MissileSpeed));
-                        }
-                    }
-                }
-                else if (sender is Obj_GeneralParticleEmitter && sender.Name.ToLower().Contains(myHero.ChampionName.ToLower()))
+                if (sender is Obj_GeneralParticleEmitter && sender.Name.ToLower().Contains(myHero.ChampionName.ToLower()))
                 {
                     if (sender.Name.ToLower().Contains("yomu") && sender.Name.ToLower().Contains("green"))
                     {
@@ -1054,31 +1040,49 @@ namespace The_Ball_Is_Angry
                 }
             }
         }
-        private static void OnDelete(GameObject sender, EventArgs args)
+
+        private static void MissileClient_OnCreate(GameObject sender, EventArgs args)
         {
-            if (sender != null && sender.Name != null)
+            if (sender is MissileClient)
             {
-                if (sender is MissileClient)
+                var missile = sender as MissileClient;
+                if (missile.SpellCaster.IsMe && (missile.SData.Name.ToLower().Contains("orianaizuna") || missile.SData.Name.ToLower().Contains("orianaredact")))
                 {
-                    var missile = sender as MissileClient;
-                    if (missile.SpellCaster.IsMe && missile.SData.Name.ToLower().Contains("orianaredact"))
+                    BallObject = sender;
+                }
+                if (GetCheckBox(SubMenu["Combo"], "Shield") || GetCheckBox(SubMenu["Harass"], "Shield") || GetCheckBox(SubMenu["Misc"], "Shield"))
+                {
+                    var spellCaster = missile.SpellCaster as Obj_AI_Base;
+                    if (!spellCaster.Name.ToLower().Contains("minion") && myHero.Team != missile.SpellCaster.Team && Extensions.Distance(myHero, sender, true) < E.RangeSquared * 1.5f)//(missile.SpellCaster.Type == GameObjectType.AIHeroClient && missile.SpellCaster.Type == GameObjectType.obj_AI_Turret) &&
                     {
-                        BallObject = E_Target;
+                        missiles.Add(missile);
+                        //Core.DelayAction(delegate { missiles.Remove(missile); }, 1000 * (int)(1.25f * Extensions.Distance(missile.Position, missile.EndPosition) / missile.SData.MissileSpeed));
                     }
-                    if (GetCheckBox(SubMenu["Combo"], "Shield") || GetCheckBox(SubMenu["Harass"], "Shield") || GetCheckBox(SubMenu["Misc"], "Shield"))
+                }
+            }
+        }
+        private static void MissileClient_OnDelete(GameObject sender, EventArgs args)
+        {
+            if (sender is MissileClient)
+            {
+                var missile = sender as MissileClient;
+                if (missile.SpellCaster.IsMe && missile.SData.Name.ToLower().Contains("orianaredact"))
+                {
+                    BallObject = E_Target;
+                }
+                if (GetCheckBox(SubMenu["Combo"], "Shield") || GetCheckBox(SubMenu["Harass"], "Shield") || GetCheckBox(SubMenu["Misc"], "Shield"))
+                {
+                    var spellCaster = missile.SpellCaster as Obj_AI_Base;
+                    if (!spellCaster.Name.ToLower().Contains("minion") && myHero.Team != missile.SpellCaster.Team)//(missile.SpellCaster.Type == GameObjectType.AIHeroClient && missile.SpellCaster.Type == GameObjectType.obj_AI_Turret) &&
                     {
-                        var spellCaster = missile.SpellCaster as Obj_AI_Base;
-                        if (spellCaster.Type != GameObjectType.LevelPropAI && myHero.Team != missile.SpellCaster.Team)//(missile.SpellCaster.Type == GameObjectType.AIHeroClient && missile.SpellCaster.Type == GameObjectType.obj_AI_Turret) &&
+                        if (missiles.Count > 0)
                         {
-                            if (missiles.Count > 0)
+                            foreach (MissileClient m in missiles)
                             {
-                                foreach (MissileClient m in missiles)
+                                if (m.NetworkId == missile.NetworkId || Extensions.Distance(m, missile, true) == 0f)
                                 {
-                                    if (m.NetworkId == missile.NetworkId || Extensions.Distance(m, missile, true) == 0f)
-                                    {
-                                        missiles.Remove(m);
-                                        break;
-                                    }
+                                    missiles.Remove(m);
+                                    break;
                                 }
                             }
                         }
