@@ -224,19 +224,11 @@ namespace iAhri
             }
         }
 
-        static void LaneClear()
-        {
-            foreach (Obj_AI_Base minion in EntityManager.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position.To2D(), 1000f))
-            {
-
-            }
-        }
-
         static void JungleClear()
         {
             if (myHero.ManaPercent >= SubMenu["JungleClear"]["Mana"].Cast<Slider>().CurrentValue)
             {
-                foreach (Obj_AI_Base minion in EntityManager.GetJungleMonsters(myHero.Position.To2D(), 1000f))
+                foreach (Obj_AI_Base minion in EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position, 1000f))
                 {
                     if (minion.IsValidTarget() && myHero.ManaPercent >= SubMenu["JungleClear"]["Mana"].Cast<Slider>().CurrentValue)
                     {
