@@ -392,6 +392,7 @@ namespace Project_Zed
             }
             else if (IsHarass)
             {
+                Harass();
                 if (HarassType == 1)
                 {
                     Harass();
