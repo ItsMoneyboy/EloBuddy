@@ -809,6 +809,13 @@ namespace Draven_Me_Crazy
             }
             return new DamageInfo(false, false, false, false, 0, 0, 0);
         }
+        static float Overkill
+        {
+            get
+            {
+                return (float)((100 + GetSlider(SubMenu["Misc"], "Overkill")) / 100);
+            }
+        }
         static int GetSlider(Menu m, string s)
         {
             return m[s].Cast<Slider>().CurrentValue;
@@ -820,13 +827,6 @@ namespace Draven_Me_Crazy
         static bool GetKeyBind(Menu m, string s)
         {
             return m[s].Cast<KeyBind>().CurrentValue;
-        }
-        static float Overkill
-        {
-            get
-            {
-                return (float)((100 + GetSlider(SubMenu["Misc"], "Overkill")) / 100);
-            }
         }
         static bool IsCombo
         {

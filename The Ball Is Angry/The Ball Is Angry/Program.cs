@@ -555,24 +555,25 @@ namespace The_Ball_Is_Angry
             {
                 foreach (MissileClient m in missiles.Where(a => a.IsValidMissile()))
                 {
+                    var hero = myHero;
                     var CanCast = false;
                     if (m.Target != null)
                     {
                         CanCast = m.Target.IsMe;
                     }
-                    if (m.EndPosition != null && m.SData.LineWidth != null && m.SData.LineWidth > 0f)
+                    if (m.EndPosition != null && m.SData.LineWidth > 0f)
                     {
                         var multiplier = 1.15f;
-                        var width = (m.SData.LineWidth + myHero.BoundingRadius) * multiplier;
+                        var width = (m.SData.LineWidth + hero.BoundingRadius) * multiplier;
                         var width_sqrt = width * width;
                         var startpos = m.StartPosition != null ? m.StartPosition : m.SpellCaster.Position;
                         var extendedendpos = m.EndPosition + (m.EndPosition - startpos).Normalized() * width;
-                        var info = myHero.Position.To2D().ProjectOn(startpos.To2D(), extendedendpos.To2D());
-                        CanCast = info.IsOnSegment && Extensions.Distance(info.SegmentPoint, myHero.Position.To2D(), true) <= width_sqrt;
+                        var info = hero.Position.To2D().ProjectOn(startpos.To2D(), extendedendpos.To2D());
+                        CanCast = info.IsOnSegment && Extensions.Distance(info.SegmentPoint, hero.Position.To2D(), true) <= width_sqrt;
                     }
                     if (CanCast)
                     {
-                        CastE(myHero);
+                        CastE(hero);
                     }
                 }
             }
@@ -597,11 +598,11 @@ namespace The_Ball_Is_Angry
                 }
                 else
                 {
-                    var enemyminions = EntityManager.MinionsAndMonsters.Get(EntityManager.MinionsAndMonsters.EntityType.Minion, EntityManager.UnitTeam.Enemy, myHero.Position, Q.Range + Q.Width);
-                    var jungleminions = EntityManager.MinionsAndMonsters.Get(EntityManager.MinionsAndMonsters.EntityType.Monster, EntityManager.UnitTeam.Enemy, myHero.Position, Q.Range + Q.Width);
+                    var enemyminions = EntityManager.MinionsAndMonsters.Get(EntityManager.MinionsAndMonsters.EntityType.Minion, EntityManager.UnitTeam.Enemy, myHero.Position, Q.Range + Q.Width).ToList<Obj_AI_Base>();
+                    var jungleminions = EntityManager.MinionsAndMonsters.Get(EntityManager.MinionsAndMonsters.EntityType.Monster, EntityManager.UnitTeam.Enemy, myHero.Position, Q.Range + Q.Width).ToList<Obj_AI_Base>();
                     if (enemyminions.Count > 0)
                     {
-                        list = enemyminions.ToList<Obj_AI_Base>();
+                        list = enemyminions;
                     }
                     else if (jungleminions.Count > 0)
                     {
@@ -651,15 +652,15 @@ namespace The_Ball_Is_Angry
                     }
                     else
                     {
-                        var enemyminions = EntityManager.MinionsAndMonsters.Get(EntityManager.MinionsAndMonsters.EntityType.Minion, EntityManager.UnitTeam.Enemy, myHero.Position, Q.Range + Q.Width);
-                        var jungleminions = EntityManager.MinionsAndMonsters.Get(EntityManager.MinionsAndMonsters.EntityType.Monster, EntityManager.UnitTeam.Enemy, myHero.Position, Q.Range + Q.Width);
+                        var enemyminions = EntityManager.MinionsAndMonsters.Get(EntityManager.MinionsAndMonsters.EntityType.Minion, EntityManager.UnitTeam.Enemy, myHero.Position, Q.Range + Q.Width).ToList<Obj_AI_Base>();
+                        var jungleminions = EntityManager.MinionsAndMonsters.Get(EntityManager.MinionsAndMonsters.EntityType.Monster, EntityManager.UnitTeam.Enemy, myHero.Position, Q.Range + Q.Width).ToList<Obj_AI_Base>();
                         if (enemyminions.Count > 0)
                         {
-                            list = enemyminions.ToList<Obj_AI_Base>();
+                            list = enemyminions;
                         }
                         else if (jungleminions.Count > 0)
                         {
-                            list = jungleminions.ToList<Obj_AI_Base>();
+                            list = jungleminions;
                         }
                     }
                     if (list.Count > 0)
@@ -688,7 +689,7 @@ namespace The_Ball_Is_Angry
                 foreach (AIHeroClient ally in EntityManager.Heroes.Allies.Where(o => o.IsValid && Extensions.Distance(myHero, o, true) < E.RangeSquared && Extensions.Distance(Ball, o, true) > 0))
                 {
                     var pred2 = E.GetPrediction(ally);
-                    if (Extensions.Distance(pred.CastPosition, pred2.CastPosition, true) <= R.RangeSquared)
+                    if (Extensions.Distance(pred.CastPosition, pred2.CastPosition, true) <= R.RangeSquared * 1.5f * 1.5f)
                     {
                         if (eAlly == null)
                         {
@@ -717,7 +718,7 @@ namespace The_Ball_Is_Angry
             int count = 0;
             if (W.IsReady())
             {
-                foreach (Obj_AI_Base obj in list.Where(obj => obj.IsValidTarget() && Extensions.Distance(obj.ServerPosition, Ball, true) <= W.RangeSquared * 2.25f))
+                foreach (Obj_AI_Base obj in list.Where(obj => obj.IsValidTarget() && Extensions.Distance(obj.ServerPosition, Ball, true) <= W.RangeSquared * 1.5f * 1.5f))
                 {
                     var pred = W.GetPrediction(obj);
                     if (pred.HitChancePercent >= HitChancePercent(W.Slot) && Extensions.Distance(Ball, pred.CastPosition, true) <= W.RangeSquared)
@@ -733,7 +734,7 @@ namespace The_Ball_Is_Angry
             int count = 0;
             if (R.IsReady())
             {
-                foreach (AIHeroClient obj in EntityManager.Heroes.Enemies.Where(o => o.IsValidTarget() && Extensions.Distance(Ball, o, true) <= R.RangeSquared * 1.96f))
+                foreach (AIHeroClient obj in EntityManager.Heroes.Enemies.Where(o => o.IsValidTarget() && Extensions.Distance(Ball, o, true) <= R.RangeSquared * 1.5f * 1.5f))
                 {
                     var pred = R.GetPrediction(obj);
                     if (pred.HitChancePercent >= HitChancePercent(R.Slot) && Extensions.Distance(Ball, pred.CastPosition, true) <= R.RangeSquared)
@@ -744,67 +745,72 @@ namespace The_Ball_Is_Angry
             }
             return count;
         }
-        private static void CastQR(AIHeroClient target = null)
+        private static void CastQR()
         {
-            var qWidth = Q.Width;
-            var qDelay = Q.CastDelay;
-            Q.CastDelay = R.CastDelay;
-            Q.Width = (int)R.Range;
-            List<Vector2> Positions = new List<Vector2>();
-            foreach (AIHeroClient enemy in EntityManager.Heroes.Enemies.Where(o => o.IsValidTarget(Q.Range + R.Range)))
+            if (Q.IsReady() && R.IsReady())
             {
-                var pred = Q.GetPrediction(enemy);
-                if (pred.HitChancePercent >= HitChancePercent(R.Slot))
+                var qWidth = Q.Width;
+                var qDelay = Q.CastDelay;
+                Q.CastDelay = R.CastDelay;
+                Q.Width = (int)R.Range;
+                List<Vector2> Positions = new List<Vector2>();
+                foreach (AIHeroClient enemy in EntityManager.Heroes.Enemies.Where(o => o.IsValidTarget(Q.Range + R.Range)))
                 {
-                    Positions.Add(pred.CastPosition.To2D());
+                    var pred = Q.GetPrediction(enemy);
+                    if (pred.HitChancePercent >= HitChancePercent(R.Slot))
+                    {
+                        Positions.Add(pred.CastPosition.To2D());
+                    }
                 }
-            }
-            Vector2 bestPos = Vector2.Zero;
-            int bestCount = 0;
-            foreach (Vector2 vec in Positions)
-            {
-                int count = Positions.Where(v => Extensions.Distance(vec, v, true) < Math.Pow(R.Width + 60, 2)).ToList().Count;
-                if (bestPos == Vector2.Zero)
+                Vector2 bestPos = Vector2.Zero;
+                int bestCount = 0;
+                foreach (Vector2 vec in Positions)
                 {
-                    bestPos = vec;
-                    bestCount = count;
+                    int count = Positions.Where(v => Extensions.Distance(vec, v, true) < Math.Pow(R.Width * 1.4f, 2)).Count();
+                    if (bestPos == Vector2.Zero)
+                    {
+                        bestPos = vec;
+                        bestCount = count;
+                    }
+                    else if (bestCount < count)
+                    {
+                        bestPos = vec;
+                        bestCount = count;
+                    }
                 }
-                else if (bestCount < count)
+                if (bestCount >= SubMenu["Combo"]["R2"].Cast<Slider>().CurrentValue)
                 {
-                    bestPos = vec;
-                    bestCount = count;
+                    Q.Cast(bestPos.To3D());
                 }
+                Q.Width = qWidth;
+                Q.CastDelay = qDelay;
             }
-            if (bestCount >= SubMenu["Combo"]["R2"].Cast<Slider>().CurrentValue)
-            {
-                Q.Cast(bestPos.To3D());
-            }
-            Q.Width = qWidth;
-            Q.CastDelay = qDelay;
         }
         private static void CastER(AIHeroClient target = null)
         {
-
-            int bestCount = -1;
-            Obj_AI_Base bestAlly = null;
-            foreach (Obj_AI_Base ally in EntityManager.Heroes.AllHeroes.Where(o => o.IsValid && o.Team == myHero.Team && Extensions.Distance(myHero, o, true) < E.RangeSquared))
+            if (E.IsReady() && R.IsReady())
             {
-                int count = ally.CountEnemiesInRange(R.Range * 1.5f);
-                if (bestCount == -1)
+                int bestCount = -1;
+                Obj_AI_Base bestAlly = null;
+                foreach (Obj_AI_Base ally in EntityManager.Heroes.AllHeroes.Where(o => o.IsValid && o.Team == myHero.Team && Extensions.Distance(myHero, o, true) < E.RangeSquared))
                 {
-                    bestCount = count;
-                    bestAlly = ally;
+                    int count = ally.CountEnemiesInRange(R.Range * 1.5f);
+                    if (bestCount == -1)
+                    {
+                        bestCount = count;
+                        bestAlly = ally;
+                    }
+                    else if (bestCount < count)
+                    {
+                        bestCount = count;
+                        bestAlly = ally;
+                    }
                 }
-                else if (bestCount < count)
-                {
-                    bestCount = count;
-                    bestAlly = ally;
-                }
-            }
 
-            if (bestCount >= SubMenu["Combo"]["R2"].Cast<Slider>().CurrentValue)
-            {
-                CastE(bestAlly);
+                if (bestCount >= SubMenu["Combo"]["R2"].Cast<Slider>().CurrentValue)
+                {
+                    CastE(bestAlly);
+                }
             }
         }
 
@@ -969,17 +975,17 @@ namespace The_Ball_Is_Angry
 
         private static void OnInterruptableSpell(Obj_AI_Base sender, Interrupter.InterruptableSpellEventArgs e)
         {
-            if (e.Sender.Team != myHero.Team)
+            if (sender.Team != myHero.Team)
             {
                 if (SubMenu["Misc"]["R"].Cast<CheckBox>().CurrentValue)
                 {
-                    if (Extensions.Distance(Ball, e.Sender, true) > R.RangeSquared)
+                    if (Extensions.Distance(Ball, sender, true) > R.RangeSquared)
                     {
-                        ThrowBall(e.Sender);
+                        ThrowBall(sender);
                     }
                     else
                     {
-                        CastR(e.Sender);
+                        CastR(sender);
                     }
                 }
             }
@@ -1328,11 +1334,5 @@ namespace The_Ball_Is_Angry
             }
         }
     }
-
-    public class _Spell
-    {
-        public float LastCastTime = 0;
-        public float LastSentTime = 0;
-        public Vector3 End = Vector3.Zero;
-    }
+    
 }

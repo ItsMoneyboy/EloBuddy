@@ -609,7 +609,7 @@ namespace Project_Zed
                 }
                 if (GetSlider(m, "E") > 0 && E.IsReady())
                 {
-                    if (GetSlider(m, "E") <= EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position, E.Range).Count)
+                    if (GetSlider(m, "E") <= EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position, E.Range).Count())
                     {
                         myHero.Spellbook.CastSpell(E.Slot);
                     }
@@ -823,7 +823,10 @@ namespace Project_Zed
                 if (sender.Name.ToLower() == "shadow" && !sender.IsDead && sender.Team == myHero.Team)
                 {
                     var s = sender as Obj_AI_Minion;
-                    Shadows.Remove(s);
+                    if (Shadows.Contains(s))
+                    {
+                        Shadows.Remove(s);
+                    }
                 }
             }
             if (sender is Obj_GeneralParticleEmitter && sender.Name.ToLower().Contains(myHero.ChampionName.ToLower()) && sender.Name.ToLower().Contains("base_r") && sender.Name.ToLower().Contains("buf_tell"))
@@ -952,7 +955,7 @@ namespace Project_Zed
             if (target.IsValidTarget())
             {
                 var damageI = GetBestCombo(target);
-                if (Extensions.Distance(myHero, target) < 550 && damageI.Damage >= target.Health && (myHero.Mana < myHero.Spellbook.GetSpell(SpellSlot.W).SData.Mana + myHero.Spellbook.GetSpell(SpellSlot.Q).SData.Mana || myHero.Mana < myHero.Spellbook.GetSpell(SpellSlot.W).SData.Mana + myHero.Spellbook.GetSpell(SpellSlot.E).SData.Mana))
+                if (Extensions.Distance(myHero, target) < 550 && (myHero.Mana < myHero.Spellbook.GetSpell(SpellSlot.W).SData.Mana + myHero.Spellbook.GetSpell(SpellSlot.Q).SData.Mana || myHero.Mana < myHero.Spellbook.GetSpell(SpellSlot.W).SData.Mana + myHero.Spellbook.GetSpell(SpellSlot.E).SData.Mana))
                 {
                     return false;
                 }
