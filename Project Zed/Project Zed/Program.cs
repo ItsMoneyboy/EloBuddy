@@ -284,7 +284,7 @@ namespace Project_Zed
                 SubMenu["Misc"].Add(enemy.ChampionName + "E", new CheckBox("E", false));
                 SubMenu["Misc"].Add(enemy.ChampionName + "R", new CheckBox("R", false));
             }
-
+            /*
             if (Orbwalker.Menu["Combo"].Cast<KeyBind>().Keys.Item2 == KeyBind.UnboundKey)
             {
                 //Orbwalker.Menu["Combo"].Cast<KeyBind>().Keys = new Tuple<uint, uint>(Orbwalker.Menu["Combo"].Cast<KeyBind>().Keys.Item1, (uint)'A');
@@ -293,6 +293,7 @@ namespace Project_Zed
             {
                 Orbwalker.Menu["Harass"].Cast<KeyBind>().Keys = new Tuple<uint, uint>(Orbwalker.Menu["Harass"].Cast<KeyBind>().Keys.Item2, (uint)'S');
             }
+            */
             Game.OnTick += OnTick;
             GameObject.OnCreate += OnCreateObj;
             GameObject.OnDelete += OnDeleteObj;
@@ -306,12 +307,14 @@ namespace Project_Zed
         {
             if (args.Animation.ToLower().Contains("death"))
             {
-
-                foreach (Obj_AI_Minion o in Shadows)
+                if (Shadows.Count > 0) 
                 {
-                    if (o.NetworkId == sender.NetworkId)
+                    foreach (Obj_AI_Minion o in Shadows)
                     {
-                        Shadows.Remove(o);
+                        if (o.NetworkId == sender.NetworkId)
+                        {
+                            Shadows.Remove(o);
+                        }
                     }
                 }
             }
@@ -319,10 +322,11 @@ namespace Project_Zed
 
         private static void OnWndProc(WndEventArgs args)
         {
+            /*
             switch (args.Msg)
             {
                 case (uint)WindowMessages.KeyDown:
-                    if (Orbwalker.Menu["Combo"].Cast<KeyBind>().Keys.Item1 == args.WParam)
+                    if (Orbwalker.["Combo"].Cast<KeyBind>().Keys.Item1 == args.WParam)
                     {
                         Combo1Pressed = true;
                     }
@@ -358,6 +362,7 @@ namespace Project_Zed
                     }
                     break;
             }
+            */
         }
 
         static bool IsWall(Vector3 v)
@@ -632,13 +637,17 @@ namespace Project_Zed
         {
             if (myHero.ManaPercent >= SubMenu["JungleClear"]["Mana"].Cast<Slider>().CurrentValue)
             {
-                foreach (Obj_AI_Base minion in EntityManager.MinionsAndMonsters.GetJungleMonsters(myHero.Position, 1000f))
+                var jungleminions = EntityManager.MinionsAndMonsters.GetJungleMonsters(myHero.Position, 1000f);
+                if (jungleminions.Count() > 0)
                 {
-                    if (minion.IsValidTarget() && myHero.ManaPercent >= SubMenu["JungleClear"]["Mana"].Cast<Slider>().CurrentValue)
+                    foreach (Obj_AI_Base minion in jungleminions)
                     {
-                        if (SubMenu["JungleClear"]["W"].Cast<CheckBox>().CurrentValue) { CastW(minion); }
-                        if (SubMenu["JungleClear"]["Q"].Cast<CheckBox>().CurrentValue) { CastQ(minion); }
-                        if (SubMenu["JungleClear"]["E"].Cast<CheckBox>().CurrentValue) { CastE(minion); }
+                        if (minion.IsValidTarget() && myHero.ManaPercent >= SubMenu["JungleClear"]["Mana"].Cast<Slider>().CurrentValue)
+                        {
+                            if (SubMenu["JungleClear"]["W"].Cast<CheckBox>().CurrentValue) { CastW(minion); }
+                            if (SubMenu["JungleClear"]["Q"].Cast<CheckBox>().CurrentValue) { CastQ(minion); }
+                            if (SubMenu["JungleClear"]["E"].Cast<CheckBox>().CurrentValue) { CastE(minion); }
+                        }
                     }
                 }
 
@@ -737,50 +746,54 @@ namespace Project_Zed
         {
             if (s.IsReady())
             {
-                foreach (Obj_AI_Base minion in EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position, s.Range + s.Width, true).Where(o => o.Health <= 2.0f * Damage(o, s.Slot)))
+                var enemyminions = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position, s.Range + s.Width, true).Where(o => o.Health <= 2.0f * Damage(o, s.Slot));
+                if (enemyminions.Count() > 0)
                 {
-                    bool CanCalculate = false;
-                    if (minion.IsValidTarget())
+                    foreach (Obj_AI_Base minion in enemyminions)
                     {
-                        if (!Orbwalker.CanAutoAttack)
+                        bool CanCalculate = false;
+                        if (minion.IsValidTarget())
                         {
-                            if (Orbwalker.CanMove && Orbwalker.LastTarget != null && Orbwalker.LastTarget.NetworkId != minion.NetworkId)
+                            if (!Orbwalker.CanAutoAttack)
                             {
-                                CanCalculate = true;
-                            }
-                        }
-                        else
-                        {
-                            if (myHero.GetAutoAttackRange(minion) <= Extensions.Distance(myHero, minion))
-                            {
-                                CanCalculate = true;
-                            }
-                            else
-                            {
-                                var speed = myHero.BasicAttack.MissileSpeed;
-                                var time = (int)(1000 * Extensions.Distance(myHero, minion) / speed + myHero.AttackCastDelay * 1000 + Game.Ping - 100);
-                                var predHealth = Prediction.Health.GetPrediction(minion, time);
-                                if (predHealth <= 0)
+                                if (Orbwalker.CanMove && Orbwalker.LastTarget != null && Orbwalker.LastTarget.NetworkId != minion.NetworkId)
                                 {
                                     CanCalculate = true;
                                 }
-                                /**
-                                if (!Orbwalker.CanBeLastHitted(minion))
+                            }
+                            else
+                            {
+                                if (myHero.GetAutoAttackRange(minion) <= Extensions.Distance(myHero, minion))
                                 {
                                     CanCalculate = true;
-                                }**/
+                                }
+                                else
+                                {
+                                    var speed = myHero.BasicAttack.MissileSpeed;
+                                    var time = (int)(1000 * Extensions.Distance(myHero, minion) / speed + myHero.AttackCastDelay * 1000 + Game.Ping - 100);
+                                    var predHealth = Prediction.Health.GetPrediction(minion, time);
+                                    if (predHealth <= 0)
+                                    {
+                                        CanCalculate = true;
+                                    }
+                                    /**
+                                    if (!Orbwalker.CanBeLastHitted(minion))
+                                    {
+                                        CanCalculate = true;
+                                    }**/
+                                }
                             }
                         }
-                    }
-                    if (CanCalculate)
-                    {
-                        var dmg = Damage(minion, s.Slot);
-                        var time = (int)(1000 * Extensions.Distance(s.SourcePosition.Value, minion) / s.Speed + s.CastDelay - 70);
-                        var predHealth = Prediction.Health.GetPrediction(minion, time);
-                        if (time > 0 && predHealth == minion.Health) { return; }
-                        if (dmg > predHealth && predHealth > 0)
+                        if (CanCalculate)
                         {
-                            CastQ(minion);
+                            var dmg = Damage(minion, s.Slot);
+                            var time = (int)(1000 * Extensions.Distance(s.SourcePosition.Value, minion) / s.Speed + s.CastDelay - 70);
+                            var predHealth = Prediction.Health.GetPrediction(minion, time);
+                            if (time > 0 && predHealth == minion.Health) { return; }
+                            if (dmg > predHealth && predHealth > 0)
+                            {
+                                CastQ(minion);
+                            }
                         }
                     }
                 }
