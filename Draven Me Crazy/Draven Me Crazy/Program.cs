@@ -265,6 +265,7 @@ namespace Draven_Me_Crazy
             if (target.IsValidTarget())
             {
                 var damageI = GetBestCombo(target);
+                //CastR(target);
                 CastQ(target, GetSlider(menu, "Q"));
                 if (GetCheckBox(menu, "R") && damageI.Damage >= target.Health && damageI.R) { CastR(target); }
                 if (GetCheckBox(menu, "E")) { CastE(target); }
@@ -280,7 +281,7 @@ namespace Draven_Me_Crazy
                 if (target.IsValidTarget())
                 {
                     CastQ(target, GetSlider(menu, "Q"));
-                    var minion = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position, myHero.AttackRange + myHero.BoundingRadius, true).FirstOrDefault();
+                    var minion = EntityManager.MinionsAndMonsters.Get(EntityManager.MinionsAndMonsters.EntityType.Minion, EntityManager.UnitTeam.Enemy, myHero.Position, Q.Range, true).FirstOrDefault();
                     if (minion != null && minion.IsValidTarget())
                     {
                         CastQ(minion, GetSlider(menu, "Q"));
@@ -295,7 +296,7 @@ namespace Draven_Me_Crazy
                             var buff = myHero.GetBuff("dravenspinningattack");
                             if (Orbwalker.CanAutoAttack)
                             {
-                                if (buff.EndTime - Game.Time <= 0.8f + myHero.AttackCastDelay)
+                                if (buff.EndTime - Game.Time <= 1.25f + myHero.AttackCastDelay)
                                 {
                                     Obj_AI_Base BestTarget = null;
                                     AIHeroClient target2 = TargetSelector.GetTarget(myHero.GetAutoAttackRange() + 60, DamageType.Physical);
@@ -305,7 +306,7 @@ namespace Draven_Me_Crazy
                                     }
                                     else
                                     {
-                                        Obj_AI_Base BestMinion = EntityManager.MinionsAndMonsters.EnemyMinions.Where(m => m.IsValidTarget() && myHero.IsInAutoAttackRange(m) && (Prediction.Health.GetPrediction(m, 2 * 1000 * (int)(myHero.AttackDelay + myHero.AttackCastDelay + Extensions.Distance(myHero, m) / myHero.BasicAttack.MissileSpeed - 0.07f)) > 2 * myHero.GetAutoAttackDamage(m) || Prediction.Health.GetPrediction(m, 1000 * (int)(myHero.AttackCastDelay + Extensions.Distance(myHero, m) / myHero.BasicAttack.MissileSpeed - 0.07f)) == m.Health)).OrderBy(m => m.HealthPercent).LastOrDefault();
+                                        Obj_AI_Minion BestMinion = EntityManager.MinionsAndMonsters.EnemyMinions.Where(m => m.IsValidTarget() && myHero.IsInAutoAttackRange(m) && (Prediction.Health.GetPrediction(m, 2 * 1000 * (int)(myHero.AttackDelay + myHero.AttackCastDelay + Extensions.Distance(myHero, m) / myHero.BasicAttack.MissileSpeed - 0.07f)) > 2 * myHero.GetAutoAttackDamage(m) || Prediction.Health.GetPrediction(m, 1000 * (int)(myHero.AttackCastDelay + Extensions.Distance(myHero, m) / myHero.BasicAttack.MissileSpeed - 0.07f)) == m.Health)).OrderBy(m => m.HealthPercent).LastOrDefault();
                                         if (BestMinion != null && BestMinion.IsValidTarget())
                                         {
                                             BestTarget = BestMinion;
@@ -336,10 +337,11 @@ namespace Draven_Me_Crazy
             var menu = SubMenu["LaneClear"];
             if (myHero.ManaPercent >= GetSlider(menu, "Mana"))
             {
-                foreach (Obj_AI_Base minion in EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position, 1000f))
+                foreach (Obj_AI_Minion minion in EntityManager.MinionsAndMonsters.Get(EntityManager.MinionsAndMonsters.EntityType.Minion, EntityManager.UnitTeam.Enemy, myHero.Position, Q.Range, true))
                 {
                     if (minion.IsValidTarget() && myHero.ManaPercent >= GetSlider(menu, "Mana"))
                     {
+                        Chat.Print("asddas");
                         CastQ(minion, GetSlider(menu, "Q"));
                     }
                 }
@@ -350,7 +352,7 @@ namespace Draven_Me_Crazy
             var menu = SubMenu["JungleClear"];
             if (myHero.ManaPercent >= GetSlider(menu, "Mana"))
             {
-                foreach (Obj_AI_Base minion in EntityManager.MinionsAndMonsters.GetJungleMonsters(myHero.Position, 1000f))
+                foreach (Obj_AI_Minion minion in EntityManager.MinionsAndMonsters.Get(EntityManager.MinionsAndMonsters.EntityType.Monster, EntityManager.UnitTeam.Enemy, myHero.Position, Q.Range, true))
                 {
                     if (minion.IsValidTarget() && myHero.ManaPercent >= GetSlider(menu, "Mana"))
                     {
@@ -366,7 +368,7 @@ namespace Draven_Me_Crazy
             var menu = SubMenu["LastHit"];
             if (myHero.ManaPercent >= GetSlider(menu, "Mana"))
             {
-                foreach (Obj_AI_Base minion in EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myHero.Position, 1000f))
+                foreach (Obj_AI_Minion minion in EntityManager.MinionsAndMonsters.Get(EntityManager.MinionsAndMonsters.EntityType.Minion, EntityManager.UnitTeam.Enemy, myHero.Position, Q.Range, true))
                 {
                     if (minion.IsValidTarget() && myHero.ManaPercent >= GetSlider(menu, "Mana"))
                     {
@@ -414,7 +416,7 @@ namespace Draven_Me_Crazy
         }
         private static void CastE(Obj_AI_Base target)
         {
-            if (E.IsReady() && target.IsValidTarget())
+            if (E.IsReady() && target.IsValidTarget() && target.IsEnemy)
             {
                 var pred = E.GetPrediction(target);
                 if (pred.HitChance == HitChance.High)
@@ -428,7 +430,8 @@ namespace Draven_Me_Crazy
             if (R.IsReady() && target.IsValidTarget())
             {
                 var pred = R.GetPrediction(target);
-                if (pred.HitChance == HitChance.High)
+                Chat.Print(pred.HitChancePercent);
+                if (pred.HitChancePercent >= 60f)
                 {
                     R.Cast(pred.CastPosition);
                 }
@@ -532,17 +535,17 @@ namespace Draven_Me_Crazy
                         var BestAxe = Axes.Where(m => m.SourceInRadius).OrderBy(m => m.TimeLeft).FirstOrDefault();
                         if (BestAxe != null)
                         {
+                            TryingToCatch = true;
+                            Orbwalker.DisableMovement = false;
+                            Orbwalker.MoveTo(BestAxe.Position);
+                            Orbwalker.DisableMovement = true;
                             if (Orbwalker.CanMove)
                             {
-                                TryingToCatch = true;
-                                Orbwalker.DisableMovement = false;
                                 if (!BestAxe.MoveSent)
                                 {
-                                    Player.IssueOrder(GameObjectOrder.MoveTo, BestAxe.Position);
-                                    BestAxe.MoveSent = true;
                                 }
-                                Orbwalker.MoveTo(BestAxe.Position);
-                                Orbwalker.DisableMovement = true;
+                                Player.IssueOrder(GameObjectOrder.MoveTo, BestAxe.Position);
+                                BestAxe.MoveSent = true;
                             }
                         }
                     }
@@ -656,9 +659,9 @@ namespace Draven_Me_Crazy
         {
             if (GetCheckBox(SubMenu["Misc"], "Gapcloser"))
             {
-                if (e.Sender.IsEnemy && e.Sender.IsValidTarget())
+                if (sender.IsEnemy && sender.IsValidTarget())
                 {
-                    CastE(e.Sender);
+                    CastE(sender);
                 }
             }
         }

@@ -81,7 +81,7 @@ namespace Draven_Me_Crazy
             {
                 if (this.Position != Vector3.Zero)
                 {
-                    var turret = EntityManager.Turrets.Enemies.Where(m => m.HealthPercent > 0 && m.AttackRange + m.BoundingRadius + Program.myHero.BoundingRadius >= Extensions.Distance(m.Position, this.Position)).FirstOrDefault();
+                    var turret = EntityManager.Turrets.Enemies.Where(m => m.Health > 0 && m.AttackRange + m.BoundingRadius + Program.myHero.BoundingRadius >= Extensions.Distance(m.Position, this.Position)).FirstOrDefault();
                     if (turret != null)
                     {
                         return true;
