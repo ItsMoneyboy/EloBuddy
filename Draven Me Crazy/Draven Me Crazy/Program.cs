@@ -341,7 +341,6 @@ namespace Draven_Me_Crazy
                 {
                     if (minion.IsValidTarget() && myHero.ManaPercent >= GetSlider(menu, "Mana"))
                     {
-                        Chat.Print("asddas");
                         CastQ(minion, GetSlider(menu, "Q"));
                     }
                 }
@@ -430,7 +429,6 @@ namespace Draven_Me_Crazy
             if (R.IsReady() && target.IsValidTarget())
             {
                 var pred = R.GetPrediction(target);
-                Chat.Print(pred.HitChancePercent);
                 if (pred.HitChancePercent >= 60f)
                 {
                     R.Cast(pred.CastPosition);
