@@ -790,7 +790,7 @@ namespace Project_Zed
         {
             if (sender is Obj_AI_Minion)
             {
-                if (sender.Name.ToLower() == "shadow" && !sender.IsDead && sender.Team == myHero.Team)
+                if (sender.Name.ToLower().Equals("shadow") && sender.Team == myHero.Team)
                 {
                     var s = sender as Obj_AI_Minion;
                     Shadows.Add(s);
@@ -820,12 +820,12 @@ namespace Project_Zed
         {
             if (sender is Obj_AI_Minion)
             {
-                if (sender.Name.ToLower() == "shadow" && !sender.IsDead && sender.Team == myHero.Team)
+                if (sender.Name.ToLower().Equals("shadow") && sender.Team == myHero.Team)
                 {
-                    var s = sender as Obj_AI_Minion;
-                    if (Shadows.Contains(s))
+                    var s2 = Shadows.Where(m => m.NetworkId == sender.NetworkId).FirstOrDefault();
+                    if (s2 != null)
                     {
-                        Shadows.Remove(s);
+                        Shadows.Remove(s2);
                     }
                 }
             }
