@@ -15,6 +15,7 @@ namespace LeeSin
 {
     public static class _R
     {
+        //  T O D O
         public static float LastCastTime = 0f;
         public static void Init()
         {
