@@ -16,6 +16,17 @@ namespace LeeSin
     {
         public static string Author = "iCreative";
         public static string AddonName = "Master the enemy";
+        public static int PassiveStack
+        {
+            get
+            {
+                if (Util.myHero.HasBuff("blindmonkpassive_cosmetic"))
+                {
+                    return Util.myHero.GetBuff("blindmonkpassive_cosmetic").Count;
+                }
+                return 0;
+            }
+        }
         static void Main(string[] args)
         {
             Loading.OnLoadingComplete += Loading_OnLoadingComplete;
@@ -29,7 +40,7 @@ namespace LeeSin
             MenuManager.Init();
             ModeManager.Init();
             WardManager.Init();
-            Q_Spell.Init();
+            _Q.Init();
             TargetSelector.Init(SpellManager.Q2.Range + 200, DamageType.Physical);
             LoadCallbacks();
         }
@@ -37,7 +48,7 @@ namespace LeeSin
         {
             Game.OnTick += Game_OnTick;
             TargetSelector.Range = 1300f;
-            if (!SpellSlot.Q.IsFirstSpell() && Q_Spell.Target != null)
+            if (!SpellSlot.Q.IsFirstSpell() && _Q.Target != null)
             {
                 TargetSelector.Range = 1500f;
             }
@@ -46,7 +57,36 @@ namespace LeeSin
 
             Interrupter.OnInterruptableSpell += Interrupter_OnInterruptableSpell;
         }
-
+        public static void GapCloseWithWard(Obj_AI_Base target)
+        {
+            if (SpellManager.CanCastW1)
+            {
+                var obj = GetBestObjectNearTo(target.Position);
+                if (obj != null && Extensions.Distance(Util.myHero, target, true) > Extensions.Distance(obj, target, true))
+                {
+                    SpellManager.CastW1(obj);
+                }
+                else if (WardManager.CanCastWard)
+                {
+                    var pred = SpellManager.W1.GetPrediction(target);
+                    if (pred.HitChancePercent >= 50f)
+                    {
+                        WardManager.CastWardTo(pred.CastPosition);
+                    }
+                }
+            }
+        }
+        public static void GapCloseWithoutWard(Obj_AI_Base target)
+        {
+            if (SpellManager.CanCastW1)
+            {
+                var obj = GetBestObjectNearTo(target.Position);
+                if (obj != null && Extensions.Distance(Util.myHero, target, true) > Extensions.Distance(obj, target, true))
+                {
+                    SpellManager.CastW1(obj);
+                }
+            }
+        }
         public static Obj_AI_Base GetBestObjectFarFrom(Vector3 Position)
         {
             var minion = AllyMinionManager.GetFurthestTo(Position);
@@ -99,14 +139,11 @@ namespace LeeSin
             }
             return null;
         }
-        public static void JumpTo(Obj_AI_Base target)
-        {
-            if (SpellManager.CanCastW1)
-            {
-                Util.myHero.Spellbook.CastSpell(SpellSlot.W, target);
-            }
-        }
 
+        public static void ForceQ2()
+        {
+
+        }
 
         private static void Game_OnTick(EventArgs args)
         {

@@ -11,16 +11,38 @@ using EloBuddy.SDK.Rendering;
 using SharpDX;
 
 
-
 namespace LeeSin
 {
     public static class Insec
     {
+        public static Menu Menu
+        {
+            get
+            {
+                return MenuManager.GetSubMenu("Insec");
+            }
+        }
+        public static float LastInsecTime = 0f;
         public static void Execute()
         {
             if (Orbwalker.CanMove)
             {
                 Orbwalker.MoveTo(Util.mousePos);
+            }
+        }
+
+        public static bool IsReady
+        {
+            get
+            {
+                return true;
+            }
+        }
+        public static bool IsRecent
+        {
+            get
+            {
+                return false;
             }
         }
     }

@@ -16,16 +16,23 @@ namespace LeeSin
 {
     public static class Flee
     {
+        public static Menu Menu
+        {
+            get
+            {
+                return MenuManager.GetSubMenu("Flee");
+            }
+        }
         public static void Execute()
         {
             if (SpellManager.CanCastW1)
             {
                 var obj = Champion.GetBestObjectNearTo(Util.mousePos);
-                if (obj != null && MenuManager.FleeMenu.GetCheckBoxValue("W"))
+                if (obj != null && Menu.GetCheckBoxValue("W"))
                 {
-                    Champion.JumpTo(obj);
+                    SpellManager.CastW1(obj);
                 }
-                else if (MenuManager.FleeMenu.GetCheckBoxValue("WardJump"))
+                else if (Menu.GetCheckBoxValue("WardJump"))
                 {
                     if (WardManager.CanCastWard)
                     {

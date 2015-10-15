@@ -20,7 +20,7 @@ namespace LeeSin
         {
             get
             {
-                return MenuManager.InsecMenu.GetKeyBindValue("Key");
+                return Insec.Menu.GetKeyBindValue("Key");
             }
         }
         public static void Init()

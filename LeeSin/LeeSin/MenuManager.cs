@@ -14,13 +14,6 @@ namespace LeeSin
 {
     public static class MenuManager
     {
-        public static Menu InsecMenu
-        {
-            get
-            {
-                return GetSubMenu("Insec");
-            }
-        }
         public static Menu AddonMenu;
         public static Dictionary<string, Menu> SubMenu = new Dictionary<string, Menu>() { };
         public static void Init()
@@ -62,15 +55,21 @@ namespace LeeSin
         }
         public static int GetSliderValue(this Menu m, string s)
         {
-            return m[s].Cast<Slider>().CurrentValue;
+            if (m != null)
+                return m[s].Cast<Slider>().CurrentValue;
+            return -1;
         }
         public static bool GetCheckBoxValue(this Menu m, string s)
         {
-            return m[s].Cast<CheckBox>().CurrentValue;
+            if (m != null)
+                return m[s].Cast<CheckBox>().CurrentValue;
+            return false;
         }
         public static bool GetKeyBindValue(this Menu m, string s)
         {
-            return m[s].Cast<KeyBind>().CurrentValue;
+            if (m != null)
+                return m[s].Cast<KeyBind>().CurrentValue;
+            return false;
         }
         public static void AddStringList(this Menu m, string uniqueID, string DisplayName, string[] values, int defaultValue)
         {
@@ -93,53 +92,11 @@ namespace LeeSin
             }
             return null;
         }
-        public static Menu FleeMenu
-        {
-            get
-            {
-                return GetSubMenu("Flee");
-            }
-        }
-        public static Menu ComboMenu
-        {
-            get
-            {
-                return GetSubMenu("Combo");
-            }
-        }
-        public static Menu HarassMenu
-        {
-            get
-            {
-                return GetSubMenu("Harass");
-            }
-        }
         public static Menu MiscMenu
         {
             get
             {
                 return GetSubMenu("Misc");
-            }
-        }
-        public static Menu LaneClearMenu
-        {
-            get
-            {
-                return GetSubMenu("LaneClear");
-            }
-        }
-        public static Menu LastHitMenu
-        {
-            get
-            {
-                return GetSubMenu("LastHit");
-            }
-        }
-        public static Menu JungleClear
-        {
-            get
-            {
-                return GetSubMenu("JungleClear");
             }
         }
         public static Menu PredictionMenu
