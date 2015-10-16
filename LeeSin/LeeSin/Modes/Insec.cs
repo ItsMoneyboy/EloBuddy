@@ -33,9 +33,26 @@ namespace LeeSin
         private static Obj_AI_Base AllySelected;
         private static Vector3 PositionSelected;
         private static float LastGapcloseAttempt = 0;
+        private static float LastSetPositionTime = 0;
         public static void Init()
         {
             Game.OnWndProc += Game_OnWndProc;
+            Game.OnTick += Game_OnTick;
+            Obj_AI_Base.OnProcessSpellCast += Obj_AI_Base_OnProcessSpellCast;
+        }
+
+        private static void Obj_AI_Base_OnProcessSpellCast(Obj_AI_Base sender, GameObjectProcessSpellCastEventArgs args)
+        {
+            if (sender.IsMe)
+            {
+                if (args.SData.Name.Equals(SpellSlot.R.GetSpellDataInst().Name))
+                {
+                    if (Menu.GetCheckBoxValue("Flash") && SpellManager.Flash.IsReady() && ModeManager.IsInsec)
+                    {
+                        SpellManager.Flash.Cast(ExpectedEndPosition);
+                    }
+                }
+            }
         }
 
         public static void Execute()
@@ -74,7 +91,7 @@ namespace LeeSin
                             }
                         }
                         SpellManager.CastQ1(target);
-                        if (Extensions.Distance(Util.myHero, target, true) > Math.Pow(WardManager.WardRange - DistanceBetween, 2))
+                        if (Extensions.Distance(Util.myHero, target, true) > Math.Pow(WardManager.WardRange - DistanceBetween - 100, 2))
                         {
                             if (_Q.HasQ2Buff)
                             {
@@ -116,6 +133,10 @@ namespace LeeSin
                         CastR(target);
                     }
                 }
+                else
+                {
+                    NormalCombo.Execute();
+                }
             }
         }
         private static void Flash(Obj_AI_Base target)
@@ -123,16 +144,16 @@ namespace LeeSin
             if (SpellManager.Flash.IsReady())
             {
                 var gapclosepos = target.Position + (target.Position - ExpectedEndPosition).Normalized() * DistanceBetween;
-                if (Extensions.Distance(gapclosepos, Util.myHero, true) <= Math.Pow(SpellManager.Flash.Range, 2) && Extensions.Distance(gapclosepos, target, true) < Math.Pow(SpellManager.R.Range, 2) && Extensions.Distance(gapclosepos, target, true) < Extensions.Distance(gapclosepos, ExpectedEndPosition, true))
+                if (Extensions.Distance(gapclosepos, Util.myHero, true) <= Math.Pow(SpellManager.Flash.Range, 2) && Extensions.Distance(gapclosepos, target, true) <= Math.Pow(SpellManager.R.Range, 2) && Extensions.Distance(gapclosepos, target, true) < Extensions.Distance(gapclosepos, ExpectedEndPosition, true))
                 {
                     if (Orbwalker.CanMove)
                     {
                         LastGapcloseAttempt = Game.Time;
-                        Orbwalker.MoveTo(gapclosepos + (gapclosepos - ExpectedEndPosition).Normalized() * (DistanceBetween + Util.myHero.BoundingRadius/2));
+                        Orbwalker.MoveTo(gapclosepos + (gapclosepos - ExpectedEndPosition).Normalized() * (DistanceBetween + Util.myHero.BoundingRadius / 2));
                     }
                     AllySelected = null;
                     PositionSelected = EndPosition;
-                    Core.DelayAction(delegate { PositionSelected = Vector3.Zero; }, 10 * 1000);
+                    LastSetPositionTime = Game.Time;
                     SpellManager.Flash.Cast(gapclosepos);
                 }
             }
@@ -144,16 +165,16 @@ namespace LeeSin
             if (WardManager.CanWardJump && pred.HitChancePercent >= 30f)
             {
                 var gapclosepos = pred.CastPosition + (pred.CastPosition - ExpectedEndPosition).Normalized() * DistanceBetween;
-                if (Extensions.Distance(gapclosepos, Util.myHero, true) <= Math.Pow(WardManager.WardRange, 2) && Extensions.Distance(gapclosepos, target, true) < Math.Pow(SpellManager.R.Range, 2) && Extensions.Distance(gapclosepos, target, true) < Extensions.Distance(gapclosepos, ExpectedEndPosition, true))
+                if (Extensions.Distance(gapclosepos, Util.myHero, true) <= Math.Pow(WardManager.WardRange, 2) && Extensions.Distance(gapclosepos, target, true) <= Math.Pow(SpellManager.R.Range, 2) && Extensions.Distance(gapclosepos, target, true) < Extensions.Distance(gapclosepos, ExpectedEndPosition, true))
                 {
                     if (Orbwalker.CanMove)
                     {
                         LastGapcloseAttempt = Game.Time;
-                        Orbwalker.MoveTo(gapclosepos + (gapclosepos - ExpectedEndPosition).Normalized() * (DistanceBetween + Util.myHero.BoundingRadius/2));
+                        Orbwalker.MoveTo(gapclosepos + (gapclosepos - ExpectedEndPosition).Normalized() * (DistanceBetween + Util.myHero.BoundingRadius / 2));
                     }
                     AllySelected = null;
                     PositionSelected = EndPosition;
-                    Core.DelayAction(delegate { PositionSelected = Vector3.Zero; }, 10 * 1000);
+                    LastSetPositionTime = Game.Time;
                     WardManager.CastWardTo(gapclosepos);
                 }
             }
@@ -165,7 +186,7 @@ namespace LeeSin
                 var extended = ExpectedEndPosition + (ExpectedEndPosition - target.Position).Normalized() * SpellManager.RKick.Range * 0.5f;
                 var realendpos = target.Position + (target.Position - Util.myHero.Position).Normalized() * SpellManager.RKick.Range;
                 var info = realendpos.To2D().ProjectOn(target.Position.To2D(), extended.To2D());
-                if (info.IsOnSegment && Extensions.Distance(info.SegmentPoint, ExpectedEndPosition.To2D(), true) < Math.Pow(SpellManager.RKick.Range * 0.5f, 2))
+                if (info.IsOnSegment && Extensions.Distance(info.SegmentPoint, ExpectedEndPosition.To2D(), true) <= Math.Pow(SpellManager.RKick.Range * 0.5f, 2))
                 {
                     SpellManager.CastR(target);
                 }
@@ -177,7 +198,7 @@ namespace LeeSin
             {
                 if (TargetSelector.Target.IsValidTarget())
                 {
-                    return Math.Min((Util.myHero.BoundingRadius + TargetSelector.Target.BoundingRadius + 60f) * (100 + Menu.GetSliderValue("DistanceBetweenPercent")) / 100, SpellManager.R.Range);
+                    return Math.Min((Util.myHero.BoundingRadius + TargetSelector.Target.BoundingRadius + 30f) * (100 + Menu.GetSliderValue("DistanceBetweenPercent")) / 100, SpellManager.R.Range);
                 }
                 return 0;
             }
@@ -268,15 +289,24 @@ namespace LeeSin
                     {
                         AllySelected = ally;
                         PositionSelected = Vector3.Zero;
-                        Core.DelayAction(delegate { AllySelected = null; }, 10 * 1000);
+                        LastSetPositionTime = Game.Time;
                     }
                     else
                     {
                         AllySelected = null;
                         PositionSelected = Util.mousePos;
-                        Core.DelayAction(delegate { PositionSelected = Vector3.Zero; }, 10 * 1000);
+                        LastSetPositionTime = Game.Time;
                     }
                 }
+            }
+        }
+        private static void Game_OnTick(EventArgs args)
+        {
+            if (Game.Time - LastSetPositionTime > 10 && LastSetPositionTime > 0)
+            {
+                AllySelected = null;
+                PositionSelected = Vector3.Zero;
+                LastSetPositionTime = 0;
             }
         }
     }

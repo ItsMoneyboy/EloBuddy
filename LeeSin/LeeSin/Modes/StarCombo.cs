@@ -42,7 +42,7 @@ namespace LeeSin
             {
 
                 var target = TargetSelector.Target;
-                if (target.IsValidTarget())
+                if (target.IsValidTarget(WardManager.WardRange))
                 {
                     if (Util.myHero.IsInAutoAttackRange(target) && Champion.PassiveStack > 2 - Menu.GetSliderValue("Star.Stack")) { return; }
                     if (Mode == 0 && Menu.GetCheckBoxValue("W") && Menu.GetCheckBoxValue("Star.Ward") && WardManager.CanWardJump && Insec.IsReady)
@@ -87,7 +87,7 @@ namespace LeeSin
                             SpellManager.CastE(target);
                         }
                     }
-                    if (Menu.GetCheckBoxValue("Star.R") && SpellSlot.R.IsReady())
+                    if (SpellSlot.R.IsReady())
                     {
                         switch (Mode)
                         {

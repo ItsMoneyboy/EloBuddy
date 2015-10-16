@@ -20,7 +20,7 @@ namespace LeeSin
         {
             var AddonName = Champion.AddonName;
             var Author = Champion.Author;
-            AddonMenu = MainMenu.AddMenu(AddonName, AddonName + " by " + Author + " v1.0000");
+            AddonMenu = MainMenu.AddMenu(AddonName, AddonName + " by " + Author + " v1.00");
             AddonMenu.AddLabel(AddonName + " made by " + Author);
 
             SubMenu["Prediction"] = AddonMenu.AddSubMenu("Prediction", "Prediction");
@@ -50,18 +50,19 @@ namespace LeeSin
                     }
                 }
             };
-            SubMenu["Combo"].AddStringList("Mode", "Combo Mode", new[] { "Without R", "Star Combo", "Gank Combo" }, 0);
+            SubMenu["Combo"].AddStringList("Mode", "Combo Mode", new[] { "Normal Combo", "Star Combo", "Gank Combo" }, 0);
             SubMenu["Combo"]["Mode"].Cast<Slider>().CurrentValue = 0; //E L I M I N A R
 
-            SubMenu["Combo"].AddGroupLabel("Without R Combo");
+            SubMenu["Combo"].AddGroupLabel("Normal Combo");
+            SubMenu["Combo"].Add("Normal.R", new CheckBox("Use R", false));
             SubMenu["Combo"].Add("Normal.Ward", new CheckBox("Use Ward", false));
             SubMenu["Combo"].Add("Normal.W", new Slider("Use W if HealthPercent", 25, 0, 100));
             SubMenu["Combo"].Add("Normal.Stack", new Slider("Use X passive before using another spell", 1, 0, 2));
+            SubMenu["Combo"].Add("Normal.R.Hit", new Slider("Use R if Hit", 3, 1, 5));
 
             SubMenu["Combo"].AddSeparator();
 
             SubMenu["Combo"].AddGroupLabel("Star Combo");
-            SubMenu["Combo"].Add("Star.R", new CheckBox("Use R", true));
             SubMenu["Combo"].Add("Star.Ward", new CheckBox("Use Ward", true));
             SubMenu["Combo"].Add("Star.Stack", new Slider("Use x passive before using another spell", 0, 0, 2));
             SubMenu["Combo"].AddStringList("Star.Mode", "Star Combo Mode", new[] { "Q1 R Q2", "R Q1 Q2" }, 0);
@@ -72,6 +73,12 @@ namespace LeeSin
             SubMenu["Combo"].Add("Gank.R", new CheckBox("Use R", true));
             SubMenu["Combo"].Add("Gank.Ward", new CheckBox("Use Ward", true));
             SubMenu["Combo"].Add("Gank.Stack", new Slider("Use x passive before using another spell", 1, 0, 2));
+            
+            //Harass
+            SubMenu["Harass"] = AddonMenu.AddSubMenu("Harass", "Harass");
+            SubMenu["Harass"].Add("Q", new CheckBox("Use Q", true));
+            SubMenu["Harass"].Add("W", new CheckBox("Use W to escape", true));
+            SubMenu["Harass"].Add("E", new CheckBox("Use E", true));
 
             //Insec
             SubMenu["Insec"] = AddonMenu.AddSubMenu("Insec", "Insec");
@@ -80,7 +87,7 @@ namespace LeeSin
             SubMenu["Insec"].Add("Flash", new CheckBox("Use flash to return", false));
             SubMenu["Insec"].AddStringList("Priority", "Priority", new[] { "WardJump > Flash", "Flash > WardJump" }, 0);
             SubMenu["Insec"].AddStringList("Position", "Insec End Position", new[] { "Turrets and Allies", "Mouse Position", "Current Position", "Clicked Position" }, 0);
-            SubMenu["Insec"].Add("DistanceBetweenPercent", new Slider("% of distance between ward an target", 20, 0, 100));
+            SubMenu["Insec"].Add("DistanceBetweenPercent", new Slider("% of distance between ward and target", 20, 0, 100));
 
             SubMenu["Drawings"] = AddonMenu.AddSubMenu("Drawings", "Drawings");
             SubMenu["Drawings"].Add("Combo.Mode", new CheckBox("Draw text of current mode", true));

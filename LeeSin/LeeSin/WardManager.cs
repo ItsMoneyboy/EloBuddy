@@ -41,6 +41,7 @@ namespace LeeSin
                 if (ward != null)
                 {
                     ward.Cast(EndPos);
+                    LastWardCreated = Game.Time;
                     LastWardJumpVector = EndPos;
                     LastWardJumpTime = Game.Time;
                 }

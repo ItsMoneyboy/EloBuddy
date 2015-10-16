@@ -14,7 +14,6 @@ namespace LeeSin
 {
     public static class _Q
     {
-        //  T O D O
         public static Obj_AI_Base Target = null;
         public static MissileClient Missile = null;
         public static float LastCastTime = 0f;

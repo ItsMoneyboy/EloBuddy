@@ -15,7 +15,6 @@ namespace LeeSin
 {
     public static class _R
     {
-        //  T O D O
         public static float LastCastTime = 0f;
         public static float BuffEndTime = 0f;
         public static Obj_AI_Base Target = null;
@@ -31,7 +30,7 @@ namespace LeeSin
 
         private static void Game_OnTick(EventArgs args)
         {
-            if (WillEndBuff)
+            if (HasEndBuff)
             {
                 if (!ModeManager.IsNone)
                 {
@@ -83,7 +82,6 @@ namespace LeeSin
 
         private static void Obj_AI_Base_OnProcessSpellCast(Obj_AI_Base sender, GameObjectProcessSpellCastEventArgs args)
         {
-
             if (args.SData.Name.Equals(SpellSlot.R.GetSpellDataInst().SData.Name))
             {
                 LastCastTime = Game.Time;
@@ -94,7 +92,7 @@ namespace LeeSin
         {
             return unit.IsValidTarget() && Target != null && unit.NetworkId == Target.NetworkId;
         }
-        public static bool WillEndBuff
+        public static bool HasEndBuff
         {
             get
             {

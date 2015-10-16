@@ -60,23 +60,7 @@ namespace LeeSin
             Flash = new Spell.Skillshot(Util.myHero.SpellSlotFromName("flash"), 400, SkillShotType.Circular);
 
             Obj_AI_Base.OnProcessSpellCast += Obj_AI_Base_OnProcessSpellCast;
-
-            /*
-            var slot = Util.myHero.GetSpellSlotFromName("summonerdot");
-            if (slot != SpellSlot.Unknown)
-            {
-                Ignite = new Spell.Targeted(slot, 600);
-            }
-            slot = Util.myHero.GetSpellSlotFromName("flash");
-            if (slot != SpellSlot.Unknown)
-            {
-                Flash = new Spell.Skillshot(slot, 400, SkillShotType.Circular);
-            }
-            slot = Util.myHero.GetSpellSlotFromName("smite");
-            if (slot != SpellSlot.Unknown)
-            {
-                Smite = new Spell.Targeted(slot, 780);
-            }*/
+            
         }
         private static SpellSlot SpellSlotFromName(this AIHeroClient hero, string name)
         {
