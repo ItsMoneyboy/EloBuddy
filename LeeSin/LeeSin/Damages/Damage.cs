@@ -16,7 +16,7 @@ namespace LeeSin
     {
 
         public static float RefreshTime = 0.4f;
-        static Dictionary<int, DamageInfo> PredictedDamage = new Dictionary<int, DamageInfo>() { };
+        static Dictionary<int, DamageResult> PredictedDamage = new Dictionary<int, DamageResult>() { };
         static float Overkill
         {
             get
@@ -43,7 +43,7 @@ namespace LeeSin
             return Util.myHero.GetSpellDamage(target, slot);
         }
 
-        public static DamageInfo GetComboDamage(this Obj_AI_Base target, bool q, bool w, bool e, bool r)
+        public static DamageResult GetComboDamage(this Obj_AI_Base target, bool q, bool w, bool e, bool r)
         {
             var ComboDamage = 0f;
             var ManaWasted = 0f;
@@ -80,10 +80,10 @@ namespace LeeSin
                 ComboDamage += Util.myHero.GetAutoAttackDamage(target, true);
             }
             ComboDamage = ComboDamage * Overkill;
-            return new DamageInfo(ComboDamage, ManaWasted);
+            return new DamageResult(ComboDamage, ManaWasted);
         }
 
-        public static DamageInfo GetBestCombo(this Obj_AI_Base target)
+        public static DamageResult GetBestCombo(this Obj_AI_Base target)
         {
             var q = SpellSlot.Q.IsReady() ? new bool[] { false, true } : new bool[] { false };
             var w = SpellSlot.W.IsReady() ? new bool[] { false, true } : new bool[] { false };
@@ -116,7 +116,7 @@ namespace LeeSin
                                 {
                                     foreach (bool e1 in e)
                                     {
-                                        DamageInfo damageI2 = target.GetComboDamage(q1, w1, e1, r1);
+                                        DamageResult damageI2 = target.GetComboDamage(q1, w1, e1, r1);
                                         float d = damageI2.Damage;
                                         float m = damageI2.Mana;
                                         if (Util.myHero.Mana >= m)
@@ -144,18 +144,18 @@ namespace LeeSin
                                 }
                             }
                         }
-                        PredictedDamage[target.NetworkId] = new DamageInfo(target, bestdmg, bestmana, best[0], best[1], best[2], best[3], Game.Time);
+                        PredictedDamage[target.NetworkId] = new DamageResult(target, bestdmg, bestmana, best[0], best[1], best[2], best[3], Game.Time);
                         return PredictedDamage[target.NetworkId];
                     }
                 }
                 else
                 {
                     var damageI2 = target.GetComboDamage(SpellSlot.Q.IsReady(), SpellSlot.W.IsReady(), SpellSlot.R.IsReady(), SpellSlot.R.IsReady());
-                    PredictedDamage[target.NetworkId] = new DamageInfo(target, damageI2.Damage, damageI2.Mana, false, false, false, false, Game.Time - (Game.Ping * 2) / 2000);
+                    PredictedDamage[target.NetworkId] = new DamageResult(target, damageI2.Damage, damageI2.Mana, false, false, false, false, Game.Time - (Game.Ping * 2) / 2000);
                     return target.GetBestCombo();
                 }
             }
-            return new DamageInfo(target, 0, 0, false, false, false, false, 0);
+            return new DamageResult(target, 0, 0, false, false, false, false, 0);
         }
     }
 }

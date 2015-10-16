@@ -31,7 +31,7 @@ namespace LeeSin
             if (Util.myHero.IsDead) { return; }
             if (MenuManager.DrawingsMenu.GetCheckBoxValue("Target") && Target != null && Target.IsValidTarget())
             {
-                Circle.Draw(Color.Red, 150f, Target.Position);
+                Circle.Draw(Color.Red, 150f, 5, Target.Position);
             }
         }
 

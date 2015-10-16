@@ -18,14 +18,28 @@ namespace LeeSin
         public static Obj_AI_Base Target = null;
         public static MissileClient Missile = null;
         public static float LastCastTime = 0f;
-        public static bool IsFlying = false;
+        public static bool IsDashing = false;
         public static void Init()
         {
+            Game.OnTick += Game_OnTick;
             Obj_AI_Base.OnBuffGain += Obj_AI_Base_OnBuffGain;
             Obj_AI_Base.OnBuffLose += Obj_AI_Base_OnBuffLose;
             Obj_AI_Base.OnProcessSpellCast += Obj_AI_Base_OnProcessSpellCast;
             MissileClient.OnCreate += MissileClient_OnCreate;
             MissileClient.OnDelete += MissileClient_OnDelete;
+        }
+
+        private static void Game_OnTick(EventArgs args)
+        {
+            SpellManager.Q1.SourcePosition = Util.myHero.Position;
+            SpellManager.Q1.RangeCheckSource = Util.myHero.Position;
+            if (EndTime - Game.Time < 0.25f)
+            {
+                if (!ModeManager.IsNone)
+                {
+                    Champion.ForceQ2();
+                }
+            }
         }
 
         private static void Obj_AI_Base_OnProcessSpellCast(Obj_AI_Base sender, GameObjectProcessSpellCastEventArgs args)
@@ -75,20 +89,21 @@ namespace LeeSin
 
         private static void Obj_AI_Base_OnBuffGain(Obj_AI_Base sender, Obj_AI_BaseBuffGainEventArgs args)
         {
-
             if (args.Buff.Caster.IsMe)
             {
-                Chat.Print(args.Buff.Name);
-                if (args.Buff.Name.ToLower().Contains("blindmonkqone"))
+                if (!sender.IsMe)
                 {
-                    Target = sender;
-                    Core.DelayAction(delegate
+                    if (args.Buff.Name.ToLower().Contains("blindmonkqone"))
                     {
-                        if (!ModeManager.IsNone)
-                        {
-                            Champion.ForceQ2();
-                        }
-                    }, 1000 * (int)(args.Buff.EndTime - args.Buff.StartTime) - 200);
+                        Target = sender;
+                    }
+                }
+                else
+                {
+                    if (args.Buff.Name.ToLower().Contains("blindmonkqtwodash"))
+                    {
+                        IsDashing = true;
+                    }
                 }
             }
         }
@@ -96,14 +111,62 @@ namespace LeeSin
         {
             if (args.Buff.Caster.IsMe)
             {
-                if (args.Buff.Name.ToLower().Contains("blindmonkqone"))
+                if (!sender.IsMe)
                 {
-                    Target = null;
+                    if (args.Buff.Name.ToLower().Contains("blindmonkqone"))
+                    {
+                        Target = null;
+                    }
+                }
+                else
+                {
+                    if (args.Buff.Name.ToLower().Contains("blindmonkqtwodash"))
+                    {
+                        IsDashing = false;
+                    }
                 }
             }
         }
-        public static float BuffDuration {
-            get {
+        public static bool WillHit(Obj_AI_Base target)
+        {
+            if (MissileIsValid && target.IsValidTarget())
+            {
+                SpellManager.Q1.SourcePosition = Missile.Position;
+                SpellManager.Q1.RangeCheckSource = Missile.Position;
+                var pred = SpellManager.Q1.GetPrediction(target);
+                var info = pred.CastPosition.To2D().ProjectOn(Missile.Position.To2D(), Missile.EndPosition.To2D());
+                if (info.IsOnSegment && pred.HitChancePercent >= SpellSlot.Q.HitChancePercent() && Extensions.Distance(info.SegmentPoint, pred.CastPosition.To2D(), true) <= Math.Pow(target.BoundingRadius + SpellManager.Q1.Width, 2))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+        public static BuffInstance Buff
+        {
+            get
+            {
+                if (Target != null)
+                {
+                    foreach (BuffInstance buff in Target.Buffs)
+                    {
+                        if (buff.Name.ToLower().Contains("blindmonkqone"))
+                        {
+                            return buff;
+                        }
+                    }
+                }
+                return null;
+            }
+        }
+        public static float EndTime
+        {
+            get
+            {
+                if (Buff != null)
+                {
+                    return Buff.EndTime;
+                }
                 return 0f;
             }
         }
@@ -111,7 +174,7 @@ namespace LeeSin
         {
             get
             {
-                return Target != null;
+                return SpellSlot.Q.IsReady() && !SpellSlot.Q.IsFirstSpell();
             }
         }
         public static bool MissileIsValid

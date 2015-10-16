@@ -31,7 +31,7 @@ namespace LeeSin
                 if (Util.myHero.IsInAutoAttackRange(target) && Champion.PassiveStack > 0) { return; }
                 if (Menu.GetCheckBoxValue("Q")) { SpellManager.CastQ(target); }
                 if (Menu.GetCheckBoxValue("E")) { SpellManager.CastE1(target); }
-                if (_Q.IsFlying || _Q.IsWaitingMissile || _Q.HasQ2Buff || (SpellSlot.Q.IsReady() && SpellSlot.Q.IsFirstSpell() && Menu.GetCheckBoxValue("Q"))) { return; }
+                if (_Q.IsDashing || _Q.IsWaitingMissile || _Q.HasQ2Buff || (SpellSlot.Q.IsReady() && SpellSlot.Q.IsFirstSpell() && Menu.GetCheckBoxValue("Q"))) { return; }
                 if (Menu.GetCheckBoxValue("W"))
                 {
                     var damageI = target.GetBestCombo();

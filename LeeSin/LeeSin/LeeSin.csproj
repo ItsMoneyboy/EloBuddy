@@ -36,7 +36,8 @@
     <Reference Include="EloBuddy">
       <HintPath>..\..\..\..\..\Downloads\EloBuddy.Loader.Complete\System\EloBuddy.dll</HintPath>
     </Reference>
-    <Reference Include="EloBuddy.SDK">
+    <Reference Include="EloBuddy.SDK, Version=1.0.0.0, Culture=neutral, PublicKeyToken=6b574a82b1ea937e, processorArchitecture=x86">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\..\Downloads\EloBuddy.Loader.Complete\System\EloBuddy.SDK.dll</HintPath>
     </Reference>
     <Reference Include="SharpDX">
@@ -47,6 +48,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -59,7 +61,8 @@
     <Compile Include="AllyMinionManager.cs" />
     <Compile Include="Champion.cs" />
     <Compile Include="Damages\Damage.cs" />
-    <Compile Include="Damages\DamageInfo.cs" />
+    <Compile Include="Damages\DamageResult.cs" />
+    <Compile Include="Modes\GankCombo.cs" />
     <Compile Include="Modes\Flee.cs" />
     <Compile Include="ItemManager.cs" />
     <Compile Include="MenuManager.cs" />
@@ -70,7 +73,9 @@
     <Compile Include="Modes\JungleClear.cs" />
     <Compile Include="Modes\LaneClear.cs" />
     <Compile Include="Modes\LastHit.cs" />
+    <Compile Include="Modes\NormalCombo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Modes\StarCombo.cs" />
     <Compile Include="_Q.cs" />
     <Compile Include="_R.cs" />
     <Compile Include="SpellManager.cs" />

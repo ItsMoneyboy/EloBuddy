@@ -20,7 +20,7 @@ namespace LeeSin
         {
             var AddonName = Champion.AddonName;
             var Author = Champion.Author;
-            AddonMenu = MainMenu.AddMenu(AddonName, AddonName + " by " + Author + " v1.0");
+            AddonMenu = MainMenu.AddMenu(AddonName, AddonName + " by " + Author + " v1.0000");
             AddonMenu.AddLabel(AddonName + " made by " + Author);
 
             SubMenu["Prediction"] = AddonMenu.AddSubMenu("Prediction", "Prediction");
@@ -31,28 +31,66 @@ namespace LeeSin
             //Combo
             SubMenu["Combo"] = AddonMenu.AddSubMenu("Combo", "Combo");
             SubMenu["Combo"].Add("Q", new CheckBox("Use Q", true));
-            SubMenu["Combo"].Add("W", new CheckBox("Use W", true));
+            SubMenu["Combo"].Add("W", new CheckBox("Use W to GapClose", true));
             SubMenu["Combo"].Add("E", new CheckBox("Use E", true));
             SubMenu["Combo"].Add("Items", new CheckBox("Use Offensive Items", true));
-            SubMenu["Combo"].Add("Ward", new CheckBox("Use Ward", false));
-            SubMenu["Combo"].Add("Stack", new Slider("Use x passive before using another spell", 1, 0, 2));
-            SubMenu["Combo"].AddStringList("StarMode", "Star Combo Mode", new[] { "Q1 R Q2", "R Q1 Q2" }, 0);
+            var switcher = SubMenu["Combo"].Add("Switcher", new KeyBind("Combo Switcher", false, KeyBind.BindTypes.HoldActive, (uint)'K'));
+            switcher.OnValueChange += delegate (ValueBase<bool> sender, ValueBase<bool>.ValueChangeArgs args)
+            {
+                if (args.NewValue == true)
+                {
+                    var cast = GetSubMenu("Combo")["Mode"].Cast<Slider>();
+                    if (cast.CurrentValue == cast.MaxValue)
+                    {
+                        cast.CurrentValue = 0;
+                    }
+                    else
+                    {
+                        cast.CurrentValue++;
+                    }
+                }
+            };
             SubMenu["Combo"].AddStringList("Mode", "Combo Mode", new[] { "Without R", "Star Combo", "Gank Combo" }, 0);
+            SubMenu["Combo"]["Mode"].Cast<Slider>().CurrentValue = 0; //E L I M I N A R
+
+            SubMenu["Combo"].AddGroupLabel("Without R Combo");
+            SubMenu["Combo"].Add("Normal.Ward", new CheckBox("Use Ward", false));
+            SubMenu["Combo"].Add("Normal.W", new Slider("Use W if HealthPercent", 25, 0, 100));
+            SubMenu["Combo"].Add("Normal.Stack", new Slider("Use X passive before using another spell", 1, 0, 2));
+
+            SubMenu["Combo"].AddSeparator();
+
+            SubMenu["Combo"].AddGroupLabel("Star Combo");
+            SubMenu["Combo"].Add("Star.R", new CheckBox("Use R", true));
+            SubMenu["Combo"].Add("Star.Ward", new CheckBox("Use Ward", true));
+            SubMenu["Combo"].Add("Star.Stack", new Slider("Use x passive before using another spell", 0, 0, 2));
+            SubMenu["Combo"].AddStringList("Star.Mode", "Star Combo Mode", new[] { "Q1 R Q2", "R Q1 Q2" }, 0);
+
+            SubMenu["Combo"].AddSeparator();
+
+            SubMenu["Combo"].AddGroupLabel("Gank Combo");
+            SubMenu["Combo"].Add("Gank.R", new CheckBox("Use R", true));
+            SubMenu["Combo"].Add("Gank.Ward", new CheckBox("Use Ward", true));
+            SubMenu["Combo"].Add("Gank.Stack", new Slider("Use x passive before using another spell", 1, 0, 2));
 
             //Insec
             SubMenu["Insec"] = AddonMenu.AddSubMenu("Insec", "Insec");
-            SubMenu["Insec"].Add("Key", new KeyBind("Insec Key", false, EloBuddy.SDK.Menu.Values.KeyBind.BindTypes.HoldActive, (uint)'T'));
-            SubMenu["Combo"].AddStringList("Priority", "Priority", new[] { "WardJump > Flash", "Flash > WardJump" }, 0);
-            SubMenu["Combo"].AddStringList("Position", "Insec End Position", new[] { "Turrets and Allies", "Mouse Position", "Current Position", "Clicked Position" }, 0);
-            SubMenu["Insec"].Add("DistanceBetweenPercent", new Slider("% of distance between ward an target", 20, 0, 100));
+            SubMenu["Insec"].Add("Key", new KeyBind("Insec Key", false, KeyBind.BindTypes.HoldActive, (uint)'R'));
+            SubMenu["Insec"].Add("Minion", new CheckBox("Use q on minion if will not hit target", true));
             SubMenu["Insec"].Add("Flash", new CheckBox("Use flash to return", false));
+            SubMenu["Insec"].AddStringList("Priority", "Priority", new[] { "WardJump > Flash", "Flash > WardJump" }, 0);
+            SubMenu["Insec"].AddStringList("Position", "Insec End Position", new[] { "Turrets and Allies", "Mouse Position", "Current Position", "Clicked Position" }, 0);
+            SubMenu["Insec"].Add("DistanceBetweenPercent", new Slider("% of distance between ward an target", 20, 0, 100));
 
             SubMenu["Drawings"] = AddonMenu.AddSubMenu("Drawings", "Drawings");
+            SubMenu["Drawings"].Add("Combo.Mode", new CheckBox("Draw text of current mode", true));
+            SubMenu["Drawings"].Add("Insec.Line", new CheckBox("Draw line of insec", true));
 
             SubMenu["Flee"] = AddonMenu.AddSubMenu("Flee", "Flee");
             SubMenu["Flee"].Add("WardJump", new CheckBox("Use WardJump", true));
             SubMenu["Flee"].Add("W", new CheckBox("Use W on objects near mouse", true));
         }
+        
         public static int GetSliderValue(this Menu m, string s)
         {
             if (m != null)
@@ -73,13 +111,14 @@ namespace LeeSin
         }
         public static void AddStringList(this Menu m, string uniqueID, string DisplayName, string[] values, int defaultValue)
         {
-            m.AddGroupLabel(DisplayName);
+            m.AddLabel(DisplayName);
             var mode = m.Add(uniqueID, new Slider(DisplayName, defaultValue, 0, values.Length - 1));
             mode.DisplayName = values[mode.CurrentValue];
             mode.OnValueChange += delegate (ValueBase<int> sender, ValueBase<int>.ValueChangeArgs args)
             {
                 sender.DisplayName = values[args.NewValue];
             };
+            SubMenu["Combo"].AddSeparator(5);
         }
         public static Menu GetSubMenu(string s)
         {

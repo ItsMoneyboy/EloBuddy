@@ -22,6 +22,7 @@ namespace LeeSin
         public static Spell.Skillshot Flash;
         public static float W_Range = 700f;
         public static float W_ExtraRange = 150f;
+        public static float W_LastCastTime, Flash_LastCastTime = 0;
         public static float E_Range
         {
             get
@@ -51,12 +52,15 @@ namespace LeeSin
             E2.AllowedCollisionCount = int.MaxValue;
 
             R = new Spell.Targeted(SpellSlot.R, 375);
-            RKick = new Spell.Skillshot(SpellSlot.R, 650, SkillShotType.Linear, 250, 600, 100);
+            RKick = new Spell.Skillshot(SpellSlot.R, 275 + 550, SkillShotType.Linear, 400, 600, 100);
             RKick.AllowedCollisionCount = int.MaxValue;
 
-            Ignite = new Spell.Targeted(Util.myHero.GetSpellSlotFromName("summonerdot"), 600);
-            Smite = new Spell.Targeted(Util.myHero.GetSpellSlotFromName("smite"), 780);
-            Flash = new Spell.Skillshot(Util.myHero.GetSpellSlotFromName("flash"), 400, SkillShotType.Circular);
+            Ignite = new Spell.Targeted(Util.myHero.SpellSlotFromName("summonerdot"), 600);
+            Smite = new Spell.Targeted(Util.myHero.SpellSlotFromName("smite"), 780);
+            Flash = new Spell.Skillshot(Util.myHero.SpellSlotFromName("flash"), 400, SkillShotType.Circular);
+
+            Obj_AI_Base.OnProcessSpellCast += Obj_AI_Base_OnProcessSpellCast;
+
             /*
             var slot = Util.myHero.GetSpellSlotFromName("summonerdot");
             if (slot != SpellSlot.Unknown)
@@ -73,6 +77,32 @@ namespace LeeSin
             {
                 Smite = new Spell.Targeted(slot, 780);
             }*/
+        }
+        private static SpellSlot SpellSlotFromName(this AIHeroClient hero, string name)
+        {
+            foreach (SpellDataInst s in hero.Spellbook.Spells)
+            {
+                if (s.Name.ToLower().Contains(name.ToLower()))
+                {
+                    return s.Slot;
+                }
+            }
+            return SpellSlot.Unknown;
+        }
+        private static void Obj_AI_Base_OnProcessSpellCast(Obj_AI_Base sender, GameObjectProcessSpellCastEventArgs args)
+        {
+            if (sender.IsMe)
+            {
+
+                if (args.SData.Name.Equals(SpellSlot.W.GetSpellDataInst().SData.Name) && args.SData.Name.ToLower().Contains("one"))
+                {
+                    W_LastCastTime = Game.Time;
+                }
+                else if (args.SData.Name.ToLower().Contains("flash"))
+                {
+                    Flash_LastCastTime = Game.Time;
+                }
+            }
         }
 
         public static void CastQ(Obj_AI_Base target)
@@ -104,28 +134,28 @@ namespace LeeSin
         }
         public static void CastQ2(Obj_AI_Base target)
         {
-            if (SpellSlot.Q.IsReady() && !SpellSlot.Q.IsFirstSpell() && target.IsValidTarget(Q2.Range) && target.HaveQ())
+            if (target != null && SpellSlot.Q.IsReady() && !SpellSlot.Q.IsFirstSpell() && target.IsValidTarget(Q2.Range) && target.HaveQ())
             {
-                Q1.Cast();
+                Util.myHero.Spellbook.CastSpell(SpellSlot.Q);
             }
         }
         public static void CastW(Obj_AI_Base target)
         {
-            if (SpellSlot.W.IsReady())
+            if (SpellSlot.W.IsReady() && target.IsValidAlly())
             {
                 if (SpellSlot.W.IsFirstSpell())
                 {
-                    CastQ1(target);
+                    CastW1(target);
                 }
                 else
                 {
-                    CastQ2(target);
+                    CastW2();
                 }
             }
         }
         public static void CastW1(Obj_AI_Base target)
         {
-            if (SpellSlot.W.IsReady() && SpellSlot.W.IsFirstSpell() && target.IsValid && !target.IsDead)
+            if (SpellSlot.W.IsReady() && SpellSlot.W.IsFirstSpell() && target.IsValidAlly())
             {
                 Util.myHero.Spellbook.CastSpell(W1.Slot, target);
             }
@@ -180,30 +210,12 @@ namespace LeeSin
         {
             if (SpellSlot.R.IsReady() && target.IsValidTarget(R.Range))
             {
-                R.Cast(target);
+                Util.myHero.Spellbook.CastSpell(R.Slot, target);
             }
         }
         public static float HitChancePercent(this SpellSlot s)
         {
-            string slot;
-            switch (s)
-            {
-                case SpellSlot.Q:
-                    slot = "Q";
-                    break;
-                case SpellSlot.W:
-                    slot = "W";
-                    break;
-                case SpellSlot.E:
-                    slot = "E";
-                    break;
-                case SpellSlot.R:
-                    slot = "R";
-                    break;
-                default:
-                    slot = "Q";
-                    break;
-            }
+            string slot = s.ToString().Trim();
             if (ModeManager.IsHarass)
             {
                 return MenuManager.PredictionMenu.GetSliderValue(slot + "Harass");
@@ -227,6 +239,13 @@ namespace LeeSin
             get
             {
                 return SpellSlot.W.IsReady() && SpellSlot.W.IsFirstSpell();
+            }
+        }
+        public static bool CanCastQ1
+        {
+            get
+            {
+                return SpellSlot.Q.IsReady() && SpellSlot.Q.IsFirstSpell();
             }
         }
     }

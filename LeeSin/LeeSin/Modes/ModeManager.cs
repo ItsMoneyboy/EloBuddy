@@ -123,7 +123,7 @@ namespace LeeSin
         {
             get
             {
-                return !IsFlee && !IsLastHit && !IsClear && !IsHarass && !IsCombo;
+                return !IsFlee && !IsLastHit && !IsClear && !IsHarass && !IsCombo && !IsInsec;
             }
         }
     }

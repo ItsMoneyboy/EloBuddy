@@ -41,17 +41,14 @@ namespace LeeSin
             ModeManager.Init();
             WardManager.Init();
             _Q.Init();
+            _R.Init();
+            Insec.Init();
             TargetSelector.Init(SpellManager.Q2.Range + 200, DamageType.Physical);
             LoadCallbacks();
         }
         private static void LoadCallbacks()
         {
             Game.OnTick += Game_OnTick;
-            TargetSelector.Range = 1300f;
-            if (!SpellSlot.Q.IsFirstSpell() && _Q.Target != null)
-            {
-                TargetSelector.Range = 1500f;
-            }
 
             Drawing.OnDraw += Drawing_OnDraw;
 
@@ -142,11 +139,27 @@ namespace LeeSin
 
         public static void ForceQ2()
         {
-
+            if (SpellSlot.Q.IsReady() && !SpellSlot.Q.IsFirstSpell())
+            {
+                if (_Q.Target != null && Extensions.Distance(TargetSelector.Target, _Q.Target, true) < Extensions.Distance(Util.myHero, _Q.Target, true))
+                {
+                    SpellManager.CastQ2(_Q.Target);
+                }
+            }
+            /*
+            if (SpellSlot.Q.IsReady() && !SpellSlot.Q.IsFirstSpell())
+            {
+                Core.DelayAction(ForceQ2, 100);
+            }*/
         }
 
         private static void Game_OnTick(EventArgs args)
         {
+            TargetSelector.Range = 1300f;
+            if (!SpellSlot.Q.IsFirstSpell() && _Q.Target != null)
+            {
+                TargetSelector.Range = 1500f;
+            }
         }
 
         private static void Interrupter_OnInterruptableSpell(Obj_AI_Base sender, Interrupter.InterruptableSpellEventArgs e)
@@ -157,7 +170,22 @@ namespace LeeSin
         private static void Drawing_OnDraw(EventArgs args)
         {
             if (Util.myHero.IsDead) { return; }
-            //Draw current combo mode;
+            if (MenuManager.DrawingsMenu.GetCheckBoxValue("Combo.Mode"))
+            {
+                var pos = Util.myHero.Position.WorldToScreen();
+                pos.X = pos.X - 50;
+                Drawing.DrawText(pos, System.Drawing.Color.White, "Combo Mode: " + Combo.Menu["Mode"].Cast<Slider>().DisplayName, 15);
+            }
+
+            if (MenuManager.DrawingsMenu.GetCheckBoxValue("Insec.Line") && Insec.IsReady)
+            {
+                var blue = System.Drawing.Color.Blue;
+                var target = TargetSelector.Target;
+                if (target.IsValidTarget())
+                {
+                    Drawing.DrawLine(target.Position.WorldToScreen(), Insec.EndPosition.WorldToScreen(), 2, blue);
+                }
+            }
         }
 
 
