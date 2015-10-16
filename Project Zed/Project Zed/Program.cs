@@ -28,7 +28,6 @@ namespace Project_Zed
         static Obj_AI_Minion wFound, rFound;
         static GameObject IsDeadObject = null;
         static Dictionary<int, bool> PassiveUsed = new Dictionary<int, bool>();
-        static bool Combo1Pressed, Combo2Pressed, Harass1Pressed, Harass2Pressed = false;
         static List<Obj_AI_Minion> Shadows = new List<Obj_AI_Minion>();
         static bool IsWaitingShadow
         {
@@ -46,6 +45,8 @@ namespace Project_Zed
         {
             get { return myHero.Spellbook.GetSpell(R.Slot).SData.Name.ToLower() != "zedr2"; }
         }
+        /*
+        static bool Combo1Pressed, Combo2Pressed, Harass1Pressed, Harass2Pressed = false;
         static int HarassType
         {
             get
@@ -81,7 +82,7 @@ namespace Project_Zed
                 }
                 return -1;
             }
-        }
+        }*/
         static int TS_Range
         {
             get
@@ -307,7 +308,7 @@ namespace Project_Zed
         {
             if (args.Animation.ToLower().Contains("death"))
             {
-                if (Shadows.Count > 0) 
+                if (Shadows.Count > 0)
                 {
                     foreach (Obj_AI_Minion o in Shadows)
                     {
@@ -376,7 +377,7 @@ namespace Project_Zed
             if (myHero.IsDead) { return; }
             KillSteal();
             Swap();
-            if (HarassType > 0 && SubMenu["Harass"]["Collision"].Cast<CheckBox>().CurrentValue)
+            if (IsHarass && SubMenu["Harass"]["Collision"].Cast<CheckBox>().CurrentValue)
             {
                 Q.AllowedCollisionCount = 0;
                 W.AllowedCollisionCount = 0;
@@ -393,6 +394,7 @@ namespace Project_Zed
             else if (IsHarass)
             {
                 Harass();
+                /*
                 if (HarassType == 1)
                 {
                     Harass();
@@ -400,7 +402,7 @@ namespace Project_Zed
                 else if (HarassType == 2)
                 {
                     Harass2();
-                }
+                }*/
             }
             else if (IsClear)
             {
