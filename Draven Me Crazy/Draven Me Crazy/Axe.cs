@@ -83,7 +83,7 @@ namespace Draven_Me_Crazy
                     var turret = EntityManager.Turrets.Enemies.Where(m => m.Health > 0).OrderBy(m => Extensions.Distance(Program.myHero, m, true)).FirstOrDefault();
                     if (turret != null)
                     {
-                        return turret.GetAutoAttackRange() + 750f >= Extensions.Distance(turret.Position, this.Position) && Program.SubMenu["Axes"]["Q"].Cast<CheckBox>().CurrentValue;
+                        return turret.GetAutoAttackRange() + 750f >= Extensions.Distance(turret.Position, this.Position) && Program.SubMenu["Axes"]["Turret"].Cast<CheckBox>().CurrentValue;
                     }
                 }
                 return false;
