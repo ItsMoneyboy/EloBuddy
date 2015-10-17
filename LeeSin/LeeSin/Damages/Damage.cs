@@ -79,22 +79,22 @@ namespace LeeSin
                 if (q)
                 {
                     ComboDamage += SpellSlot.Q.GetSpellDamage(target, 2);
-                    ManaWasted += Util.myHero.Spellbook.GetSpell(SpellSlot.Q).SData.Mana;
+                    ManaWasted += SpellSlot.Q.GetSpellDataInst().SData.ManaCostArray[SpellSlot.Q.GetSpellDataInst().Level - 1];
                 }
                 if (w)
                 {
                     ComboDamage += SpellSlot.W.GetSpellDamage(target);
-                    ManaWasted += Util.myHero.Spellbook.GetSpell(SpellSlot.W).SData.Mana;
+                    ManaWasted += SpellSlot.W.GetSpellDataInst().SData.ManaCostArray[SpellSlot.W.GetSpellDataInst().Level - 1];
                 }
                 if (e)
                 {
                     ComboDamage += SpellSlot.E.GetSpellDamage(target);
-                    ManaWasted += Util.myHero.Spellbook.GetSpell(SpellSlot.E).SData.Mana;
+                    ManaWasted += SpellSlot.E.GetSpellDataInst().SData.ManaCostArray[SpellSlot.E.GetSpellDataInst().Level - 1];
                 }
                 if (r)
                 {
                     ComboDamage += SpellSlot.R.GetSpellDamage(target);
-                    ManaWasted += Util.myHero.Spellbook.GetSpell(SpellSlot.R).SData.Mana;
+                    ManaWasted += SpellSlot.R.GetSpellDataInst().SData.ManaCostArray[SpellSlot.R.GetSpellDataInst().Level - 1];
                 }
                 if (SpellManager.Ignite_IsReady)
                 {
@@ -107,7 +107,7 @@ namespace LeeSin
                 ComboDamage += Util.myHero.GetAutoAttackDamage(target, true);
             }
             ComboDamage = ComboDamage * Overkill;
-            return new DamageResult(ComboDamage, ManaWasted);
+            return new DamageResult(target, ComboDamage, ManaWasted);
         }
 
         public static DamageResult GetBestCombo(this Obj_AI_Base target)
@@ -123,7 +123,7 @@ namespace LeeSin
                     var damageI = PredictedDamage[target.NetworkId];
                     if (Game.Time - damageI.Time <= RefreshTime)
                     {
-                        return damageI;
+                        return PredictedDamage[target.NetworkId];
                     }
                     else
                     {

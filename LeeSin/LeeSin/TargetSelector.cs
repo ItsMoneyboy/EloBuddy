@@ -21,20 +21,9 @@ namespace LeeSin
         public static void Init(float range, DamageType d)
         {
             Game.OnWndProc += Game_OnWndProc;
-            Drawing.OnDraw += Drawing_OnDraw;
             damageType = d;
-            MenuManager.DrawingsMenu.Add("Target", new CheckBox("Draw circle on target", true));
         }
-
-        private static void Drawing_OnDraw(EventArgs args)
-        {
-            if (Util.myHero.IsDead) { return; }
-            if (MenuManager.DrawingsMenu.GetCheckBoxValue("Target") && Target != null && Target.IsValidTarget())
-            {
-                Circle.Draw(Color.Red, 150f, 5, Target.Position);
-            }
-        }
-
+        
         private static void Game_OnWndProc(WndEventArgs args)
         {
             if (args.Msg == (uint)WindowMessages.LeftButtonDown)

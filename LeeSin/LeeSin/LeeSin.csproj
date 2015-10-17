@@ -63,6 +63,7 @@
     <Compile Include="Champion.cs" />
     <Compile Include="Damages\Damage.cs" />
     <Compile Include="Damages\DamageResult.cs" />
+    <Compile Include="DrawManager.cs" />
     <Compile Include="Modes\KillSteal.cs" />
     <Compile Include="Modes\GankCombo.cs" />
     <Compile Include="Modes\Flee.cs" />

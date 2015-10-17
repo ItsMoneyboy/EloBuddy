@@ -20,21 +20,10 @@ namespace LeeSin
         public static Spell.Active Q2, W2;
         public static Spell.Targeted Ignite, Smite;
         public static Spell.Skillshot Flash;
-        public static float W_Range = 700f;
+        public static float W1_Range = 700f;
         public static float W_ExtraRange = 150f;
         public static float Smite_Delay = 0;
         public static float W_LastCastTime, Flash_LastCastTime;
-        public static float E_Range
-        {
-            get
-            {
-                if (!SpellSlot.E.IsFirstSpell())
-                {
-                    return E2.Range;
-                }
-                return E1.Range;
-            }
-        }
         public static void Init()
         {
             Q1 = new Spell.Skillshot(SpellSlot.Q, 1100, SkillShotType.Linear, 250, 1800, 60);
@@ -240,14 +229,14 @@ namespace LeeSin
         {
             get
             {
-                return SpellSlot.W.IsReady() && SpellSlot.W.IsFirstSpell();
+                return SpellSlot.W.IsReady() && SpellSlot.W.IsFirstSpell() && Util.myHero.Mana >= SpellSlot.W.GetSpellDataInst().SData.ManaCostArray[SpellSlot.W.GetSpellDataInst().Level - 1];
             }
         }
         public static bool CanCastQ1
         {
             get
             {
-                return SpellSlot.Q.IsReady() && SpellSlot.Q.IsFirstSpell();
+                return SpellSlot.Q.IsReady() && SpellSlot.Q.IsFirstSpell() && Util.myHero.Mana >= SpellSlot.Q.GetSpellDataInst().SData.ManaCostArray[SpellSlot.Q.GetSpellDataInst().Level - 1];
             }
         }
         public static bool Smite_IsReady
@@ -255,6 +244,54 @@ namespace LeeSin
             get
             {
                 return Smite != null && Smite.IsReady();
+            }
+        }
+        public static bool CanUseSmiteOnHeroes
+        {
+            get
+            {
+                if (Smite_IsReady)
+                {
+                    var name = SpellManager.Smite.Slot.GetSpellDataInst().SData.Name.ToLower();
+                    if (name.Contains("smiteduel") || name.Contains("smiteplayerganker"))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
+        public static float E_Range
+        {
+            get
+            {
+                if (!SpellSlot.E.IsFirstSpell())
+                {
+                    return E2.Range;
+                }
+                return E1.Range;
+            }
+        }
+        public static float Q_Range
+        {
+            get
+            {
+                if (!SpellSlot.Q.IsFirstSpell())
+                {
+                    return Q2.Range;
+                }
+                return Q1.Range;
+            }
+        }
+        public static float W_Range
+        {
+            get
+            {
+                if (!SpellSlot.W.IsFirstSpell())
+                {
+                    return W2.Range;
+                }
+                return W1_Range;
             }
         }
         public static bool Ignite_IsReady

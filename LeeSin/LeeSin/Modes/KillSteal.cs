@@ -23,6 +23,10 @@ namespace LeeSin
         }
         public static void Execute()
         {
+            foreach (AIHeroClient enemy in EntityManager.Heroes.Enemies.Where(m => m.IsValidTarget()))
+            {
+                var result = enemy.GetBestCombo();
+            }
             foreach (AIHeroClient enemy in EntityManager.Heroes.Enemies.Where(m => m.IsValidTarget(TargetSelector.Range) && m.HealthPercent < 40))
             {
                 var result = enemy.GetBestCombo();
@@ -36,13 +40,9 @@ namespace LeeSin
                 {
                     SpellManager.Ignite.Cast(enemy);
                 }
-                if (Menu.GetCheckBoxValue("Smite") && SpellManager.Smite_IsReady && enemy.IsInSmiteRange() && Util.myHero.GetSummonerSpellDamage(enemy, DamageLibrary.SummonerSpells.Smite) >= enemy.Health)
+                if (Menu.GetCheckBoxValue("Smite") && SpellManager.CanUseSmiteOnHeroes && enemy.IsInSmiteRange() && Util.myHero.GetSummonerSpellDamage(enemy, DamageLibrary.SummonerSpells.Smite) >= enemy.Health)
                 {
-                    var name = SpellManager.Smite.Slot.GetSpellDataInst().SData.Name.ToLower();
-                    if (name.Contains("smiteduel") || name.Contains("smiteplayerganker"))
-                    {
-                        Util.myHero.Spellbook.CastSpell(SpellManager.Smite.Slot, enemy);
-                    }
+                    Util.myHero.Spellbook.CastSpell(SpellManager.Smite.Slot, enemy);
                 }
             }
         }

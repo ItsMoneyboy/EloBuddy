@@ -113,6 +113,7 @@ namespace LeeSin
                         if (missile.SData.Name.ToLower().Contains("blindmonkqone"))
                         {
                             Missile = missile;
+                            Core.DelayAction(delegate { Missile = null; }, 1000 * (int)(2 * Extensions.Distance(Missile, Missile.EndPosition) / SpellManager.Q1.Speed));
                         }
                     }
                 }
@@ -269,7 +270,7 @@ namespace LeeSin
         {
             get
             {
-                return SpellSlot.Q.IsReady() && !SpellSlot.Q.IsFirstSpell();
+                return (SpellSlot.Q.IsReady() && !SpellSlot.Q.IsFirstSpell()) || IsValidTarget;
             }
         }
         private static bool MissileIsValid

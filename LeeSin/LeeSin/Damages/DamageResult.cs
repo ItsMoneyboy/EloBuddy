@@ -25,21 +25,22 @@ namespace LeeSin
         public float Time = 0f;
         public Obj_AI_Base Target = null;
 
-        public DamageResult(Obj_AI_Base Target, float Damage, float Mana, bool Q, bool W, bool E, bool R, float Time)
+        public DamageResult(Obj_AI_Base target, float dmg, float m, bool q, bool w, bool e, bool r, float t)
         {
-            this.Target = Target;
-            this.Q = Q;
-            this.W = W;
-            this.E = E;
-            this.R = R;
-            this.Damage = Damage;
-            this.Mana = Mana;
-            this.Time = Time;
+            this.Target = target;
+            this.Q = q;
+            this.W = w;
+            this.E = e;
+            this.R = e;
+            this.Damage = dmg;
+            this.Mana = m;
+            this.Time = t;
         }
-        public DamageResult(float Damage, float Mana)
+        public DamageResult(Obj_AI_Base target, float dmg, float m)
         {
-            this.Damage = Damage;
-            this.Mana = Mana;
+            this.Target = target;
+            this.Damage = dmg;
+            this.Mana = m;
         }
         public bool IsKillable
         {

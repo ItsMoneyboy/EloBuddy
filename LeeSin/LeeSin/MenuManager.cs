@@ -33,6 +33,7 @@ namespace LeeSin
             SubMenu["Combo"].Add("Q", new CheckBox("Use Q", true));
             SubMenu["Combo"].Add("W", new CheckBox("Use W to GapClose", true));
             SubMenu["Combo"].Add("E", new CheckBox("Use E", true));
+            SubMenu["Combo"].Add("Smite", new CheckBox("Use Smite", false));
             SubMenu["Combo"].Add("Items", new CheckBox("Use Offensive Items", true));
             var switcher = SubMenu["Combo"].Add("Switcher", new KeyBind("Combo Switcher", false, KeyBind.BindTypes.HoldActive, (uint)'K'));
             switcher.OnValueChange += delegate (ValueBase<bool> sender, ValueBase<bool>.ValueChangeArgs args)
@@ -109,13 +110,21 @@ namespace LeeSin
             SubMenu["KillSteal"].Add("Smite", new CheckBox("Use Smite", true));
 
             SubMenu["Drawings"] = AddonMenu.AddSubMenu("Drawings", "Drawings");
+            SubMenu["Drawings"].Add("Disable", new CheckBox("Disable all drawings", false));
+            SubMenu["Drawings"].Add("Q", new CheckBox("Use Q", true));
+            SubMenu["Drawings"].Add("W", new CheckBox("Use W", true));
+            SubMenu["Drawings"].Add("E", new CheckBox("Use E", false));
+            SubMenu["Drawings"].Add("R", new CheckBox("Use R", false));
             SubMenu["Drawings"].Add("Combo.Mode", new CheckBox("Draw text of current mode", true));
             SubMenu["Drawings"].Add("Insec.Line", new CheckBox("Draw line of insec", true));
-            
+            SubMenu["Drawings"].Add("Target", new CheckBox("Draw circle on target", true));
+
             SubMenu["Flee"] = AddonMenu.AddSubMenu("Flee", "Flee");
             SubMenu["Flee"].Add("WardJump", new CheckBox("Use WardJump", true));
             SubMenu["Flee"].Add("W", new CheckBox("Use W on objects near mouse", true));
-            
+
+            SubMenu["Misc"] = AddonMenu.AddSubMenu("Misc", "Misc");
+            SubMenu["Misc"].Add("Overkill", new Slider("Overkill % for damage prediction", 10, 0, 100));
 
         }
         

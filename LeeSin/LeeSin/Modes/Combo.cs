@@ -57,6 +57,7 @@ namespace LeeSin
             if (target.IsValidTarget())
             {
                 if (Menu.GetCheckBoxValue("Items")) { ItemManager.UseOffensiveItems(target); }
+                if (Menu.GetCheckBoxValue("Smite") && SpellManager.CanUseSmiteOnHeroes) { Util.myHero.Spellbook.CastSpell(SpellManager.Smite.Slot, target); }
                 switch (Menu.GetSliderValue("Mode"))
                 {
                     case 0:

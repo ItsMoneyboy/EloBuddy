@@ -109,11 +109,11 @@ namespace LeeSin
         }
         public static Obj_AI_Minion GetNearestTo(Vector3 position)
         {
-            return WardsAvailable.Where(m => m.IsValid && !m.IsDead && Extensions.Distance(Util.myHero, m, true) <= Math.Pow(SpellManager.W_Range + SpellManager.W_ExtraRange, 2)).OrderBy(m => Extensions.Distance(m, position, true)).FirstOrDefault();
+            return WardsAvailable.Where(m => m.IsValid && !m.IsDead && Extensions.Distance(Util.myHero, m, true) <= Math.Pow(SpellManager.W1_Range + SpellManager.W_ExtraRange, 2)).OrderBy(m => Extensions.Distance(m, position, true)).FirstOrDefault();
         }
         public static Obj_AI_Minion GetFurthestTo(Vector3 position)
         {
-            return WardsAvailable.Where(m => m.IsValid && !m.IsDead && Extensions.Distance(Util.myHero, m, true) <= Math.Pow(SpellManager.W_Range + SpellManager.W_ExtraRange, 2)).OrderBy(m => Extensions.Distance(m, position, true)).LastOrDefault();
+            return WardsAvailable.Where(m => m.IsValid && !m.IsDead && Extensions.Distance(Util.myHero, m, true) <= Math.Pow(SpellManager.W1_Range + SpellManager.W_ExtraRange, 2)).OrderBy(m => Extensions.Distance(m, position, true)).LastOrDefault();
         }
         public static bool IsTryingToJump
         {

@@ -46,14 +46,13 @@ namespace LeeSin
             Insec.Init();
             AutoSmite.Init();
             JungleClear.Init();
+            DrawManager.Init();
             TargetSelector.Init(SpellManager.Q2.Range + 200, DamageType.Physical);
             LoadCallbacks();
         }
         private static void LoadCallbacks()
         {
             Game.OnTick += Game_OnTick;
-
-            Drawing.OnDraw += Drawing_OnDraw;
 
             Interrupter.OnInterruptableSpell += Interrupter_OnInterruptableSpell;
 
@@ -145,9 +144,12 @@ namespace LeeSin
         {
             if (SpellSlot.Q.IsReady() && !SpellSlot.Q.IsFirstSpell())
             {
-                if (_Q.IsValidTarget && Extensions.Distance(TargetSelector.Target, _Q.Target, true) < Extensions.Distance(Util.myHero, _Q.Target, true))
+                if (_Q.IsValidTarget)
                 {
-                    SpellManager.CastQ2(_Q.Target);
+                    if (Extensions.Distance(TargetSelector.Target, _Q.Target, true) < Extensions.Distance(Util.myHero, _Q.Target, true))
+                    {
+                        SpellManager.CastQ2(_Q.Target);
+                    }
                 }
             }
             /*
@@ -169,27 +171,6 @@ namespace LeeSin
         private static void Interrupter_OnInterruptableSpell(Obj_AI_Base sender, Interrupter.InterruptableSpellEventArgs e)
         {
 
-        }
-
-        private static void Drawing_OnDraw(EventArgs args)
-        {
-            if (Util.myHero.IsDead) { return; }
-            if (MenuManager.DrawingsMenu.GetCheckBoxValue("Combo.Mode"))
-            {
-                var pos = Util.myHero.Position.WorldToScreen();
-                pos.X = pos.X - 50;
-                Drawing.DrawText(pos, System.Drawing.Color.White, "Combo Mode: " + Combo.Menu["Mode"].Cast<Slider>().DisplayName, 15);
-            }
-
-            if (MenuManager.DrawingsMenu.GetCheckBoxValue("Insec.Line") && Insec.IsReady)
-            {
-                var blue = System.Drawing.Color.Blue;
-                var target = TargetSelector.Target;
-                if (target.IsValidTarget())
-                {
-                    Drawing.DrawLine(target.Position.WorldToScreen(), Insec.EndPosition.WorldToScreen(), 2, blue);
-                }
-            }
         }
 
 
