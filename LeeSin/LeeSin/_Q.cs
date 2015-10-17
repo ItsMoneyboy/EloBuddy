@@ -103,14 +103,17 @@ namespace LeeSin
         }
         private static void MissileClient_OnCreate(GameObject sender, EventArgs args)
         {
-            if (sender is MissileClient)
+            if (IsWaitingMissile)
             {
-                var missile = sender as MissileClient;
-                if (missile.SpellCaster.IsMe)
+                if (sender != null && sender is MissileClient)
                 {
-                    if (missile.SData.Name.ToLower().Contains("blindmonkqone"))
+                    var missile = sender as MissileClient;
+                    if (missile.SpellCaster.IsMe)
                     {
-                        Missile = missile;
+                        if (missile.SData.Name.ToLower().Contains("blindmonkqone"))
+                        {
+                            Missile = missile;
+                        }
                     }
                 }
             }
@@ -118,12 +121,12 @@ namespace LeeSin
 
         private static void MissileClient_OnDelete(GameObject sender, EventArgs args)
         {
-            if (sender is MissileClient)
+            if (MissileIsValid)
             {
-                var missile = sender as MissileClient;
-                if (missile.SpellCaster.IsMe)
+                if (sender != null && sender is MissileClient)
                 {
-                    if (MissileIsValid)
+                    var missile = sender as MissileClient;
+                    if (missile.SpellCaster.IsMe)
                     {
                         if (Missile.NetworkId == missile.NetworkId)
                         {
@@ -188,7 +191,7 @@ namespace LeeSin
                     if (SpellManager.Smite_IsReady && minions.Count() == 1 && CanSmite)
                     {
                         var collision = minions.FirstOrDefault();
-                        if (collision is Obj_AI_Minion && collision.IsValidTarget(SpellManager.Smite.Range))
+                        if (collision is Obj_AI_Minion && collision.IsInSmiteRange())
                         {
                             var minion = collision as Obj_AI_Minion;
                             int time = SpellManager.Q1.CastDelay + 1000 * (int)(Extensions.Distance(Util.myHero, minion) / SpellManager.Q1.Speed) + (int)SpellManager.Smite_Delay * 1000 - 70;
@@ -199,7 +202,7 @@ namespace LeeSin
                             }
                         }
                     }
-                    else if (pred.CollisionObjects.Where(m=> m.IsValidTarget() && Extensions.Distance(Util.myHero, m, true) < Extensions.Distance(Util.myHero, target, true)).Count() == 0)
+                    else if (pred.CollisionObjects.Where(m => m.IsValidTarget() && Extensions.Distance(Util.myHero, m, true) < Extensions.Distance(Util.myHero, target, true)).Count() == 0)
                     {
                         SpellManager.Q1.Cast(pred.CastPosition);
                     }

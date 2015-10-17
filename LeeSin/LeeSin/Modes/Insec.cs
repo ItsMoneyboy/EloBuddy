@@ -81,7 +81,7 @@ namespace LeeSin
                             var predtarget = SpellManager.Q1.GetPrediction(target);
                             if (Menu.GetCheckBoxValue("Object") && predtarget.CollisionObjects.Count() > 1)
                             {
-                                foreach (Obj_AI_Base minion in EntityManager.MinionsAndMonsters.Get(EntityManager.MinionsAndMonsters.EntityType.Both, EntityManager.UnitTeam.Enemy, Util.myHero.Position, SpellManager.Q2.Range).Where(m => m.IsValidTarget() && SpellSlot.Q.GetSpellDamage(m) < m.Health && Extensions.Distance(Util.myHero, target, true) > Extensions.Distance(m, target, true) && Extensions.Distance(m, target, true) < Math.Pow(WardManager.WardRange - DistanceBetween - Offset, 2)).OrderBy(m => Extensions.Distance(target, m, true)))
+                                foreach (Obj_AI_Base minion in EntityManager.MinionsAndMonsters.Get(EntityManager.MinionsAndMonsters.EntityType.Both, EntityManager.UnitTeam.Enemy, Util.myHero.Position, SpellManager.Q2.Range).Where(m => m.IsValidTarget() && SpellSlot.Q.GetSpellDamage(m) < Prediction.Health.GetPrediction(m, SpellManager.Q1.CastDelay + 1000 * (int) (Extensions.Distance(Util.myHero, m)/SpellManager.Q1.Speed)) && Extensions.Distance(Util.myHero, target, true) > Extensions.Distance(m, target, true) && Extensions.Distance(m, target, true) < Math.Pow(WardManager.WardRange - DistanceBetween - Offset, 2)).OrderBy(m => Extensions.Distance(target, m, true)))
                                 {
                                     var pred = SpellManager.Q1.GetPrediction(minion);
                                     if (pred.HitChancePercent >= SpellSlot.Q.HitChancePercent())

@@ -48,7 +48,7 @@ namespace LeeSin
             {
                 if (Menu.GetCheckBoxValue("Smite"))
                 {
-                    var dragon = EntityManager.MinionsAndMonsters.GetJungleMonsters(Util.myHero.Position, SpellManager.Q2.Range, true).Where(m => m.IsDragon()).FirstOrDefault();
+                    var dragon = EntityManager.MinionsAndMonsters.GetJungleMonsters(Util.myHero.Position, SpellManager.Q2.Range, true).Where(m => m.IsInSmiteRange() && m.IsDragon()).FirstOrDefault();
                     if (dragon != null)
                     {
                         if (dragon.Health <= Util.myHero.GetSummonerSpellDamage(dragon, DamageLibrary.SummonerSpells.Smite))

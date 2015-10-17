@@ -36,12 +36,12 @@ namespace LeeSin
                 {
                     SpellManager.Ignite.Cast(enemy);
                 }
-                if (Menu.GetCheckBoxValue("Smite") && SpellManager.Smite_IsReady && Util.myHero.GetSummonerSpellDamage(enemy, DamageLibrary.SummonerSpells.Smite) >= enemy.Health)
+                if (Menu.GetCheckBoxValue("Smite") && SpellManager.Smite_IsReady && enemy.IsInSmiteRange() && Util.myHero.GetSummonerSpellDamage(enemy, DamageLibrary.SummonerSpells.Smite) >= enemy.Health)
                 {
                     var name = SpellManager.Smite.Slot.GetSpellDataInst().SData.Name.ToLower();
                     if (name.Contains("smiteduel") || name.Contains("smiteplayerganker"))
                     {
-                        SpellManager.Smite.Cast(enemy);
+                        Util.myHero.Spellbook.CastSpell(SpellManager.Smite.Slot, enemy);
                     }
                 }
             }

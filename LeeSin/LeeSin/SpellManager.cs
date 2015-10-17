@@ -62,7 +62,7 @@ namespace LeeSin
             slot = Util.myHero.SpellSlotFromName("smite");
             if (slot != SpellSlot.Unknown)
             {
-                Smite = new Spell.Targeted(slot, 780);
+                Smite = new Spell.Targeted(slot, 500);
             }
             slot = Util.myHero.SpellSlotFromName("flash");
             if (slot != SpellSlot.Unknown)
@@ -72,7 +72,10 @@ namespace LeeSin
 
             Obj_AI_Base.OnProcessSpellCast += Obj_AI_Base_OnProcessSpellCast;
         }
-
+        public static bool IsInSmiteRange(this Obj_AI_Base target)
+        {
+            return target.IsValidTarget(Smite.Range + Util.myHero.BoundingRadius + target.BoundingRadius);
+        }
         public static SpellSlot SpellSlotFromName(this AIHeroClient hero, string name)
         {
             foreach (SpellDataInst s in hero.Spellbook.Spells)
@@ -263,7 +266,8 @@ namespace LeeSin
         }
         public static bool Flash_IsReady
         {
-            get {
+            get
+            {
                 return Flash != null && Flash.IsReady();
             }
         }

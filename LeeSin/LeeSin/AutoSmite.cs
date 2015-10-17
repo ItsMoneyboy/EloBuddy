@@ -37,7 +37,7 @@ namespace LeeSin
             {
                 if (Menu.GetCheckBoxValue("DragonSteal"))
                 {
-                    var minion = EntityManager.MinionsAndMonsters.GetJungleMonsters(Util.myHero.Position, SpellManager.Q2.Range, true).Where(m => m.IsValidTarget() && (m.Name.ToLower().Contains("baron") || m.Name.ToLower().Contains("dragon"))).FirstOrDefault();
+                    var minion = EntityManager.MinionsAndMonsters.GetJungleMonsters(Util.myHero.Position, SpellManager.Q2.Range, true).Where(m => m.IsInSmiteRange() && (m.Name.ToLower().Contains("baron") || m.Name.ToLower().Contains("dragon"))).FirstOrDefault();
                     if (minion != null)
                     {
                         if (minion.Health <= Util.myHero.GetSummonerSpellDamage(minion, DamageLibrary.SummonerSpells.Smite))
