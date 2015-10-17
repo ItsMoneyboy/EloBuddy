@@ -238,22 +238,27 @@ namespace Draven_Me_Crazy
 
         private static void KillSteal()
         {
-            foreach (AIHeroClient enemy in EntityManager.Heroes.Enemies)
+            var enemies = EntityManager.Heroes.Enemies.Where(m => m.IsValidTarget(E.Range));
+            if (enemies.Count() > 0)
             {
-                if (enemy.IsValidTarget(E.Range) && enemy.HealthPercent <= 40)
+                enemies = enemies.OrderBy(m => 1 / TargetSelector.GetPriority(m));
+                foreach (AIHeroClient enemy in enemies)
                 {
-                    var damageI = GetBestCombo(enemy);
-                    var menu = SubMenu["KillSteal"];
-                    if (damageI.Damage >= enemy.Health)
+                    if (enemy.IsValidTarget(E.Range) && enemy.HealthPercent <= 40)
                     {
-                        if (GetCheckBox(menu, "Q") && (Damage(enemy, Q.Slot) >= enemy.Health || damageI.Q)) { CastQ(enemy); }
-                        if (GetCheckBox(menu, "W") && (Damage(enemy, W.Slot) >= enemy.Health || damageI.W)) { CastW(enemy); }
-                        if (GetCheckBox(menu, "E") && (Damage(enemy, E.Slot) >= enemy.Health || damageI.E)) { CastE(enemy); }
-                        if (GetCheckBox(menu, "R") && (Damage(enemy, R.Slot) >= enemy.Health || damageI.R)) { CastR(enemy); }
-                    }
-                    if (Ignite != null && GetCheckBox(menu, "Ignite") && Ignite.IsReady() && myHero.GetSummonerSpellDamage(enemy, DamageLibrary.SummonerSpells.Ignite) >= enemy.Health)
-                    {
-                        Ignite.Cast(enemy);
+                        var damageI = GetBestCombo(enemy);
+                        var menu = SubMenu["KillSteal"];
+                        if (damageI.Damage >= enemy.Health)
+                        {
+                            if (GetCheckBox(menu, "Q") && (Damage(enemy, Q.Slot) >= enemy.Health || damageI.Q)) { CastQ(enemy); }
+                            if (GetCheckBox(menu, "W") && (Damage(enemy, W.Slot) >= enemy.Health || damageI.W)) { CastW(enemy); }
+                            if (GetCheckBox(menu, "E") && (Damage(enemy, E.Slot) >= enemy.Health || damageI.E)) { CastE(enemy); }
+                            if (GetCheckBox(menu, "R") && (Damage(enemy, R.Slot) >= enemy.Health || damageI.R)) { CastR(enemy); }
+                        }
+                        if (Ignite != null && GetCheckBox(menu, "Ignite") && Ignite.IsReady() && myHero.GetSummonerSpellDamage(enemy, DamageLibrary.SummonerSpells.Ignite) >= enemy.Health)
+                        {
+                            Ignite.Cast(enemy);
+                        }
                     }
                 }
             }
@@ -573,7 +578,7 @@ namespace Draven_Me_Crazy
                     }
                     else if (name.Contains("reticlecatchsuccess.troy"))
                     {
-                        RemoveAxe(sender);
+                        RemoveAxe(sender.Position);
                     }
                     //Chat.Print("Created " + sender.Name);
                 }
@@ -583,7 +588,6 @@ namespace Draven_Me_Crazy
                     if (missile.SpellCaster.IsMe && missile.SData.Name.ToLower().Contains("dravenspinningreturncatch"))
                     {
                         Axes.Add(new Axe(missile));
-                        Core.DelayAction(delegate { RemoveAxe(sender); }, (int)(Axe.LimitTime * 1000 + 600));
                     }
                 }
             }
@@ -597,7 +601,7 @@ namespace Draven_Me_Crazy
                     var name = sender.Name.ToLower();
                     if (name.Contains("q_reticle_self.troy"))
                     {
-                        RemoveAxe(sender);
+                        RemoveAxe(sender.Position);
                     }
                     //Chat.Print("Deleted " + sender.Name);
                 }
@@ -615,13 +619,13 @@ namespace Draven_Me_Crazy
                 }
             }
         }
-        private static void RemoveAxe(GameObject sender)
+        private static void RemoveAxe(Vector3 position)
         {
             if (Axes.Count > 0)
-            {
-                foreach (Axe a in Axes.OrderBy(m => Extensions.Distance(m.Position, sender, true)))
+            { 
+                foreach (Axe a in Axes.OrderBy(m => Extensions.Distance(m.Position, position, true)))
                 {
-                    if (Extensions.Distance(a.Reticle.Position.To2D(), sender.Position.To2D(), true) < 30 * 30)
+                    if (Extensions.Distance(a.Reticle.Position.To2D(), position.To2D(), true) < 30 * 30)
                     {
                         Axes.Remove(a);
                         break;
@@ -638,7 +642,7 @@ namespace Draven_Me_Crazy
                 foreach (Axe a in Axes)
                 {
                     var color = new ColorBGRA(255, 0, 0, 255);
-                    if (a.InTime)
+                    if (a.InTime && !a.InTurret)
                     {
                         var AxeCatchPositionFromHero = a.Position + (myHero.Position - a.Position).Normalized() * Math.Min(Axe.Radius, Extensions.Distance(myHero, a.Position));
                         var Time = a.TimeLeft - ((Extensions.Distance(myHero.Position, AxeCatchPositionFromHero) / myHero.MoveSpeed) + (myHero.AttackCastDelay));

@@ -44,7 +44,6 @@ namespace Draven_Me_Crazy
         {
             get
             {
-
                 if (this.Missile != null)
                     return LimitTime - (Game.Time - this.StartTime);//2 * Extensions.Distance(this.Reticle.Position, this.Missile.Position) / this.Speed; //
                 return float.MaxValue;
@@ -81,11 +80,10 @@ namespace Draven_Me_Crazy
             {
                 if (this.Position != Vector3.Zero)
                 {
-                    var turret = EntityManager.Turrets.Enemies.Where(m => m.Health > 0 && m.AttackRange + m.BoundingRadius + Program.myHero.BoundingRadius >= Extensions.Distance(m.Position, this.Position)).FirstOrDefault();
+                    var turret = EntityManager.Turrets.Enemies.Where(m => m.Health > 0).OrderBy(m => Extensions.Distance(Program.myHero, m, true)).FirstOrDefault();
                     if (turret != null)
                     {
-                        return true;
-                        //return EntityManager.Heroes.Enemies.Where(m => turret.IsInAutoAttackRange(m)).Count() > 0 && Program.SubMenu["Axes"]["Turret"].Cast<CheckBox>().CurrentValue;
+                        return turret.GetAutoAttackRange() + 750f >= Extensions.Distance(turret.Position, this.Position) && Program.SubMenu["Axes"]["Q"].Cast<CheckBox>().CurrentValue;
                     }
                 }
                 return false;
