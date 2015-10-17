@@ -79,15 +79,19 @@ namespace LeeSin
                         if (SpellManager.CanCastQ1)
                         {
                             var predtarget = SpellManager.Q1.GetPrediction(target);
-                            if (Menu.GetCheckBoxValue("Minion") && predtarget.CollisionObjects.Count() > 1)
+                            if (Menu.GetCheckBoxValue("Object") && predtarget.CollisionObjects.Count() > 1)
                             {
-                                foreach (Obj_AI_Base minion in predtarget.CollisionObjects.Where(m => m.IsValidTarget() && SpellSlot.Q.GetSpellDamage(m) < m.Health && Extensions.Distance(m, target, true) < Math.Pow(WardManager.WardRange - DistanceBetween - Offset, 2)).OrderBy(m => Extensions.Distance(target, m, true)))
+                                foreach (Obj_AI_Base minion in EntityManager.MinionsAndMonsters.Get(EntityManager.MinionsAndMonsters.EntityType.Both, EntityManager.UnitTeam.Enemy, Util.myHero.Position, SpellManager.Q2.Range).Where(m => m.IsValidTarget() && SpellSlot.Q.GetSpellDamage(m) < m.Health && Extensions.Distance(Util.myHero, target, true) > Extensions.Distance(m, target, true) && Extensions.Distance(m, target, true) < Math.Pow(WardManager.WardRange - DistanceBetween - Offset, 2)).OrderBy(m => Extensions.Distance(target, m, true)))
                                 {
                                     var pred = SpellManager.Q1.GetPrediction(minion);
                                     if (pred.HitChancePercent >= SpellSlot.Q.HitChancePercent())
                                     {
                                         SpellManager.Q1.Cast(pred.CastPosition);
                                     }
+                                }
+                                foreach (AIHeroClient enemy in EntityManager.Heroes.Enemies.Where(m => m.NetworkId != target.NetworkId && m.IsValidTarget(SpellManager.Q2.Range) && SpellSlot.Q.GetSpellDamage(m) < m.Health && Extensions.Distance(Util.myHero, target, true) > Extensions.Distance(m, target, true) && Extensions.Distance(m, target, true) < Math.Pow(WardManager.WardRange - DistanceBetween - Offset, 2)).OrderBy(m => Extensions.Distance(target, m, true)))
+                                {
+                                    SpellManager.CastQ1(enemy);
                                 }
                             }
                         }

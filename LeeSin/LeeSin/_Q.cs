@@ -60,7 +60,7 @@ namespace LeeSin
                     else if (WillHit(Smite_Target))
                     {
                         var pred = SpellManager.Q1.GetPrediction(Smite_Target);
-                        var width = Smite_Target.BoundingRadius + SpellManager.Q1.Width / 2;//
+                        var width = Smite_Target.BoundingRadius + SpellManager.Q1.Width;//
                         var TimeToArriveQ = (Extensions.Distance(Missile, pred.CastPosition) - width) / SpellManager.Q1.Speed - SpellManager.Smite_Delay + Game.Ping / 2000 - 0.1f;
                         if (TimeToArriveQ <= 0)
                         {
@@ -211,7 +211,7 @@ namespace LeeSin
             if (MissileIsValid && target.IsValidTarget())
             {
                 var pred = SpellManager.Q1.GetPrediction(target);
-                var info = pred.CastPosition.To2D().ProjectOn(Missile.Position.To2D(), Missile.EndPosition.To2D());
+                var info = pred.CastPosition.To2D().ProjectOn(Missile.StartPosition.To2D(), Missile.EndPosition.To2D());
                 float hitchancepercent = (target is AIHeroClient) ? SpellSlot.Q.HitChancePercent() : 0;
                 if (info.IsOnSegment && pred.HitChancePercent >= hitchancepercent && Extensions.Distance(info.SegmentPoint, pred.CastPosition.To2D(), true) <= Math.Pow(target.BoundingRadius + SpellManager.Q1.Width, 2))
                 {

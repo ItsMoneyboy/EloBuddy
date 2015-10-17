@@ -77,7 +77,7 @@ namespace LeeSin
             //Insec
             SubMenu["Insec"] = AddonMenu.AddSubMenu("Insec", "Insec");
             SubMenu["Insec"].Add("Key", new KeyBind("Insec Key", false, KeyBind.BindTypes.HoldActive, (uint)'R'));
-            SubMenu["Insec"].Add("Minion", new CheckBox("Use q on minion if can't hit target", true));
+            SubMenu["Insec"].Add("Object", new CheckBox("Use q on enemy hero/minion if can't hit target", true));
             SubMenu["Insec"].Add("Flash", new CheckBox("Use flash to return", false));
             SubMenu["Insec"].AddStringList("Priority", "Priority", new[] { "WardJump > Flash", "Flash > WardJump" }, 0);
             SubMenu["Insec"].AddStringList("Position", "Insec End Position", new[] { "Turrets and Allies", "Mouse Position", "Current Position", "Clicked Position" }, 0);
