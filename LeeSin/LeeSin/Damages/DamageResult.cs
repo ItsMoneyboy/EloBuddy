@@ -25,8 +25,9 @@ namespace LeeSin
         public float Time = 0f;
         public Obj_AI_Base Target = null;
 
-        public DamageResult(Obj_AI_Base target, float Damage, float Mana, bool Q, bool W, bool E, bool R, float Time)
+        public DamageResult(Obj_AI_Base Target, float Damage, float Mana, bool Q, bool W, bool E, bool R, float Time)
         {
+            this.Target = Target;
             this.Q = Q;
             this.W = W;
             this.E = E;
@@ -44,8 +45,12 @@ namespace LeeSin
         {
             get
             {
-                return Target.Health <= Damage;
+                return Target.IsValidTarget() && Target.Health <= Damage;
             }
+        }
+        public bool CanKillWith(SpellSlot slot)
+        {
+            return Target.IsValidTarget() && (slot.GetSpellDamage(Target) >= Target.Health || Q);
         }
     }
 }

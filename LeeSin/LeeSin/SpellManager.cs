@@ -22,7 +22,8 @@ namespace LeeSin
         public static Spell.Skillshot Flash;
         public static float W_Range = 700f;
         public static float W_ExtraRange = 150f;
-        public static float W_LastCastTime, Flash_LastCastTime = 0;
+        public static float Smite_Delay = 0;
+        public static float W_LastCastTime, Flash_LastCastTime;
         public static float E_Range
         {
             get
@@ -36,12 +37,11 @@ namespace LeeSin
         }
         public static void Init()
         {
-
             Q1 = new Spell.Skillshot(SpellSlot.Q, 1100, SkillShotType.Linear, 250, 1800, 60);
             Q1.AllowedCollisionCount = 0;
             Q2 = new Spell.Active(SpellSlot.Q, 1300);
 
-            W1 = new Spell.Skillshot(SpellSlot.W, 900, SkillShotType.Linear, 0, 1500, 150);
+            W1 = new Spell.Skillshot(SpellSlot.W, 900, SkillShotType.Linear, 50, 1500, 150);
             W1.AllowedCollisionCount = int.MaxValue;
 
             W2 = new Spell.Active(SpellSlot.W, 700);
@@ -52,17 +52,28 @@ namespace LeeSin
             E2.AllowedCollisionCount = int.MaxValue;
 
             R = new Spell.Targeted(SpellSlot.R, 375);
-            RKick = new Spell.Skillshot(SpellSlot.R, 275 + 550, SkillShotType.Linear, 400, 600, 100);
+            RKick = new Spell.Skillshot(SpellSlot.R, 275 + 550, SkillShotType.Linear, 400, 600, 75);
             RKick.AllowedCollisionCount = int.MaxValue;
-
-            Ignite = new Spell.Targeted(Util.myHero.SpellSlotFromName("summonerdot"), 600);
-            Smite = new Spell.Targeted(Util.myHero.SpellSlotFromName("smite"), 780);
-            Flash = new Spell.Skillshot(Util.myHero.SpellSlotFromName("flash"), 400, SkillShotType.Circular);
+            var slot = Util.myHero.SpellSlotFromName("summonerdot");
+            if (slot != SpellSlot.Unknown)
+            {
+                Ignite = new Spell.Targeted(slot, 600);
+            }
+            slot = Util.myHero.SpellSlotFromName("smite");
+            if (slot != SpellSlot.Unknown)
+            {
+                Smite = new Spell.Targeted(slot, 780);
+            }
+            slot = Util.myHero.SpellSlotFromName("flash");
+            if (slot != SpellSlot.Unknown)
+            {
+                Flash = new Spell.Skillshot(slot, 400, SkillShotType.Circular);
+            }
 
             Obj_AI_Base.OnProcessSpellCast += Obj_AI_Base_OnProcessSpellCast;
-            
         }
-        private static SpellSlot SpellSlotFromName(this AIHeroClient hero, string name)
+
+        public static SpellSlot SpellSlotFromName(this AIHeroClient hero, string name)
         {
             foreach (SpellDataInst s in hero.Spellbook.Spells)
             {
@@ -77,7 +88,6 @@ namespace LeeSin
         {
             if (sender.IsMe)
             {
-
                 if (args.SData.Name.Equals(SpellSlot.W.GetSpellDataInst().SData.Name) && args.SData.Name.ToLower().Contains("one"))
                 {
                     W_LastCastTime = Game.Time;
@@ -88,7 +98,6 @@ namespace LeeSin
                 }
             }
         }
-
         public static void CastQ(Obj_AI_Base target)
         {
             if (SpellSlot.Q.IsReady())
@@ -104,15 +113,21 @@ namespace LeeSin
             }
         }
 
-        public static void CastQ1(Obj_AI_Base target, float hitchancepercent = -1)
+        public static void CastQ1(Obj_AI_Base target)
         {
             if (SpellSlot.Q.IsReady() && SpellSlot.Q.IsFirstSpell() && target.IsValidTarget(Q1.Range))
             {
-                var pred = Q1.GetPrediction(target);
-                if (hitchancepercent == -1) { hitchancepercent = SpellSlot.Q.HitChancePercent(); }
-                if (pred.HitChancePercent >= hitchancepercent)
+                if (target is AIHeroClient)
                 {
-                    Q1.Cast(pred.CastPosition);
+                    _Q.CheckSmite(target);
+                }
+                else
+                {
+                    var pred = Q1.GetPrediction(target);
+                    if (pred.HitChancePercent >= SpellSlot.Q.HitChancePercent())
+                    {
+                        Q1.Cast(pred.CastPosition);
+                    }
                 }
             }
         }
@@ -200,7 +215,7 @@ namespace LeeSin
         public static float HitChancePercent(this SpellSlot s)
         {
             string slot = s.ToString().Trim();
-            if (ModeManager.IsHarass)
+            if (Harass.IsActive)
             {
                 return MenuManager.PredictionMenu.GetSliderValue(slot + "Harass");
             }
@@ -230,6 +245,26 @@ namespace LeeSin
             get
             {
                 return SpellSlot.Q.IsReady() && SpellSlot.Q.IsFirstSpell();
+            }
+        }
+        public static bool Smite_IsReady
+        {
+            get
+            {
+                return Smite != null && Smite.IsReady();
+            }
+        }
+        public static bool Ignite_IsReady
+        {
+            get
+            {
+                return Ignite != null && Ignite.IsReady();
+            }
+        }
+        public static bool Flash_IsReady
+        {
+            get {
+                return Flash != null && Flash.IsReady();
             }
         }
     }

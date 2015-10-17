@@ -59,9 +59,11 @@
   <ItemGroup>
     <Compile Include="AllyHeroManager.cs" />
     <Compile Include="AllyMinionManager.cs" />
+    <Compile Include="AutoSmite.cs" />
     <Compile Include="Champion.cs" />
     <Compile Include="Damages\Damage.cs" />
     <Compile Include="Damages\DamageResult.cs" />
+    <Compile Include="Modes\KillSteal.cs" />
     <Compile Include="Modes\GankCombo.cs" />
     <Compile Include="Modes\Flee.cs" />
     <Compile Include="ItemManager.cs" />

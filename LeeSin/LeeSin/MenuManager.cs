@@ -54,11 +54,11 @@ namespace LeeSin
             SubMenu["Combo"]["Mode"].Cast<Slider>().CurrentValue = 0; //E L I M I N A R
 
             SubMenu["Combo"].AddGroupLabel("Normal Combo");
-            SubMenu["Combo"].Add("Normal.R", new CheckBox("Use R", false));
+            SubMenu["Combo"].Add("Normal.R", new CheckBox("Use R on Target", false));
             SubMenu["Combo"].Add("Normal.Ward", new CheckBox("Use Ward", false));
-            SubMenu["Combo"].Add("Normal.W", new Slider("Use W if HealthPercent", 25, 0, 100));
             SubMenu["Combo"].Add("Normal.Stack", new Slider("Use X passive before using another spell", 1, 0, 2));
-            SubMenu["Combo"].Add("Normal.R.Hit", new Slider("Use R if Hit", 3, 1, 5));
+            SubMenu["Combo"].Add("Normal.W", new Slider("Use W if HealthPercent", 25, 0, 100));
+            SubMenu["Combo"].Add("Normal.R.Hit", new Slider("Use R if Hit >=", 3, 1, 5));
 
             SubMenu["Combo"].AddSeparator();
 
@@ -74,28 +74,49 @@ namespace LeeSin
             SubMenu["Combo"].Add("Gank.Ward", new CheckBox("Use Ward", true));
             SubMenu["Combo"].Add("Gank.Stack", new Slider("Use x passive before using another spell", 1, 0, 2));
             
-            //Harass
+            //Insec
+            SubMenu["Insec"] = AddonMenu.AddSubMenu("Insec", "Insec");
+            SubMenu["Insec"].Add("Key", new KeyBind("Insec Key", false, KeyBind.BindTypes.HoldActive, (uint)'R'));
+            SubMenu["Insec"].Add("Minion", new CheckBox("Use q on minion if can't hit target", true));
+            SubMenu["Insec"].Add("Flash", new CheckBox("Use flash to return", false));
+            SubMenu["Insec"].AddStringList("Priority", "Priority", new[] { "WardJump > Flash", "Flash > WardJump" }, 0);
+            SubMenu["Insec"].AddStringList("Position", "Insec End Position", new[] { "Turrets and Allies", "Mouse Position", "Current Position", "Clicked Position" }, 0);
+            SubMenu["Insec"].Add("DistanceBetweenPercent", new Slider("% of distance between ward and target", 20, 0, 100));
+            
             SubMenu["Harass"] = AddonMenu.AddSubMenu("Harass", "Harass");
             SubMenu["Harass"].Add("Q", new CheckBox("Use Q", true));
             SubMenu["Harass"].Add("W", new CheckBox("Use W to escape", true));
             SubMenu["Harass"].Add("E", new CheckBox("Use E", true));
 
-            //Insec
-            SubMenu["Insec"] = AddonMenu.AddSubMenu("Insec", "Insec");
-            SubMenu["Insec"].Add("Key", new KeyBind("Insec Key", false, KeyBind.BindTypes.HoldActive, (uint)'R'));
-            SubMenu["Insec"].Add("Minion", new CheckBox("Use q on minion if will not hit target", true));
-            SubMenu["Insec"].Add("Flash", new CheckBox("Use flash to return", false));
-            SubMenu["Insec"].AddStringList("Priority", "Priority", new[] { "WardJump > Flash", "Flash > WardJump" }, 0);
-            SubMenu["Insec"].AddStringList("Position", "Insec End Position", new[] { "Turrets and Allies", "Mouse Position", "Current Position", "Clicked Position" }, 0);
-            SubMenu["Insec"].Add("DistanceBetweenPercent", new Slider("% of distance between ward and target", 20, 0, 100));
+            SubMenu["Smite"] = AddonMenu.AddSubMenu("Smite", "Smite");
+            SubMenu["Smite"].Add("Q.Combo", new CheckBox("Use Q - Smite in Combo", true));
+            SubMenu["Smite"].Add("Q.Harass", new CheckBox("Use Q - Smite in Harass", false));
+            SubMenu["Smite"].Add("Q.Insec", new CheckBox("Use Q - Smite in Insec", true));
+            SubMenu["Smite"].Add("DragonSteal", new CheckBox("Use Smite on Dragon/Baron", true));
+            //SubMenu["Smite"].Add("KillSteal", new CheckBox("Use Smite to KillSteal", true));
+            
+            SubMenu["JungleClear"] = AddonMenu.AddSubMenu("JungleClear", "JungleClear");
+            SubMenu["JungleClear"].Add("Q", new CheckBox("Use Q", true));
+            SubMenu["JungleClear"].Add("W", new CheckBox("Use W", true));
+            SubMenu["JungleClear"].Add("E", new CheckBox("Use E", true));
+            SubMenu["JungleClear"].Add("Smite", new CheckBox("Use Smite on Dragon/Baron", true));
+
+            SubMenu["KillSteal"] = AddonMenu.AddSubMenu("KillSteal", "KillSteal");
+            SubMenu["KillSteal"].Add("Q", new CheckBox("Use Q", true));
+            SubMenu["KillSteal"].Add("E", new CheckBox("Use E", true));
+            SubMenu["KillSteal"].Add("R", new CheckBox("Use R", false));
+            SubMenu["KillSteal"].Add("Ignite", new CheckBox("Use Ignite", true));
+            SubMenu["KillSteal"].Add("Smite", new CheckBox("Use Smite", true));
 
             SubMenu["Drawings"] = AddonMenu.AddSubMenu("Drawings", "Drawings");
             SubMenu["Drawings"].Add("Combo.Mode", new CheckBox("Draw text of current mode", true));
             SubMenu["Drawings"].Add("Insec.Line", new CheckBox("Draw line of insec", true));
-
+            
             SubMenu["Flee"] = AddonMenu.AddSubMenu("Flee", "Flee");
             SubMenu["Flee"].Add("WardJump", new CheckBox("Use WardJump", true));
             SubMenu["Flee"].Add("W", new CheckBox("Use W on objects near mouse", true));
+            
+
         }
         
         public static int GetSliderValue(this Menu m, string s)
@@ -157,6 +178,13 @@ namespace LeeSin
             get
             {
                 return GetSubMenu("Drawings");
+            }
+        }
+        public static Menu SmiteMenu
+        {
+            get
+            {
+                return GetSubMenu("Smite");
             }
         }
     }

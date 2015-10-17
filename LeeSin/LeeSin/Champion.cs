@@ -14,6 +14,7 @@ namespace LeeSin
 {
     public static class Champion
     {
+        //Falta agregar laneclear, lasthit.
         public static string Author = "iCreative";
         public static string AddonName = "Master the enemy";
         public static int PassiveStack
@@ -43,6 +44,8 @@ namespace LeeSin
             _Q.Init();
             _R.Init();
             Insec.Init();
+            AutoSmite.Init();
+            JungleClear.Init();
             TargetSelector.Init(SpellManager.Q2.Range + 200, DamageType.Physical);
             LoadCallbacks();
         }
@@ -53,6 +56,7 @@ namespace LeeSin
             Drawing.OnDraw += Drawing_OnDraw;
 
             Interrupter.OnInterruptableSpell += Interrupter_OnInterruptableSpell;
+
         }
         public static void GapCloseWithWard(Obj_AI_Base target)
         {
@@ -141,7 +145,7 @@ namespace LeeSin
         {
             if (SpellSlot.Q.IsReady() && !SpellSlot.Q.IsFirstSpell())
             {
-                if (_Q.Target != null && Extensions.Distance(TargetSelector.Target, _Q.Target, true) < Extensions.Distance(Util.myHero, _Q.Target, true))
+                if (_Q.IsValidTarget && Extensions.Distance(TargetSelector.Target, _Q.Target, true) < Extensions.Distance(Util.myHero, _Q.Target, true))
                 {
                     SpellManager.CastQ2(_Q.Target);
                 }

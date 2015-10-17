@@ -49,7 +49,7 @@ namespace LeeSin
                     {
                         Insec.Execute();
                     }
-                    if (Insec.IsRecent) { return; }
+                    if (WardManager.IsTryingToJump) { return; }
                     if (Menu.GetCheckBoxValue("Q") && SpellSlot.Q.IsReady())
                     {
                         if (SpellSlot.Q.IsFirstSpell())

@@ -46,6 +46,7 @@ namespace LeeSin
                     }
                 }
                 if (SpellManager.CanCastW1 && !target.IsValidTarget(SpellManager.W_Range)) { return; }
+                if (WardManager.IsTryingToJump) { return; }
                 if (Menu.GetCheckBoxValue("E") && !SpellSlot.Q.IsReady()) { SpellManager.CastE(target); }
                 if (Menu.GetCheckBoxValue("Q")) { SpellManager.CastQ(target); }
             }

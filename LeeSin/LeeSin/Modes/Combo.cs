@@ -22,6 +22,35 @@ namespace LeeSin
                 return MenuManager.GetSubMenu("Combo");
             }
         }
+        public static bool IsNormalCombo
+        {
+            get
+            {
+                return Menu.GetSliderValue("Mode") == 0;
+            }
+        }
+        public static bool IsStarCombo
+        {
+            get
+            {
+                return Menu.GetSliderValue("Mode") == 1;
+            }
+        }
+        public static bool IsGankCombo
+        {
+            get
+            {
+                return Menu.GetSliderValue("Mode") == 2;
+            }
+        }
+        public static float Extra_AA_Range = 150f;
+        public static bool IsActive
+        {
+            get
+            {
+                return ModeManager.IsCombo;
+            }
+        }
         public static void Execute()
         {
             var target = TargetSelector.Target;

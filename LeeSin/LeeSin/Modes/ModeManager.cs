@@ -25,11 +25,12 @@ namespace LeeSin
         }
         public static void Init()
         {
-            Game.OnTick += Game_OnTick;
+            Game.OnUpdate += Game_OnTick;
         }
         private static void Game_OnTick(EventArgs args)
         {
             Orbwalker.DisableAttacking = IsInsec;
+            KillSteal.Execute();
             if (IsInsec)
             {
                 Insec.Execute();
@@ -63,12 +64,13 @@ namespace LeeSin
             }
 
         }
-        public static void KillSteal()
+        public static bool IsInAutoAttackRange(this Obj_AI_Base source, Obj_AI_Base target)
         {
-            foreach (AIHeroClient enemy in EntityManager.Heroes.Enemies.Where(m => m.IsValidTarget(1300f)))
+            if (Combo.IsActive || Harass.IsActive)
             {
-
+                return target.IsValidTarget(source.BoundingRadius + target.BoundingRadius + source.AttackRange + Combo.Extra_AA_Range);
             }
+            return target.IsValidTarget(source.BoundingRadius + target.BoundingRadius + source.AttackRange);
         }
         public static bool IsCombo
         {
@@ -123,7 +125,7 @@ namespace LeeSin
         {
             get
             {
-                return !IsFlee && !IsLastHit && !IsClear && !IsHarass && !IsCombo && !IsInsec;
+                return !IsLastHit && !IsClear && !IsHarass && !IsCombo && !IsInsec;
             }
         }
     }

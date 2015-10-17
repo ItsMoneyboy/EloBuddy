@@ -21,6 +21,13 @@ namespace LeeSin
                 return MenuManager.GetSubMenu("LastHit");
             }
         }
+        public static bool IsActive
+        {
+            get
+            {
+                return ModeManager.IsLastHit;
+            }
+        }
         public static void Execute()
         {
 

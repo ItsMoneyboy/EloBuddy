@@ -24,20 +24,47 @@ namespace LeeSin
                 return (float)((100 + MenuManager.MiscMenu.GetSliderValue("Overkill")) / 100);
             }
         }
-        public static float GetSpellDamage(this Obj_AI_Base target, SpellSlot slot)
+        public static float GetSpellDamage(this SpellSlot slot, Obj_AI_Base target, int stage = 1)
         {
             if (target.IsValidTarget())
             {
+                if (slot == SpellSlot.Q)
+                {
+                    if (stage == 2)
+                    {
+                        return Util.myHero.CalculateDamageOnUnit(target, DamageType.Physical, (float)30 * slot.GetSpellDataInst().Level + 30 + 0.9f * Util.myHero.FlatPhysicalDamageMod) + Util.myHero.CalculateDamageOnUnit(target, DamageType.Physical, (float)30 * slot.GetSpellDataInst().Level + 30 + 0.9f * Util.myHero.FlatPhysicalDamageMod + 8f * (target.MaxHealth - target.Health) / 100);
+                    }
+                    else
+                    {
+                        if (slot.IsFirstSpell())
+                        {
+                            return Util.myHero.CalculateDamageOnUnit(target, DamageType.Physical, (float)30 * slot.GetSpellDataInst().Level + 30 + 0.9f * Util.myHero.FlatPhysicalDamageMod);
+                        }
+                        else
+                        {
+                            return Util.myHero.CalculateDamageOnUnit(target, DamageType.Physical, (float)30 * slot.GetSpellDataInst().Level + 30 + 0.9f * Util.myHero.FlatPhysicalDamageMod + 8f * (target.MaxHealth - target.Health) / 100);
+                        }
+
+                    }
+                }
                 if (slot == SpellSlot.W)
                 {
+                    return 0f;
                 }
                 else if (slot == SpellSlot.E)
                 {
-                    return Util.myHero.CalculateDamageOnUnit(target, DamageType.Physical, (float)35 * Util.myHero.Spellbook.GetSpell(SpellSlot.E).Level + 35 + 0.5f * Util.myHero.FlatPhysicalDamageMod);
+                    if (slot.IsFirstSpell())
+                    {
+                        return Util.myHero.CalculateDamageOnUnit(target, DamageType.Magical, (float)35 * slot.GetSpellDataInst().Level + 25 + 1f * Util.myHero.FlatMagicDamageMod);
+                    }
+                    else
+                    {
+                        return 0f;
+                    }
                 }
                 else if (slot == SpellSlot.R)
                 {
-                    return 2 * Util.myHero.CalculateDamageOnUnit(target, DamageType.Physical, (float)100 * Util.myHero.Spellbook.GetSpell(SpellSlot.R).Level + 75 + 1.1f * Util.myHero.FlatPhysicalDamageMod);
+                    return Util.myHero.CalculateDamageOnUnit(target, DamageType.Magical, (float)200 * slot.GetSpellDataInst().Level + 2.0f * Util.myHero.FlatMagicDamageMod);
                 }
             }
             return Util.myHero.GetSpellDamage(target, slot);
@@ -51,29 +78,29 @@ namespace LeeSin
             {
                 if (q)
                 {
-                    ComboDamage += target.GetSpellDamage(SpellSlot.Q);
+                    ComboDamage += SpellSlot.Q.GetSpellDamage(target, 2);
                     ManaWasted += Util.myHero.Spellbook.GetSpell(SpellSlot.Q).SData.Mana;
                 }
                 if (w)
                 {
-                    ComboDamage += target.GetSpellDamage(SpellSlot.W);
+                    ComboDamage += SpellSlot.W.GetSpellDamage(target);
                     ManaWasted += Util.myHero.Spellbook.GetSpell(SpellSlot.W).SData.Mana;
                 }
                 if (e)
                 {
-                    ComboDamage += target.GetSpellDamage(SpellSlot.E);
+                    ComboDamage += SpellSlot.E.GetSpellDamage(target);
                     ManaWasted += Util.myHero.Spellbook.GetSpell(SpellSlot.E).SData.Mana;
                 }
                 if (r)
                 {
-                    ComboDamage += target.GetSpellDamage(SpellSlot.R);
+                    ComboDamage += SpellSlot.R.GetSpellDamage(target);
                     ManaWasted += Util.myHero.Spellbook.GetSpell(SpellSlot.R).SData.Mana;
                 }
-                if (SpellManager.Ignite != null && SpellManager.Ignite.IsReady())
+                if (SpellManager.Ignite_IsReady)
                 {
                     ComboDamage += Util.myHero.GetSummonerSpellDamage(target, DamageLibrary.SummonerSpells.Ignite);
                 }
-                if (SpellManager.Smite != null && SpellManager.Smite.IsReady())
+                if (SpellManager.Smite_IsReady)
                 {
                     ComboDamage += Util.myHero.GetSummonerSpellDamage(target, DamageLibrary.SummonerSpells.Smite);
                 }

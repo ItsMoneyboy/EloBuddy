@@ -79,7 +79,55 @@ namespace LeeSin
             }
         }
 
-
+        public static Tuple<int, AIHeroClient> BestHitR(int minhits)
+        {
+            var BestCount = 0;
+            AIHeroClient BestTarget = null;
+            if (SpellSlot.R.IsReady() && EntityManager.Heroes.Enemies.Where(m => m.IsValidTarget(SpellManager.RKick.Range)).Count() >= minhits)
+            {
+                foreach (AIHeroClient enemy in EntityManager.Heroes.Enemies.Where(m => m.IsValidTarget(SpellManager.R.Range)))
+                {
+                    var width = SpellManager.RKick.Width;//enemy.BoundingRadius;
+                    var startpos = enemy.Position.To2D();
+                    var endpos = startpos + (startpos - Util.myHero.Position.To2D()).Normalized() * SpellManager.RKick.Range;
+                    List<Tuple<Vector2, float>> positions = new List<Tuple<Vector2, float>>();
+                    SpellManager.RKick.SourcePosition = enemy.Position;
+                    foreach (AIHeroClient enemy2 in EntityManager.Heroes.Enemies.Where(m => m.IsValidTarget(SpellManager.RKick.Range) && m.NetworkId != enemy.NetworkId))
+                    {
+                        var info = enemy2.Position.To2D().ProjectOn(startpos, endpos);
+                        if (info.IsOnSegment && Extensions.Distance(info.SegmentPoint, enemy2.Position.To2D(), true) <= Math.Pow(1.8f * (enemy2.BoundingRadius + width), 2))
+                        {
+                            var pred = SpellManager.RKick.GetPrediction(enemy2);
+                            if (pred.HitChancePercent >= 50)
+                            {
+                                positions.Add(new Tuple<Vector2, float>(pred.CastPosition.To2D(), enemy.BoundingRadius));
+                            }
+                        }
+                    }
+                    var Count = 1;
+                    foreach (Tuple<Vector2, float> t in positions)
+                    {
+                        var v = t.Item1;
+                        var info = v.ProjectOn(startpos, endpos);
+                        if (info.IsOnSegment && Extensions.Distance(info.SegmentPoint, v, true) <= Math.Pow((t.Item2 + width), 2))
+                        {
+                            Count++;
+                        }
+                    }
+                    if (BestCount == 0)
+                    {
+                        BestCount = Count;
+                        BestTarget = enemy;
+                    }
+                    else if (BestCount < Count)
+                    {
+                        BestCount = Count;
+                        BestTarget = enemy;
+                    }
+                }
+            }
+            return new Tuple<int, AIHeroClient>(BestCount, BestTarget);
+        }
         private static void Obj_AI_Base_OnProcessSpellCast(Obj_AI_Base sender, GameObjectProcessSpellCastEventArgs args)
         {
             if (args.SData.Name.Equals(SpellSlot.R.GetSpellDataInst().SData.Name))

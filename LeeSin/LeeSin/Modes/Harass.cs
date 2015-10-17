@@ -22,6 +22,13 @@ namespace LeeSin
                 return MenuManager.GetSubMenu("Harass");
             }
         }
+        public static bool IsActive
+        {
+            get
+            {
+                return ModeManager.IsHarass;
+            }
+        }
         public static void Execute()
         {
 

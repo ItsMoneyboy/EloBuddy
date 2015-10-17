@@ -23,6 +23,13 @@ namespace LeeSin
                 return MenuManager.GetSubMenu("Flee");
             }
         }
+        public static bool IsActive
+        {
+            get
+            {
+                return ModeManager.IsFlee;
+            }
+        }
         public static void Execute()
         {
             if (SpellManager.CanCastW1)

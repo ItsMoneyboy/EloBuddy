@@ -21,6 +21,13 @@ namespace LeeSin
                 return MenuManager.GetSubMenu("LaneClear");
             }
         }
+        public static bool IsActive
+        {
+            get
+            {
+                return ModeManager.IsLaneClear;
+            }
+        }
         public static void Execute()
         {
 
