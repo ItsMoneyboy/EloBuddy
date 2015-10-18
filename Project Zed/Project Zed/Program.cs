@@ -22,8 +22,8 @@ namespace Project_Zed
         static Vector3 mousePos { get { return Game.CursorPos; } }
         static Menu menu;
         static Dictionary<string, Menu> SubMenu = new Dictionary<string, Menu>() { };
-        static Spell.Skillshot Q, W, E;
-        static Spell.Targeted Ignite, R;
+        static Spell.Skillshot Q, W, E = null;
+        static Spell.Targeted Ignite, R = null;
         static _Spell _W, _R;
         static Obj_AI_Minion wFound, rFound;
         static GameObject IsDeadObject = null;
@@ -448,9 +448,12 @@ namespace Project_Zed
                         if (SubMenu["KillSteal"]["W"].Cast<CheckBox>().CurrentValue && enemy.HealthPercent < 25f && (Damage(enemy, W.Slot) >= enemy.Health || damageI.W)) { CastW(enemy); }
                         if (SubMenu["KillSteal"]["E"].Cast<CheckBox>().CurrentValue && (Damage(enemy, E.Slot) >= enemy.Health || damageI.E)) { CastE(enemy); }
                     }
-                    if (Ignite != null && SubMenu["KillSteal"]["Ignite"].Cast<CheckBox>().CurrentValue && Ignite.IsReady() && myHero.GetSummonerSpellDamage(enemy, DamageLibrary.SummonerSpells.Ignite) >= enemy.Health)
+                    if (Ignite != null && SubMenu["KillSteal"]["Ignite"].Cast<CheckBox>().CurrentValue)
                     {
-                        Ignite.Cast(enemy);
+                        if (Ignite.IsReady() && myHero.GetSummonerSpellDamage(enemy, DamageLibrary.SummonerSpells.Ignite) >= enemy.Health)
+                        {
+                            Ignite.Cast(enemy);
+                        }
                     }
                 }
             }
