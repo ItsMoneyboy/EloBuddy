@@ -23,10 +23,6 @@ namespace LeeSin
         }
         public static void Execute()
         {
-            foreach (AIHeroClient enemy in EntityManager.Heroes.Enemies.Where(m => m.IsValidTarget()))
-            {
-                var result = enemy.GetBestCombo();
-            }
             foreach (AIHeroClient enemy in EntityManager.Heroes.Enemies.Where(m => m.IsValidTarget(TargetSelector.Range) && m.HealthPercent < 40))
             {
                 var result = enemy.GetBestCombo();
@@ -35,6 +31,18 @@ namespace LeeSin
                     if (Menu.GetCheckBoxValue("Q") && result.CanKillWith(SpellSlot.Q)) { SpellManager.CastQ(enemy); }
                     if (Menu.GetCheckBoxValue("E") && result.CanKillWith(SpellSlot.E)) { SpellManager.CastE(enemy); }
                     if (Menu.GetCheckBoxValue("R") && result.CanKillWith(SpellSlot.R)) { SpellManager.CastR(enemy); }
+                    var custom = (Menu.GetCheckBoxValue("Q") && result.CanKillWith(SpellSlot.Q)) || (Menu.GetCheckBoxValue("E") && result.CanKillWith(SpellSlot.E)) || (Menu.GetCheckBoxValue("R") && result.CanKillWith(SpellSlot.R));
+                    if (Menu.GetCheckBoxValue("W") && custom)
+                    {
+                        if (Menu.GetCheckBoxValue("Ward"))
+                        {
+                            Champion.GapCloseWithWard(enemy);
+                        }
+                        else
+                        {
+                            Champion.GapCloseWithoutWard(enemy);
+                        }
+                    }
                 }
                 if (Menu.GetCheckBoxValue("Ignite") && SpellManager.Ignite_IsReady && Util.myHero.GetSummonerSpellDamage(enemy, DamageLibrary.SummonerSpells.Ignite) >= enemy.Health)
                 {

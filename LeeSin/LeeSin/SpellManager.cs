@@ -15,15 +15,15 @@ namespace LeeSin
 {
     public static class SpellManager
     {
-        public static Spell.Skillshot Q1, W1, RKick, E1, E2;
-        public static Spell.Targeted R;
-        public static Spell.Active Q2, W2;
-        public static Spell.Targeted Ignite, Smite;
-        public static Spell.Skillshot Flash;
+        public static Spell.Skillshot Q1, W1, RKick, E1, E2 = null;
+        public static Spell.Targeted R = null;
+        public static Spell.Active Q2, W2 = null;
+        public static Spell.Targeted Ignite, Smite = null;
+        public static Spell.Skillshot Flash = null;
         public static float W1_Range = 700f;
         public static float W_ExtraRange = 150f;
-        public static float Smite_Delay = 0;
-        public static float W_LastCastTime, Flash_LastCastTime;
+        public static float Smite_Delay = 0f;
+        public static float W_LastCastTime, Flash_LastCastTime = 0f;
         public static void Init()
         {
             Q1 = new Spell.Skillshot(SpellSlot.Q, 1100, SkillShotType.Linear, 250, 1800, 60);

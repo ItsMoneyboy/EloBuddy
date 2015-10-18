@@ -32,7 +32,14 @@ namespace LeeSin
                 {
                     if (stage == 2)
                     {
-                        return Util.myHero.CalculateDamageOnUnit(target, DamageType.Physical, (float)30 * slot.GetSpellDataInst().Level + 30 + 0.9f * Util.myHero.FlatPhysicalDamageMod) + Util.myHero.CalculateDamageOnUnit(target, DamageType.Physical, (float)30 * slot.GetSpellDataInst().Level + 30 + 0.9f * Util.myHero.FlatPhysicalDamageMod + 8f * (target.MaxHealth - target.Health) / 100);
+                        if (slot.IsFirstSpell())
+                        {
+                            return Util.myHero.CalculateDamageOnUnit(target, DamageType.Physical, (float)30 * slot.GetSpellDataInst().Level + 30 + 0.9f * Util.myHero.FlatPhysicalDamageMod) + Util.myHero.CalculateDamageOnUnit(target, DamageType.Physical, (float)30 * slot.GetSpellDataInst().Level + 30 + 0.9f * Util.myHero.FlatPhysicalDamageMod + 8f * (target.MaxHealth - target.Health) / 100);
+                        }
+                        else
+                        {
+                            return Util.myHero.CalculateDamageOnUnit(target, DamageType.Physical, (float)30 * slot.GetSpellDataInst().Level + 30 + 0.9f * Util.myHero.FlatPhysicalDamageMod + 8f * (target.MaxHealth - target.Health) / 100);
+                        }
                     }
                     else
                     {
@@ -49,17 +56,21 @@ namespace LeeSin
                 }
                 if (slot == SpellSlot.W)
                 {
-                    return 0f;
+                    return Util.myHero.GetAutoAttackDamage(target, true) * 2;
                 }
                 else if (slot == SpellSlot.E)
                 {
+                    if (stage == 2)
+                    {
+                        return Util.myHero.CalculateDamageOnUnit(target, DamageType.Magical, (float)35 * slot.GetSpellDataInst().Level + 25 + 1f * Util.myHero.FlatMagicDamageMod) + Util.myHero.GetAutoAttackDamage(target, true);
+                    }
                     if (slot.IsFirstSpell())
                     {
                         return Util.myHero.CalculateDamageOnUnit(target, DamageType.Magical, (float)35 * slot.GetSpellDataInst().Level + 25 + 1f * Util.myHero.FlatMagicDamageMod);
                     }
                     else
                     {
-                        return 0f;
+                        return Util.myHero.GetAutoAttackDamage(target, true);
                     }
                 }
                 else if (slot == SpellSlot.R)

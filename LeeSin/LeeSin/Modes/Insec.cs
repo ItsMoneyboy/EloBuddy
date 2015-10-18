@@ -137,7 +137,7 @@ namespace LeeSin
                 }
                 else
                 {
-                    NormalCombo.Execute();
+                    Combo.Execute();
                 }
             }
         }

@@ -89,7 +89,7 @@ namespace LeeSin
                 if (Game.Time - LastCastSpell < 0.25) { return; }
                 if (Menu.GetCheckBoxValue("W") && minion.IsInAutoAttackRange(Util.myHero)) { SpellManager.CastW(Util.myHero); }
                 if (Game.Time - LastCastSpell < 0.25) { return; }
-                if (Menu.GetCheckBoxValue("E")) { SpellManager.CastQ(minion); }
+                if (Menu.GetCheckBoxValue("E")) { SpellManager.CastE(minion); }
             }
         }
         private static bool IsDragon(this Obj_AI_Minion minion)

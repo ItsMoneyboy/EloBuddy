@@ -16,7 +16,7 @@ namespace LeeSin
     public static class TargetSelector
     {
         public static DamageType damageType;
-        public static AIHeroClient TargetSelected;
+        public static AIHeroClient ForcedTarget;
         public static float Range;
         public static void Init(float range, DamageType d)
         {
@@ -31,7 +31,7 @@ namespace LeeSin
                 var target = EloBuddy.SDK.TargetSelector.GetTarget(250f, damageType, Util.mousePos);
                 if (target.IsValidTarget())
                 {
-                    TargetSelected = target;
+                    ForcedTarget = target;
                 }
             }
         }
@@ -39,9 +39,9 @@ namespace LeeSin
         {
             get
             {
-                if (TargetSelected != null && TargetSelected.IsValidTarget() && Extensions.Distance(Util.myHero, TargetSelected, true) < Range * Range)
+                if (ForcedTarget != null && ForcedTarget.IsValidTarget() && Extensions.Distance(Util.myHero, ForcedTarget, true) < Range * Range)
                 {
-                    return TargetSelected;
+                    return ForcedTarget;
                 }
                 return EloBuddy.SDK.TargetSelector.GetTarget(Range, damageType, Util.myHero.Position);
             }

@@ -170,7 +170,18 @@ namespace LeeSin
 
         private static void Interrupter_OnInterruptableSpell(Obj_AI_Base sender, Interrupter.InterruptableSpellEventArgs e)
         {
-
+            if (sender.IsValidTarget(TargetSelector.Range) && sender.IsEnemy && sender is AIHeroClient)
+            {
+                if (MenuManager.MiscMenu.GetCheckBoxValue("Interrupter"))
+                {
+                    if (SpellSlot.R.IsReady())
+                    {
+                        SpellManager.CastQ(sender);
+                        SpellManager.CastR(sender);
+                        GapCloseWithWard(sender);
+                    }
+                }
+            }
         }
 
 
