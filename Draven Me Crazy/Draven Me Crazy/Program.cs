@@ -23,9 +23,9 @@ namespace Draven_Me_Crazy
         static Vector3 mousePos { get { return Game.CursorPos; } }
         static Menu menu;
         public static Dictionary<string, Menu> SubMenu = new Dictionary<string, Menu>() { };
-        static Spell.Skillshot E, R;
-        static Spell.Active Q, W;
-        static Spell.Targeted Ignite;
+        static Spell.Skillshot E, R = null;
+        static Spell.Active Q, W = null;
+        static Spell.Targeted Ignite = null;
         static List<Axe> Axes = new List<Axe>();
         public static List<Obj_AI_Turret> Turrets = new List<Obj_AI_Turret>();
         static bool TryingToCatch = false;
@@ -139,6 +139,7 @@ namespace Draven_Me_Crazy
 
             SubMenu["KillSteal"] = menu.AddSubMenu("KillSteal", "KillSteal");
             SubMenu["KillSteal"].Add("Q", new CheckBox("Use Q", true));
+            SubMenu["KillSteal"].Add("W", new CheckBox("Use W", true));
             SubMenu["KillSteal"].Add("E", new CheckBox("Use E", true));
             SubMenu["KillSteal"].Add("R", new CheckBox("Use R", true));
             SubMenu["KillSteal"].Add("Ignite", new CheckBox("Use Ignite", true));
@@ -255,9 +256,12 @@ namespace Draven_Me_Crazy
                             if (GetCheckBox(menu, "E") && (Damage(enemy, E.Slot) >= enemy.Health || damageI.E)) { CastE(enemy); }
                             if (GetCheckBox(menu, "R") && (Damage(enemy, R.Slot) >= enemy.Health || damageI.R)) { CastR(enemy); }
                         }
-                        if (Ignite != null && GetCheckBox(menu, "Ignite") && Ignite.IsReady() && myHero.GetSummonerSpellDamage(enemy, DamageLibrary.SummonerSpells.Ignite) >= enemy.Health)
+                        if (Ignite != null && GetCheckBox(menu, "Ignite"))
                         {
-                            Ignite.Cast(enemy);
+                            if (Ignite.IsReady() && myHero.GetSummonerSpellDamage(enemy, DamageLibrary.SummonerSpells.Ignite) >= enemy.Health)
+                            {
+                                Ignite.Cast(enemy);
+                            }
                         }
                     }
                 }
@@ -622,7 +626,7 @@ namespace Draven_Me_Crazy
         private static void RemoveAxe(Vector3 position)
         {
             if (Axes.Count > 0)
-            { 
+            {
                 foreach (Axe a in Axes.OrderBy(m => Extensions.Distance(m.Position, position, true)))
                 {
                     if (Extensions.Distance(a.Reticle.Position.To2D(), position.To2D(), true) < 30 * 30)
