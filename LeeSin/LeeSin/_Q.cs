@@ -284,7 +284,7 @@ namespace LeeSin
         {
             get
             {
-                return MissileIsValid || Game.Time - LastCastTime < 0.28f;
+                return MissileIsValid || Game.Time - LastCastTime <= 0.29f;
             }
         }
 

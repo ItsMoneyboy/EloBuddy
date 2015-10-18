@@ -125,7 +125,7 @@ namespace LeeSin
         }
         public static void CastQ2(Obj_AI_Base target)
         {
-            if (target != null && SpellSlot.Q.IsReady() && !SpellSlot.Q.IsFirstSpell() && target.IsValidTarget(Q2.Range))
+            if (SpellSlot.Q.IsReady() && !SpellSlot.Q.IsFirstSpell() && target.IsValidTarget(Q2.Range))
             {
                 if (target.HaveQ())
                 {

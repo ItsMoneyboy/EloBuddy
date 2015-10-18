@@ -88,7 +88,7 @@ namespace LeeSin
                 if (Menu.GetCheckBoxValue("Q")) { SpellManager.CastQ(minion); }
                 if (Game.Time - LastCastSpell < 0.25) { return; }
                 if (Menu.GetCheckBoxValue("W") && minion.IsInAutoAttackRange(Util.myHero)) { SpellManager.CastW(Util.myHero); }
-                //if (Game.Time - LastCastSpell < 0.25) { return; }
+                if (Game.Time - LastCastSpell < 0.25) { return; }
                 if (Menu.GetCheckBoxValue("E")) { SpellManager.CastE(minion); }
             }
         }

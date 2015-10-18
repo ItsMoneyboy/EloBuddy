@@ -103,6 +103,7 @@ namespace LeeSin
                                     SpellManager.CastQ1(enemy);
                                 }
                             }
+                            SpellManager.CastQ1(target);
                         }
                         if (Extensions.Distance(Util.myHero, target, true) > Math.Pow(WardManager.WardRange - DistanceBetween, 2))
                         {
@@ -114,7 +115,6 @@ namespace LeeSin
                                 }
                             }
                         }
-                        SpellManager.CastQ1(target);
                     }
                     if (Extensions.Distance(Util.myHero, target, true) < Math.Pow(WardManager.WardRange - DistanceBetween, 2) && !IsRecent)
                     {
@@ -264,7 +264,7 @@ namespace LeeSin
                                     return turret.Position;
                                 }
                             }
-                            var allies = EntityManager.Heroes.Allies.Where(m => m.IsValidAlly() && Extensions.Distance(Util.myHero, m, true) < Math.Pow(SpellManager.RKick.Range + 500f, 2)).OrderBy(m => m.GetPriority());
+                            var allies = EntityManager.Heroes.Allies.Where(m => m.IsValidAlly() && !m.IsMe && Extensions.Distance(Util.myHero, m, true) < Math.Pow(SpellManager.RKick.Range + 500f, 2)).OrderBy(m => m.GetPriority());
                             if (allies.Count() > 0)
                             {
                                 var ally = allies.LastOrDefault();

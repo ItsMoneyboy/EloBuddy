@@ -38,7 +38,7 @@ namespace LeeSin
             {
                 var pos = Util.myHero.Position.WorldToScreen();
                 pos.X = pos.X - 50;
-                Drawing.DrawText(pos, System.Drawing.Color.White, "Combo Mode: " + Combo.Menu["Mode"].Cast<Slider>().DisplayName, 15);
+                Drawing.DrawText(pos, System.Drawing.Color.White, Combo.Menu["Mode"].Cast<Slider>().DisplayName, 15);
             }
 
             if (Menu.GetCheckBoxValue("Insec.Line") && Insec.IsReady)

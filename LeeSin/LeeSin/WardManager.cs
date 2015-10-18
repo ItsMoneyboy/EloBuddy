@@ -16,7 +16,7 @@ namespace LeeSin
     public static class WardManager
     {
         public static float WardRange = 600f;
-        private static Item[] ItemWards = new Item[] { new Item((int)ItemId.Ruby_Sightstone, WardRange), new Item((int)ItemId.Sightstone, WardRange), new Item((int)ItemId.Warding_Totem_Trinket, WardRange), new Item((int)ItemId.Stealth_Ward, WardRange), new Item((int)ItemId.Vision_Ward, WardRange) };
+        private static Item[] ItemWards = new Item[] { new Item((int)ItemId.Ruby_Sightstone, WardRange), new Item((int)ItemId.Sightstone, WardRange), new Item((int)ItemId.Warding_Totem_Trinket, WardRange), new Item((int)ItemId.Greater_Stealth_Totem_Trinket, WardRange), new Item((int)ItemId.Stealth_Ward, WardRange), new Item((int)ItemId.Greater_Vision_Totem_Trinket, WardRange), new Item((int)ItemId.Vision_Ward, WardRange) };
         private static List<Obj_AI_Minion> WardsAvailable = new List<Obj_AI_Minion>();
         private static Vector3 LastWardJumpVector = Vector3.Zero;
         private static float LastWardJumpTime = 0f;
@@ -77,7 +77,7 @@ namespace LeeSin
         }
         private static bool IsWard(this GameObject sender)
         {
-            return sender is Obj_AI_Minion && (sender.Name.ToLower().Contains("sightward") || sender.Name.ToLower().Contains("visionward")) && sender.Team == Util.myHero.Team;
+            return sender is Obj_AI_Minion && sender.Name != null && sender.Team == Util.myHero.Team && (sender.Name.ToLower().Contains("sightward") || sender.Name.ToLower().Contains("visionward"));
         }
         private static void Obj_Ward_OnCreate(GameObject sender, EventArgs args)
         {

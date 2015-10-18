@@ -42,6 +42,21 @@ namespace LeeSin
             this.Damage = dmg;
             this.Mana = m;
         }
+        private bool GetBoolFromSlot(SpellSlot slot)
+        {
+            switch (slot)
+            {
+                case SpellSlot.Q:
+                    return Q;
+                case SpellSlot.W:
+                    return W;
+                case SpellSlot.E:
+                    return E;
+                case SpellSlot.R:
+                    return R;
+            }
+            return false;
+        }
         public bool IsKillable
         {
             get
@@ -51,7 +66,7 @@ namespace LeeSin
         }
         public bool CanKillWith(SpellSlot slot)
         {
-            return Target.IsValidTarget() && (slot.GetSpellDamage(Target) >= Target.Health || Q);
+            return Target.IsValidTarget() && (slot.GetSpellDamage(Target) >= Target.Health || GetBoolFromSlot(slot));
         }
     }
 }

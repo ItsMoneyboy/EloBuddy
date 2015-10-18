@@ -69,9 +69,9 @@ namespace LeeSin
         {
             if (Combo.IsActive || Harass.IsActive)
             {
-                return target.IsValidTarget(source.BoundingRadius + target.BoundingRadius + source.AttackRange + Extra_AA_Range);
+                return target.IsValidTarget() && Math.Pow(source.BoundingRadius + target.BoundingRadius + source.AttackRange + Extra_AA_Range, 2) >= Extensions.Distance(source, target, true);
             }
-            return target.IsValidTarget(source.BoundingRadius + target.BoundingRadius + source.AttackRange);
+            return target.IsValidTarget() && Math.Pow(source.BoundingRadius + target.BoundingRadius + source.AttackRange, 2) >= Extensions.Distance(source, target, true);
         }
         public static bool IsCombo
         {

@@ -77,12 +77,17 @@ namespace LeeSin
             
             //Insec
             SubMenu["Insec"] = AddonMenu.AddSubMenu("Insec", "Insec");
-            SubMenu["Insec"].Add("Key", new KeyBind("Insec Key", false, KeyBind.BindTypes.HoldActive, (uint)'R'));
+            SubMenu["Insec"].Add("Key", new KeyBind("Insec Key (Make sure that this key is unique)", false, KeyBind.BindTypes.HoldActive, (uint)'R'));
             SubMenu["Insec"].Add("Object", new CheckBox("Use q on enemy hero/minion if can't hit target", true));
+            SubMenu["Insec"].AddSeparator(0);
             SubMenu["Insec"].Add("Flash", new CheckBox("Use flash to return", false));
             SubMenu["Insec"].AddStringList("Priority", "Priority", new[] { "WardJump > Flash", "Flash > WardJump" }, 0);
-            SubMenu["Insec"].AddStringList("Position", "Insec End Position", new[] { "Turrets and Allies", "Mouse Position", "Current Position", "Clicked Position" }, 0);
+            SubMenu["Insec"].AddStringList("Position", "Insec End Position", new[] { "Ally Selected > Position Selected > Turret > Ally Near > Current Position", "Mouse Position", "Current Position" }, 0);
             SubMenu["Insec"].Add("DistanceBetweenPercent", new Slider("% of distance between ward and target", 20, 0, 100));
+            SubMenu["Insec"].AddGroupLabel("Tips");
+            SubMenu["Insec"].AddLabel("To select an ally just use left click on that ally.");
+            SubMenu["Insec"].AddLabel("To select a target just use left click on that target.");
+            SubMenu["Insec"].AddLabel("To select a position just use left click on that position.");
             
             SubMenu["Harass"] = AddonMenu.AddSubMenu("Harass", "Harass");
             SubMenu["Harass"].Add("Q", new CheckBox("Use Q", true));
@@ -152,12 +157,11 @@ namespace LeeSin
         }
         public static void AddStringList(this Menu m, string uniqueID, string DisplayName, string[] values, int defaultValue)
         {
-            m.AddLabel(DisplayName);
             var mode = m.Add(uniqueID, new Slider(DisplayName, defaultValue, 0, values.Length - 1));
-            mode.DisplayName = values[mode.CurrentValue];
+            mode.DisplayName = DisplayName + ": " + values[mode.CurrentValue];
             mode.OnValueChange += delegate (ValueBase<int> sender, ValueBase<int>.ValueChangeArgs args)
             {
-                sender.DisplayName = values[args.NewValue];
+                sender.DisplayName = DisplayName + ": " + values[args.NewValue];
             };
             SubMenu["Combo"].AddSeparator(5);
         }
