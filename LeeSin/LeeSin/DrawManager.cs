@@ -43,11 +43,18 @@ namespace LeeSin
 
             if (Menu.GetCheckBoxValue("Insec.Line") && Insec.IsReady)
             {
-                var blue = System.Drawing.Color.Blue;
+                var blue = System.Drawing.Color.FromArgb(140, 0, 0, 255);
                 var target = TargetSelector.Target;
+                var startpos = target.Position;
+                var endpos = Insec.EndPosition;
+                var endpos1 = Insec.EndPosition + (startpos - endpos).To2D().Normalized().Rotated(45 * (float)Math.PI / 180).To3D() * target.BoundingRadius;
+                var endpos2 = Insec.EndPosition + (startpos - endpos).To2D().Normalized().Rotated( - 45 * (float)Math.PI / 180).To3D() * target.BoundingRadius;
                 if (target.IsValidTarget())
                 {
-                    Drawing.DrawLine(target.Position.WorldToScreen(), Insec.EndPosition.WorldToScreen(), 2, blue);
+                    var width = 5;
+                    Drawing.DrawLine(startpos.WorldToScreen(), endpos.WorldToScreen(), width, blue);
+                    Drawing.DrawLine(endpos.WorldToScreen(), endpos1.WorldToScreen(), width, blue);
+                    Drawing.DrawLine(endpos.WorldToScreen(), endpos2.WorldToScreen(), width, blue);
                 }
             }
             var color = new ColorBGRA(255, 255, 255, 100);

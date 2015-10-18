@@ -259,7 +259,7 @@ namespace LeeSin
                             if (allies.Count() > 0)
                             {
                                 var ally = allies.LastOrDefault();
-                                var pos = ally.Position + (target.Position - ally.Position).Normalized().To2D().Perpendicular().To3DWorld() * ally.GetAutoAttackRange(target) / 2;
+                                var pos = ally.Position + (target.Position - ally.Position).Normalized().To2D().Perpendicular().To3D() * ally.GetAutoAttackRange(target) / 2;
                                 return pos;
                             }
                             break;
