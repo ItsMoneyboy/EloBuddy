@@ -30,27 +30,26 @@ namespace LeeSin
         {
             if (Util.myHero.IsDead) { return; }
             if (Menu.GetCheckBoxValue("Disable")) { return; }
-            if (MenuManager.DrawingsMenu.GetCheckBoxValue("Target") && TargetSelector.Target != null && TargetSelector.Target.IsValidTarget())
-            {
-                Circle.Draw(Color.Red, 150f, 5, TargetSelector.Target.Position);
-            }
             if (Menu.GetCheckBoxValue("Combo.Mode"))
             {
                 var pos = Util.myHero.Position.WorldToScreen();
                 pos.X = pos.X - 50;
                 Drawing.DrawText(pos, System.Drawing.Color.White, Combo.Menu["Mode"].Cast<Slider>().DisplayName, 15);
             }
-
+            var target = TargetSelector.Target;
+            if (MenuManager.DrawingsMenu.GetCheckBoxValue("Target") && target.IsValidTarget())
+            {
+                Circle.Draw(Color.Red, 150f, 5, TargetSelector.Target.Position);
+            }
             if (Menu.GetCheckBoxValue("Insec.Line") && Insec.IsReady)
             {
-                var blue = System.Drawing.Color.FromArgb(140, 0, 0, 255);
-                var target = TargetSelector.Target;
-                var startpos = target.Position;
-                var endpos = Insec.EndPosition;
-                var endpos1 = Insec.EndPosition + (startpos - endpos).To2D().Normalized().Rotated(45 * (float)Math.PI / 180).To3D() * target.BoundingRadius;
-                var endpos2 = Insec.EndPosition + (startpos - endpos).To2D().Normalized().Rotated( - 45 * (float)Math.PI / 180).To3D() * target.BoundingRadius;
                 if (target.IsValidTarget())
                 {
+                    var blue = System.Drawing.Color.FromArgb(140, 0, 0, 255);
+                    var startpos = target.Position;
+                    var endpos = Insec.EndPosition;
+                    var endpos1 = Insec.EndPosition + (startpos - endpos).To2D().Normalized().Rotated(45 * (float)Math.PI / 180).To3D() * target.BoundingRadius;
+                    var endpos2 = Insec.EndPosition + (startpos - endpos).To2D().Normalized().Rotated(-45 * (float)Math.PI / 180).To3D() * target.BoundingRadius;
                     var width = 5;
                     Drawing.DrawLine(startpos.WorldToScreen(), endpos.WorldToScreen(), width, blue);
                     Drawing.DrawLine(endpos.WorldToScreen(), endpos1.WorldToScreen(), width, blue);

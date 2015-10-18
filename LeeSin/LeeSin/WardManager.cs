@@ -77,7 +77,7 @@ namespace LeeSin
         }
         private static bool IsWard(this GameObject sender)
         {
-            return sender is Obj_AI_Minion && sender.Name != null && sender.Team == Util.myHero.Team && (sender.Name.ToLower().Contains("sightward") || sender.Name.ToLower().Contains("visionward"));
+            return sender is Obj_AI_Minion && sender.Team == Util.myHero.Team && sender.Name != null && (sender.Name.ToLower().Contains("sightward") || sender.Name.ToLower().Contains("visionward"));
         }
         private static void Obj_Ward_OnCreate(GameObject sender, EventArgs args)
         {

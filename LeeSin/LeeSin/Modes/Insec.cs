@@ -215,9 +215,10 @@ namespace LeeSin
         {
             get
             {
-                if (TargetSelector.Target.IsValidTarget())
+                var target = TargetSelector.Target;
+                if (target.IsValidTarget())
                 {
-                    return Math.Min((Util.myHero.BoundingRadius + TargetSelector.Target.BoundingRadius + 50f) * (100 + Menu.GetSliderValue("DistanceBetweenPercent")) / 100, SpellManager.R.Range);
+                    return Math.Min((Util.myHero.BoundingRadius + target.BoundingRadius + 50f) * (100 + Menu.GetSliderValue("DistanceBetweenPercent")) / 100, SpellManager.R.Range);
                 }
                 return 0;
             }
@@ -246,7 +247,8 @@ namespace LeeSin
                 {
                     return PositionSelected;
                 }
-                if (TargetSelector.Target.IsValidTarget())
+                var target = TargetSelector.Target;
+                if (target.IsValidTarget())
                 {
                     switch (Menu.GetSliderValue("Position"))
                     {
@@ -255,7 +257,6 @@ namespace LeeSin
                         case 2:
                             return Util.myHero.Position;
                         default:
-                            var target = TargetSelector.Target;
                             var turret = EntityManager.Turrets.Allies.OrderBy(m => Extensions.Distance(Util.myHero, m, true)).FirstOrDefault();
                             if (turret != null)
                             {
@@ -282,7 +283,7 @@ namespace LeeSin
         {
             get
             {
-                return (WardManager.CanWardJump || SpellManager.Flash_IsReady || IsRecent) && SpellSlot.R.IsReady() && EndPosition != Vector3.Zero;
+                return (WardManager.CanWardJump || SpellManager.Flash_IsReady || IsRecent) && SpellSlot.R.IsReady() && TargetSelector.Target.IsValidTarget() && EndPosition != Vector3.Zero;
             }
         }
         public static bool IsRecent

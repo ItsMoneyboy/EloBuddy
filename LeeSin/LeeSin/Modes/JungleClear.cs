@@ -84,12 +84,13 @@ namespace LeeSin
                         return;
                     }
                 }
+                if (Menu.GetCheckBoxValue("W") && minion.IsInAutoAttackRange(Util.myHero) && Util.myHero.HealthPercent <= 40) { SpellManager.CastW(Util.myHero); }
                 if (Game.Time - LastCastSpell < 0.25) { return; }
                 if (Menu.GetCheckBoxValue("Q")) { SpellManager.CastQ(minion); }
                 if (Game.Time - LastCastSpell < 0.25) { return; }
-                if (Menu.GetCheckBoxValue("W") && minion.IsInAutoAttackRange(Util.myHero)) { SpellManager.CastW(Util.myHero); }
-                if (Game.Time - LastCastSpell < 0.25) { return; }
                 if (Menu.GetCheckBoxValue("E")) { SpellManager.CastE(minion); }
+                if (Game.Time - LastCastSpell < 0.25) { return; }
+                if (Menu.GetCheckBoxValue("W") && minion.IsInAutoAttackRange(Util.myHero)) { SpellManager.CastW(Util.myHero); }
             }
         }
         private static bool IsDragon(this Obj_AI_Minion minion)

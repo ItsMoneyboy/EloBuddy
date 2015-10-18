@@ -130,9 +130,12 @@ namespace LeeSin
         }
         private static void Obj_AI_Base_OnProcessSpellCast(Obj_AI_Base sender, GameObjectProcessSpellCastEventArgs args)
         {
-            if (args.SData.Name.Equals(SpellSlot.R.GetSpellDataInst().SData.Name))
+            if (sender.IsMe)
             {
-                LastCastTime = Game.Time;
+                if (args.SData.Name.Equals(SpellSlot.R.GetSpellDataInst().SData.Name))
+                {
+                    LastCastTime = Game.Time;
+                }
             }
         }
 

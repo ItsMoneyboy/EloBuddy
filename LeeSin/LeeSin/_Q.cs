@@ -84,15 +84,18 @@ namespace LeeSin
 
         private static void Obj_AI_Base_OnProcessSpellCast(Obj_AI_Base sender, GameObjectProcessSpellCastEventArgs args)
         {
-            if (args.SData.Name.Equals(SpellSlot.Q.GetSpellDataInst().SData.Name))
+            if (sender.IsMe)
             {
-                if (args.SData.Name.ToLower().Contains("one"))
+                if (args.SData.Name.Equals(SpellSlot.Q.GetSpellDataInst().SData.Name))
                 {
-                    LastCastTime = Game.Time;
-                }
-                else
-                {
-                    IsDashing = true;
+                    if (args.SData.Name.ToLower().Contains("one"))
+                    {
+                        LastCastTime = Game.Time;
+                    }
+                    else
+                    {
+                        IsDashing = true;
+                    }
                 }
             }
         }
