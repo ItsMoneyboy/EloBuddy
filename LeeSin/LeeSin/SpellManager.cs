@@ -125,9 +125,16 @@ namespace LeeSin
         }
         public static void CastQ2(Obj_AI_Base target)
         {
-            if (target != null && SpellSlot.Q.IsReady() && !SpellSlot.Q.IsFirstSpell() && target.IsValidTarget(Q2.Range) && target.HaveQ())
+            if (target != null && SpellSlot.Q.IsReady() && !SpellSlot.Q.IsFirstSpell() && target.IsValidTarget(Q2.Range))
             {
-                Util.myHero.Spellbook.CastSpell(SpellSlot.Q);
+                if (target.HaveQ())
+                {
+                    Util.myHero.Spellbook.CastSpell(SpellSlot.Q);
+                }
+                else if (_Q.EndTime - Game.Time < 0.5f)
+                {
+                    Champion.ForceQ2(target);
+                }
             }
         }
         public static void CastW(Obj_AI_Base target)

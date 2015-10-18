@@ -101,7 +101,7 @@ namespace LeeSin
                             {
                                 if (_Q.IsValidTarget && Extensions.Distance(target, _Q.Target, true) < Math.Pow(WardManager.WardRange - DistanceBetween - Offset, 2))
                                 {
-                                    Champion.ForceQ2();
+                                    Champion.ForceQ2(target);
                                 }
                             }
                         }
@@ -137,7 +137,7 @@ namespace LeeSin
                 }
                 else
                 {
-                    Combo.Execute();
+                    NormalCombo.Execute();
                 }
             }
         }
@@ -208,7 +208,7 @@ namespace LeeSin
             {
                 if (TargetSelector.Target.IsValidTarget())
                 {
-                    return Math.Min((Util.myHero.BoundingRadius + TargetSelector.Target.BoundingRadius + 30f) * (100 + Menu.GetSliderValue("DistanceBetweenPercent")) / 100, SpellManager.R.Range);
+                    return Math.Min((Util.myHero.BoundingRadius + TargetSelector.Target.BoundingRadius + 50f) * (100 + Menu.GetSliderValue("DistanceBetweenPercent")) / 100, SpellManager.R.Range);
                 }
                 return 0;
             }

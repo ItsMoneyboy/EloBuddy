@@ -248,7 +248,7 @@ namespace LeeSin
                 return Smite_Target != null && Smite_Target.IsValidTarget() && SpellManager.Smite_IsReady;
             }
         }
-        private static float EndTime
+        public static float EndTime
         {
             get
             {

@@ -71,7 +71,7 @@ namespace LeeSin
                         {
                             if (!ModeManager.IsNone)
                             {
-                                Champion.ForceQ2();
+                                Champion.ForceQ2(sender);
                             }
                         }
                     }

@@ -140,13 +140,17 @@ namespace LeeSin
             return null;
         }
 
-        public static void ForceQ2()
+        public static void ForceQ2(Obj_AI_Base target = null)
         {
             if (SpellSlot.Q.IsReady() && !SpellSlot.Q.IsFirstSpell())
             {
-                if (_Q.IsValidTarget)
+                if (target == null)
                 {
-                    if (Extensions.Distance(TargetSelector.Target, _Q.Target, true) < Extensions.Distance(Util.myHero, _Q.Target, true))
+                    target = TargetSelector.Target;
+                }
+                if (_Q.IsValidTarget && target.IsValidTarget())
+                {
+                    if (Extensions.Distance(target, _Q.Target, true) < Extensions.Distance(Util.myHero, _Q.Target, true))
                     {
                         SpellManager.CastQ2(_Q.Target);
                     }

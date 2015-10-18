@@ -62,7 +62,11 @@ namespace LeeSin
                 {
                     if (stage == 2)
                     {
-                        return Util.myHero.CalculateDamageOnUnit(target, DamageType.Magical, (float)35 * slot.GetSpellDataInst().Level + 25 + 1f * Util.myHero.FlatMagicDamageMod) + Util.myHero.GetAutoAttackDamage(target, true);
+                        if (slot.IsFirstSpell())
+                        {
+                            return Util.myHero.CalculateDamageOnUnit(target, DamageType.Magical, (float)35 * slot.GetSpellDataInst().Level + 25 + 1f * Util.myHero.FlatMagicDamageMod) + Util.myHero.GetAutoAttackDamage(target, true);
+                        }
+                        return Util.myHero.GetAutoAttackDamage(target, true);
                     }
                     if (slot.IsFirstSpell())
                     {
@@ -99,7 +103,7 @@ namespace LeeSin
                 }
                 if (e)
                 {
-                    ComboDamage += SpellSlot.E.GetSpellDamage(target);
+                    ComboDamage += SpellSlot.E.GetSpellDamage(target, 2);
                     ManaWasted += SpellSlot.E.GetSpellDataInst().SData.ManaCostArray[SpellSlot.E.GetSpellDataInst().Level - 1];
                 }
                 if (r)
