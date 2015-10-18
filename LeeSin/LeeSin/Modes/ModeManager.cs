@@ -23,6 +23,7 @@ namespace LeeSin
                 return Insec.Menu.GetKeyBindValue("Key");
             }
         }
+        public static float Extra_AA_Range = 120f;
         public static void Init()
         {
             Game.OnUpdate += Game_OnTick;
@@ -68,7 +69,7 @@ namespace LeeSin
         {
             if (Combo.IsActive || Harass.IsActive)
             {
-                return target.IsValidTarget(source.BoundingRadius + target.BoundingRadius + source.AttackRange + Combo.Extra_AA_Range);
+                return target.IsValidTarget(source.BoundingRadius + target.BoundingRadius + source.AttackRange + Extra_AA_Range);
             }
             return target.IsValidTarget(source.BoundingRadius + target.BoundingRadius + source.AttackRange);
         }

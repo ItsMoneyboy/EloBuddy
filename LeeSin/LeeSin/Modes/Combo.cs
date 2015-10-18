@@ -43,7 +43,6 @@ namespace LeeSin
                 return Menu.GetSliderValue("Mode") == 2;
             }
         }
-        public static float Extra_AA_Range = 150f;
         public static bool IsActive
         {
             get

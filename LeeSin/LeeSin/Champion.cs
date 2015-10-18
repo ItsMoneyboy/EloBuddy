@@ -170,6 +170,11 @@ namespace LeeSin
             {
                 TargetSelector.Range = 1500f;
             }
+            var t = _R.BestHitR(MenuManager.MiscMenu.GetSliderValue("R.Hit"));
+            if (MenuManager.MiscMenu.GetSliderValue("R.Hit") <= t.Item1)
+            {
+                SpellManager.CastR(t.Item2);
+            }
         }
 
         private static void Interrupter_OnInterruptableSpell(Obj_AI_Base sender, Interrupter.InterruptableSpellEventArgs e)

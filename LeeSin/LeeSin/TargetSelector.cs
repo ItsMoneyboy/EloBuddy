@@ -28,7 +28,7 @@ namespace LeeSin
         {
             if (args.Msg == (uint)WindowMessages.LeftButtonDown)
             {
-                var target = EloBuddy.SDK.TargetSelector.GetTarget(250f, damageType, Util.mousePos);
+                var target = EloBuddy.SDK.TargetSelector.GetTarget(200f, damageType, Util.mousePos);
                 if (target.IsValidTarget())
                 {
                     ForcedTarget = target;

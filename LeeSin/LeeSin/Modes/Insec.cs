@@ -65,11 +65,20 @@ namespace LeeSin
 
         public static void Execute()
         {
+            var target = TargetSelector.Target;
             if (Orbwalker.CanMove && Game.Time - LastGapcloseAttempt > 0.25f)
             {
-                Orbwalker.MoveTo(Util.mousePos);
+
+                if (target.IsValidTarget() && Extensions.Distance(Util.myHero, ExpectedEndPosition, true) > Extensions.Distance(target, ExpectedEndPosition, true) && IsReady)
+                {
+                    var gapclosepos = target.Position + (target.Position - ExpectedEndPosition).Normalized() * DistanceBetween;
+                    Orbwalker.MoveTo(gapclosepos);
+                }
+                else
+                {
+                    Orbwalker.MoveTo(Util.mousePos);
+                }
             }
-            var target = TargetSelector.Target;
             if (target.IsValidTarget())
             {
                 if (IsReady)
@@ -81,7 +90,7 @@ namespace LeeSin
                             var predtarget = SpellManager.Q1.GetPrediction(target);
                             if (Menu.GetCheckBoxValue("Object") && predtarget.CollisionObjects.Count() > 1)
                             {
-                                foreach (Obj_AI_Base minion in EntityManager.MinionsAndMonsters.Get(EntityManager.MinionsAndMonsters.EntityType.Both, EntityManager.UnitTeam.Enemy, Util.myHero.Position, SpellManager.Q2.Range).Where(m => m.IsValidTarget() && SpellSlot.Q.GetSpellDamage(m) < Prediction.Health.GetPrediction(m, SpellManager.Q1.CastDelay + 1000 * (int) (Extensions.Distance(Util.myHero, m)/SpellManager.Q1.Speed)) && Extensions.Distance(Util.myHero, target, true) > Extensions.Distance(m, target, true) && Extensions.Distance(m, target, true) < Math.Pow(WardManager.WardRange - DistanceBetween - Offset, 2)).OrderBy(m => Extensions.Distance(target, m, true)))
+                                foreach (Obj_AI_Base minion in EntityManager.MinionsAndMonsters.Get(EntityManager.MinionsAndMonsters.EntityType.Both, EntityManager.UnitTeam.Enemy, Util.myHero.Position, SpellManager.Q2.Range).Where(m => m.IsValidTarget() && SpellSlot.Q.GetSpellDamage(m) < Prediction.Health.GetPrediction(m, SpellManager.Q1.CastDelay + 1000 * (int)(Extensions.Distance(Util.myHero, m) / SpellManager.Q1.Speed)) && Extensions.Distance(Util.myHero, target, true) > Extensions.Distance(m, target, true) && Extensions.Distance(m, target, true) < Math.Pow(WardManager.WardRange - DistanceBetween - Offset, 2)).OrderBy(m => Extensions.Distance(target, m, true)))
                                 {
                                     var pred = SpellManager.Q1.GetPrediction(minion);
                                     if (pred.HitChancePercent >= SpellSlot.Q.HitChancePercent())
@@ -178,7 +187,7 @@ namespace LeeSin
                     PositionSelected = EndPosition;
                     LastSetPositionTime = Game.Time;
                     var obj = Champion.GetBestObjectNearTo(gapclosepos);
-                    if (obj != null)
+                    if (obj != null && Extensions.Distance(obj, target, true) < Extensions.Distance(obj, ExpectedEndPosition, true))
                     {
                         SpellManager.CastW1(obj);
                     }
@@ -289,7 +298,7 @@ namespace LeeSin
             {
                 if (IsReady)
                 {
-                    var target = EloBuddy.SDK.TargetSelector.GetTarget(250f, TargetSelector.damageType, Util.mousePos);
+                    var target = EloBuddy.SDK.TargetSelector.GetTarget(200f, TargetSelector.damageType, Util.mousePos);
                     if (target.IsValidTarget())
                     {
 
@@ -297,7 +306,7 @@ namespace LeeSin
                     else
                     {
                         var ally = AllyHeroManager.GetNearestTo(Util.mousePos);
-                        if (ally != null && Extensions.Distance(ally, Util.mousePos) < 250f)
+                        if (ally != null && Extensions.Distance(ally, Util.mousePos) <= 200f)
                         {
                             AllySelected = ally;
                             PositionSelected = Vector3.Zero;

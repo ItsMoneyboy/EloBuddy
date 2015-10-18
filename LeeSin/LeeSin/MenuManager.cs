@@ -104,7 +104,7 @@ namespace LeeSin
 
             SubMenu["KillSteal"] = AddonMenu.AddSubMenu("KillSteal", "KillSteal");
             SubMenu["KillSteal"].Add("Ward", new CheckBox("Use Ward to GapClose", false));
-            SubMenu["KillSteal"].Add("Q", new CheckBox("Use Q", true));
+            SubMenu["KillSteal"].Add("Q", new CheckBox("Use Q", false));
             SubMenu["KillSteal"].Add("W", new CheckBox("Use W to GapClose", true));
             SubMenu["KillSteal"].Add("E", new CheckBox("Use E", true));
             SubMenu["KillSteal"].Add("R", new CheckBox("Use R", false));
@@ -126,8 +126,9 @@ namespace LeeSin
             SubMenu["Flee"].Add("W", new CheckBox("Use W on objects near mouse", true));
 
             SubMenu["Misc"] = AddonMenu.AddSubMenu("Misc", "Misc");
-            SubMenu["Misc"].Add("Overkill", new Slider("Overkill % for damage prediction", 10, 0, 100));
             SubMenu["Misc"].Add("Interrupter", new CheckBox("Use R to interrupt channeling spells", true));
+            SubMenu["Misc"].Add("Overkill", new Slider("Overkill % for damage prediction", 10, 0, 100));
+            SubMenu["Misc"].Add("R.Hit", new Slider("Use R if Hit >=", 3, 1, 5));
 
         }
         

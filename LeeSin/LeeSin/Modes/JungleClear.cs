@@ -79,7 +79,7 @@ namespace LeeSin
                 }
                 if (minion.IsDragon() && SpellManager.Smite_IsReady && SpellSlot.Q.IsReady())
                 {
-                    if (2 * SpellSlot.Q.GetSpellDamage(minion) + Util.myHero.GetSummonerSpellDamage(minion, DamageLibrary.SummonerSpells.Smite) >= minion.Health && SpellSlot.Q.GetSpellDamage(minion) + Util.myHero.GetSummonerSpellDamage(minion, DamageLibrary.SummonerSpells.Smite) <= minion.Health)
+                    if (2.5f * SpellSlot.Q.GetSpellDamage(minion, 2) + Util.myHero.GetSummonerSpellDamage(minion, DamageLibrary.SummonerSpells.Smite) >= minion.Health && SpellSlot.Q.GetSpellDamage(minion, 2) + Util.myHero.GetSummonerSpellDamage(minion, DamageLibrary.SummonerSpells.Smite) <= minion.Health)
                     {
                         return;
                     }
@@ -88,7 +88,7 @@ namespace LeeSin
                 if (Menu.GetCheckBoxValue("Q")) { SpellManager.CastQ(minion); }
                 if (Game.Time - LastCastSpell < 0.25) { return; }
                 if (Menu.GetCheckBoxValue("W") && minion.IsInAutoAttackRange(Util.myHero)) { SpellManager.CastW(Util.myHero); }
-                if (Game.Time - LastCastSpell < 0.25) { return; }
+                //if (Game.Time - LastCastSpell < 0.25) { return; }
                 if (Menu.GetCheckBoxValue("E")) { SpellManager.CastE(minion); }
             }
         }
