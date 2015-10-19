@@ -41,7 +41,7 @@ namespace LeeSin
             {
                 if (ForcedTarget != null)
                 {
-                    if (ForcedTarget.IsValidTarget(Range * Range))
+                    if (ForcedTarget.IsValidTarget(Range))
                     {
                         return ForcedTarget;
                     }
