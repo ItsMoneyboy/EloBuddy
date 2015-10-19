@@ -248,18 +248,18 @@ namespace LeeSin
         {
             get
             {
-                if (AllySelected != null)
-                {
-                    if (AllySelected.IsValidAlly() && AllySelected.Position.IsValidPosition())
-                        return AllySelected.Position;
-                }
-                if (PositionSelected != Vector3.Zero && PositionSelected.IsValidPosition())
-                {
-                    return PositionSelected;
-                }
                 var target = TargetSelector.Target;
                 if (target.IsValidTarget())
                 {
+                    if (AllySelected != null)
+                    {
+                        if (AllySelected.IsValidAlly() && AllySelected.Position.IsValidPosition())
+                            return AllySelected.Position + (target.Position - AllySelected.Position).Normalized().To2D().Perpendicular().To3D() * (AllySelected.AttackRange + AllySelected.BoundingRadius + target.BoundingRadius) / 2;
+                    }
+                    if (PositionSelected != Vector3.Zero && PositionSelected.IsValidPosition())
+                    {
+                        return PositionSelected;
+                    }
                     switch (Menu.GetSliderValue("Position"))
                     {
                         case 1:
@@ -270,7 +270,7 @@ namespace LeeSin
                             var turret = EntityManager.Turrets.Allies.Where(m => m.IsValidAlly()).OrderBy(m => Extensions.Distance(Util.myHero, m, true)).FirstOrDefault();
                             if (turret != null)
                             {
-                                if (Extensions.Distance(turret, target) - SpellManager.RKick.Range < (turret.BoundingRadius + target.BoundingRadius) + 750 + 200)
+                                if (Extensions.Distance(turret, target) - SpellManager.RKick.Range < 750 + 200)
                                 {
                                     return turret.Position;
                                 }

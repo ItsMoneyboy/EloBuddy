@@ -16,9 +16,9 @@ namespace LeeSin
     {
         public static AIHeroClient myHero { get { return ObjectManager.Player; } }
         public static Vector3 mousePos { get { return Game.CursorPos; } }
-        public static bool IsValidAlly(this Obj_AI_Base unit, float range = float.MaxValue)
+        public static bool IsValidAlly(this AttackableUnit unit, float range = float.MaxValue)
         {
-            return unit != null && unit.IsValid && unit.IsAlly && unit.IsVisible && unit.IsTargetable && !unit.IsDead && Extensions.Distance(myHero, unit, true) <= Math.Pow(range, 2);
+            return unit != null && unit.IsValid && !unit.IsDead && Extensions.Distance(myHero, unit, true) <= Math.Pow(range, 2);
         }
         public static int GetPriority(this AIHeroClient hero)
         {
