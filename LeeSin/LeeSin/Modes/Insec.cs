@@ -157,7 +157,7 @@ namespace LeeSin
             {
                 var gapclosepos = target.Position + (target.Position - ExpectedEndPosition).Normalized() * DistanceBetween;
                 var flashendpos = Util.myHero.Position + (gapclosepos - Util.myHero.Position).Normalized() * SpellManager.Flash.Range;
-                if (Extensions.Distance(gapclosepos, target, true) <= Math.Pow(SpellManager.R.Range, 2) && Extensions.Distance(flashendpos, target, true) < Extensions.Distance(flashendpos, ExpectedEndPosition, true) && Extensions.Distance(gapclosepos, target, true) < Extensions.Distance(gapclosepos, ExpectedEndPosition, true))
+                if (Extensions.Distance(gapclosepos, target, true) <= Math.Pow(SpellManager.R.Range, 2) && Extensions.Distance(target.Position, flashendpos, true) > Math.Pow(50, 2) && Extensions.Distance(flashendpos, target, true) < Extensions.Distance(flashendpos, ExpectedEndPosition, true) && Extensions.Distance(gapclosepos, target, true) < Extensions.Distance(gapclosepos, ExpectedEndPosition, true))
                 {
                     if (Orbwalker.CanMove)
                     {

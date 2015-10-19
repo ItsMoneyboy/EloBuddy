@@ -15,6 +15,13 @@ namespace LeeSin
     public static class JungleClear
     {
         private static float LastCastSpell;
+        public static bool IsActive
+        {
+            get
+            {
+                return ModeManager.IsJungleClear;
+            }
+        }
         public static Menu Menu
         {
             get
@@ -25,23 +32,33 @@ namespace LeeSin
         public static void Init()
         {
             Spellbook.OnCastSpell += Spellbook_OnCastSpell;
+            Obj_AI_Base.OnBuffGain += Obj_AI_Base_OnBuffGain;
+            Obj_AI_Base.OnBuffLose += Obj_AI_Base_OnBuffLose;
+        }
+
+        private static void Obj_AI_Base_OnBuffLose(Obj_AI_Base sender, Obj_AI_BaseBuffLoseEventArgs args)
+        {
+            if (args.Buff.Caster.IsMe)
+            {
+
+            }
+        }
+
+        private static void Obj_AI_Base_OnBuffGain(Obj_AI_Base sender, Obj_AI_BaseBuffGainEventArgs args)
+        {
+            if (args.Buff.Caster.IsMe)
+            {
+
+            }
         }
 
         private static void Spellbook_OnCastSpell(Spellbook sender, SpellbookCastSpellEventArgs args)
         {
-            if (sender.IsCastingSpell)
+            if (sender.IsCastingSpell && IsActive)
             {
-                LastCastSpell = Game.Time;
             }
         }
 
-        public static bool IsActive
-        {
-            get
-            {
-                return ModeManager.IsJungleClear;
-            }
-        }
         public static void Execute()
         {
             if (SpellManager.Smite_IsReady)
@@ -69,31 +86,51 @@ namespace LeeSin
                     }
                 }
                 if (Champion.PassiveStack > 0 && Util.myHero.IsInAutoAttackRange(minion)) { return; }
-                if (Game.Time - LastCastSpell < 0.25) { return; }
+                if (Menu.GetCheckBoxValue("W") && minion.IsInAutoAttackRange(Util.myHero) && Util.myHero.HealthPercent <= 40)
+                {
+                    if (SpellSlot.W.IsReady() && SpellSlot.W.IsFirstSpell())
+                    {
+                        Util.myHero.Spellbook.CastSpell(SpellSlot.W, Util.myHero, true);
+                        return;
+                    }
+                }
                 if (SpellSlot.Q.IsReady() && !SpellSlot.Q.IsFirstSpell() && Menu.GetCheckBoxValue("Q"))
                 {
-                    SpellManager.CastQ2(_Q.Target);
+                    Util.myHero.Spellbook.CastSpell(SpellSlot.Q, true);
                     return;
                 }
-                if (Game.Time - LastCastSpell < 0.25) { return; }
                 if (SpellSlot.W.IsReady() && !SpellSlot.W.IsFirstSpell() && Menu.GetCheckBoxValue("W"))
                 {
-                    SpellManager.CastW2();
+                    Util.myHero.Spellbook.CastSpell(SpellSlot.W, true);
                     return;
                 }
-                if (Game.Time - LastCastSpell < 0.25) { return; }
-                if (SpellSlot.E.IsReady() && !SpellSlot.E.IsFirstSpell() && Menu.GetCheckBoxValue("E"))
+                if (SpellSlot.E.IsReady() && !SpellSlot.E.IsFirstSpell() && Menu.GetCheckBoxValue("E") && Extensions.Distance(minion, Util.myHero, true) <= Math.Pow(SpellManager.E_Range, 2))
                 {
-                    SpellManager.CastE2(minion);
+                    Util.myHero.Spellbook.CastSpell(SpellSlot.E, true);
                     return;
                 }
-                if (Menu.GetCheckBoxValue("W") && minion.IsInAutoAttackRange(Util.myHero) && Util.myHero.HealthPercent <= 40) { SpellManager.CastW(Util.myHero); }
-                if (Game.Time - LastCastSpell < 0.25) { return; }
-                if (Menu.GetCheckBoxValue("Q")) { SpellManager.CastQ(minion); }
-                if (Game.Time - LastCastSpell < 0.25) { return; }
-                if (Menu.GetCheckBoxValue("E")) { SpellManager.CastE(minion); }
-                if (Game.Time - LastCastSpell < 0.25) { return; }
-                if (Menu.GetCheckBoxValue("W") && minion.IsInAutoAttackRange(Util.myHero)) { SpellManager.CastW(Util.myHero); }
+                if (SpellSlot.Q.IsReady() && SpellSlot.Q.IsFirstSpell() && Menu.GetCheckBoxValue("Q"))
+                {
+                    var pred = SpellManager.Q1.GetPrediction(minion);
+                    if (pred.HitChancePercent >= SpellSlot.Q.HitChancePercent())
+                    {
+                        Util.myHero.Spellbook.CastSpell(SpellSlot.Q, pred.CastPosition, true);
+                        return;
+                    }
+                }
+                if (SpellSlot.E.IsReady() && SpellSlot.E.IsFirstSpell() && Menu.GetCheckBoxValue("E") && Extensions.Distance(minion, Util.myHero, true) <= Math.Pow(SpellManager.E_Range, 2))
+                {
+                    Util.myHero.Spellbook.CastSpell(SpellSlot.E, true);
+                    return;
+                }
+                if (Menu.GetCheckBoxValue("W") && minion.IsInAutoAttackRange(Util.myHero))
+                {
+                    if (SpellSlot.W.IsReady() && SpellSlot.W.IsFirstSpell())
+                    {
+                        Util.myHero.Spellbook.CastSpell(SpellSlot.W, Util.myHero, true);
+                        return;
+                    }
+                }
             }
         }
         public static bool IsDragon(this Obj_AI_Minion minion)

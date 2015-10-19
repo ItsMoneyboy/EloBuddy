@@ -129,7 +129,7 @@ namespace LeeSin
             {
                 if (target.HaveQ())
                 {
-                    Util.myHero.Spellbook.CastSpell(SpellSlot.Q);
+                    Util.myHero.Spellbook.CastSpell(SpellSlot.Q, true);
                 }
                 else if (_Q.EndTime - Game.Time < 0.5f)
                 {
@@ -155,7 +155,7 @@ namespace LeeSin
         {
             if (SpellSlot.W.IsReady() && SpellSlot.W.IsFirstSpell() && target.IsValidAlly())
             {
-                Util.myHero.Spellbook.CastSpell(W1.Slot, target);
+                Util.myHero.Spellbook.CastSpell(W1.Slot, target, true);
             }
         }
 
@@ -189,7 +189,7 @@ namespace LeeSin
                 var pred = E1.GetPrediction(target);
                 if (pred.HitChance == HitChance.High)
                 {
-                    Util.myHero.Spellbook.CastSpell(E1.Slot);
+                    Util.myHero.Spellbook.CastSpell(E1.Slot, true);
                 }
             }
         }
@@ -200,7 +200,7 @@ namespace LeeSin
                 var pred = E2.GetPrediction(target);
                 if (pred.HitChance == HitChance.High)
                 {
-                    Util.myHero.Spellbook.CastSpell(E2.Slot);
+                    Util.myHero.Spellbook.CastSpell(E2.Slot, true);
                 }
             }
         }
@@ -208,7 +208,7 @@ namespace LeeSin
         {
             if (SpellSlot.R.IsReady() && target.IsValidTarget(R.Range))
             {
-                Util.myHero.Spellbook.CastSpell(R.Slot, target);
+                Util.myHero.Spellbook.CastSpell(R.Slot, target, true);
             }
         }
         public static float HitChancePercent(this SpellSlot s)
