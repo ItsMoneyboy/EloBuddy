@@ -96,7 +96,7 @@ namespace LeeSin
                 if (Menu.GetCheckBoxValue("W") && minion.IsInAutoAttackRange(Util.myHero)) { SpellManager.CastW(Util.myHero); }
             }
         }
-        private static bool IsDragon(this Obj_AI_Minion minion)
+        public static bool IsDragon(this Obj_AI_Minion minion)
         {
             return minion.IsValidTarget() && (minion.Name.ToLower().Contains("baron") || minion.Name.ToLower().Contains("dragon"));
         }

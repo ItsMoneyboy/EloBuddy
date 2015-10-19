@@ -41,7 +41,7 @@ namespace LeeSin
             {
                 if (ForcedTarget != null)
                 {
-                    if (ForcedTarget.IsValidTarget() && Extensions.Distance(Util.myHero, ForcedTarget, true) < Range * Range)
+                    if (ForcedTarget.IsValidTarget(Range * Range))
                     {
                         return ForcedTarget;
                     }

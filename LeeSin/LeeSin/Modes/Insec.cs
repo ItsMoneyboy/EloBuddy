@@ -211,6 +211,15 @@ namespace LeeSin
                 }
             }
         }
+        private static bool IsValidPosition(this Vector3 position)
+        {
+            var target = TargetSelector.Target;
+            if (target.IsValidTarget())
+            {
+                return Extensions.Distance(target, position, true) <= Math.Pow(SpellManager.RKick.Range + 500f, 2);
+            }
+            return false;
+        }
         private static float DistanceBetween
         {
             get
@@ -241,10 +250,10 @@ namespace LeeSin
             {
                 if (AllySelected != null)
                 {
-                    if (AllySelected.IsValidAlly())
+                    if (AllySelected.IsValidAlly() && AllySelected.Position.IsValidPosition())
                         return AllySelected.Position;
                 }
-                if (PositionSelected != Vector3.Zero)
+                if (PositionSelected != Vector3.Zero && PositionSelected.IsValidPosition())
                 {
                     return PositionSelected;
                 }
@@ -266,7 +275,7 @@ namespace LeeSin
                                     return turret.Position;
                                 }
                             }
-                            var allies = EntityManager.Heroes.Allies.Where(m => m.IsValidAlly() && !m.IsMe && Extensions.Distance(target, m, true) < Math.Pow(SpellManager.RKick.Range + 500f, 2)).OrderBy(m => m.GetPriority());
+                            var allies = EntityManager.Heroes.Allies.Where(m => m.IsValidAlly() && !m.IsMe && m.Position.IsValidPosition()).OrderBy(m => m.GetPriority());
                             if (allies.Count() > 0)
                             {
                                 var ally = allies.LastOrDefault();
@@ -317,7 +326,7 @@ namespace LeeSin
                         else
                         {
                             AllySelected = null;
-                            PositionSelected = Util.mousePos;
+                            PositionSelected = new Vector3(Util.mousePos.X, Util.mousePos.Y, Util.mousePos.Z);
                             LastSetPositionTime = Game.Time;
                         }
                     }
