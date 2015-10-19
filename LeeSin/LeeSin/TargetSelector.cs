@@ -23,7 +23,7 @@ namespace LeeSin
             Game.OnWndProc += Game_OnWndProc;
             damageType = d;
         }
-        
+
         private static void Game_OnWndProc(WndEventArgs args)
         {
             if (args.Msg == (uint)WindowMessages.LeftButtonDown)
@@ -39,9 +39,12 @@ namespace LeeSin
         {
             get
             {
-                if (ForcedTarget != null && ForcedTarget.IsValidTarget() && Extensions.Distance(Util.myHero, ForcedTarget, true) < Range * Range)
+                if (ForcedTarget != null)
                 {
-                    return ForcedTarget;
+                    if (ForcedTarget.IsValidTarget() && Extensions.Distance(Util.myHero, ForcedTarget, true) < Range * Range)
+                    {
+                        return ForcedTarget;
+                    }
                 }
                 return EloBuddy.SDK.TargetSelector.GetTarget(Range, damageType, Util.myHero.Position);
             }

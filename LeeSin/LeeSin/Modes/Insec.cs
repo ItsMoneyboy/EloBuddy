@@ -241,7 +241,8 @@ namespace LeeSin
             {
                 if (AllySelected != null)
                 {
-                    return AllySelected.Position;
+                    if (AllySelected.IsValidAlly())
+                        return AllySelected.Position;
                 }
                 if (PositionSelected != Vector3.Zero)
                 {
@@ -265,7 +266,7 @@ namespace LeeSin
                                     return turret.Position;
                                 }
                             }
-                            var allies = EntityManager.Heroes.Allies.Where(m => m.IsValidAlly() && !m.IsMe && Extensions.Distance(Util.myHero, m, true) < Math.Pow(SpellManager.RKick.Range + 500f, 2)).OrderBy(m => m.GetPriority());
+                            var allies = EntityManager.Heroes.Allies.Where(m => m.IsValidAlly() && !m.IsMe && Extensions.Distance(target, m, true) < Math.Pow(SpellManager.RKick.Range + 500f, 2)).OrderBy(m => m.GetPriority());
                             if (allies.Count() > 0)
                             {
                                 var ally = allies.LastOrDefault();
@@ -283,7 +284,7 @@ namespace LeeSin
         {
             get
             {
-                return (WardManager.CanWardJump || SpellManager.Flash_IsReady || IsRecent) && SpellSlot.R.IsReady() && TargetSelector.Target.IsValidTarget() && EndPosition != Vector3.Zero;
+                return (WardManager.CanWardJump || SpellManager.Flash_IsReady || IsRecent) && SpellSlot.R.IsReady() && TargetSelector.Target != null && TargetSelector.Target.IsValidTarget();
             }
         }
         public static bool IsRecent

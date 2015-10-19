@@ -18,11 +18,11 @@ namespace LeeSin
     {
         public static Obj_AI_Base GetNearestTo(Vector3 position)
         {
-            return EntityManager.Heroes.Allies.Where(m => m.IsValid && !m.IsDead && Extensions.Distance(Util.myHero, m, true) <= Math.Pow(SpellManager.W1_Range + SpellManager.W_ExtraRange, 2)).OrderBy(m => Extensions.Distance(m, position, true)).FirstOrDefault();
+            return EntityManager.Heroes.Allies.Where(m => m.IsValid && !m.IsDead && !m.IsMe && Extensions.Distance(Util.myHero, m, true) <= Math.Pow(SpellManager.W1_Range + SpellManager.W_ExtraRange, 2)).OrderBy(m => Extensions.Distance(m, position, true)).FirstOrDefault();
         }
         public static Obj_AI_Base GetFurthestTo(Vector3 position)
         {
-            return EntityManager.Heroes.Allies.Where(m => m.IsValid && !m.IsDead && Extensions.Distance(Util.myHero, m, true) <= Math.Pow(SpellManager.W1_Range + SpellManager.W_ExtraRange, 2)).OrderBy(m => Extensions.Distance(m, position, true)).LastOrDefault();
+            return EntityManager.Heroes.Allies.Where(m => m.IsValid && !m.IsDead && !m.IsMe && Extensions.Distance(Util.myHero, m, true) <= Math.Pow(SpellManager.W1_Range + SpellManager.W_ExtraRange, 2)).OrderBy(m => Extensions.Distance(m, position, true)).LastOrDefault();
         }
     }
 }

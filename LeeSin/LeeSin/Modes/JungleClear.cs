@@ -61,28 +61,31 @@ namespace LeeSin
             var minion = EntityManager.MinionsAndMonsters.GetJungleMonsters(Util.myHero.Position, SpellManager.Q1.Range, true).Where(m => m.IsValidTarget()).OrderBy(m => m.MaxHealth).LastOrDefault();
             if (minion != null)
             {
-                if (Champion.PassiveStack > 0 && Util.myHero.IsInAutoAttackRange(minion)) { return; }
-                if (SpellSlot.Q.IsReady() && !SpellSlot.Q.IsFirstSpell() && Menu.GetCheckBoxValue("Q"))
-                {
-                    SpellManager.CastQ2(_Q.Target);
-                    return;
-                }
-                if (SpellSlot.W.IsReady() && !SpellSlot.W.IsFirstSpell() && Menu.GetCheckBoxValue("W"))
-                {
-                    SpellManager.CastW2();
-                    return;
-                }
-                if (SpellSlot.E.IsReady() && !SpellSlot.E.IsFirstSpell() && Menu.GetCheckBoxValue("E"))
-                {
-                    SpellManager.CastE2(minion);
-                    return;
-                }
                 if (minion.IsDragon() && SpellManager.Smite_IsReady && SpellSlot.Q.IsReady())
                 {
                     if (2.5f * SpellSlot.Q.GetSpellDamage(minion, 2) + Util.myHero.GetSummonerSpellDamage(minion, DamageLibrary.SummonerSpells.Smite) >= minion.Health && SpellSlot.Q.GetSpellDamage(minion, 2) + Util.myHero.GetSummonerSpellDamage(minion, DamageLibrary.SummonerSpells.Smite) <= minion.Health)
                     {
                         return;
                     }
+                }
+                if (Champion.PassiveStack > 0 && Util.myHero.IsInAutoAttackRange(minion)) { return; }
+                if (Game.Time - LastCastSpell < 0.25) { return; }
+                if (SpellSlot.Q.IsReady() && !SpellSlot.Q.IsFirstSpell() && Menu.GetCheckBoxValue("Q"))
+                {
+                    SpellManager.CastQ2(_Q.Target);
+                    return;
+                }
+                if (Game.Time - LastCastSpell < 0.25) { return; }
+                if (SpellSlot.W.IsReady() && !SpellSlot.W.IsFirstSpell() && Menu.GetCheckBoxValue("W"))
+                {
+                    SpellManager.CastW2();
+                    return;
+                }
+                if (Game.Time - LastCastSpell < 0.25) { return; }
+                if (SpellSlot.E.IsReady() && !SpellSlot.E.IsFirstSpell() && Menu.GetCheckBoxValue("E"))
+                {
+                    SpellManager.CastE2(minion);
+                    return;
                 }
                 if (Menu.GetCheckBoxValue("W") && minion.IsInAutoAttackRange(Util.myHero) && Util.myHero.HealthPercent <= 40) { SpellManager.CastW(Util.myHero); }
                 if (Game.Time - LastCastSpell < 0.25) { return; }
