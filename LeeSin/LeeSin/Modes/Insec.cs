@@ -111,6 +111,7 @@ namespace LeeSin
                             {
                                 if (_Q.IsValidTarget && Extensions.Distance(target, _Q.Target, true) < Math.Pow(WardManager.WardRange - DistanceBetween - Offset, 2))
                                 {
+                                    TargetSelector.ForcedTarget = target;
                                     Champion.ForceQ2(target);
                                 }
                             }
@@ -150,7 +151,7 @@ namespace LeeSin
                 }
             }
         }
-        private static void Flash(Obj_AI_Base target)
+        private static void Flash(AIHeroClient target)
         {
             if (SpellManager.Flash_IsReady)
             {
@@ -165,12 +166,13 @@ namespace LeeSin
                     AllySelected = null;
                     PositionSelected = EndPosition;
                     LastSetPositionTime = Game.Time;
+                    TargetSelector.ForcedTarget = target;
                     Util.myHero.Spellbook.CastSpell(SpellManager.Flash.Slot, gapclosepos);
                 }
             }
         }
 
-        private static void WardJump(Obj_AI_Base target)
+        private static void WardJump(AIHeroClient target)
         {
             var pred = SpellManager.W1.GetPrediction(target);
             if (WardManager.CanWardJump && pred.HitChancePercent >= 30f)
@@ -186,6 +188,7 @@ namespace LeeSin
                     AllySelected = null;
                     PositionSelected = EndPosition;
                     LastSetPositionTime = Game.Time;
+                    TargetSelector.ForcedTarget = target;
                     var obj = Champion.GetBestObjectNearTo(gapclosepos);
                     if (obj != null && Extensions.Distance(obj, target, true) < Extensions.Distance(obj, ExpectedEndPosition, true))
                     {
@@ -251,10 +254,9 @@ namespace LeeSin
                 var target = TargetSelector.Target;
                 if (target.IsValidTarget())
                 {
-                    if (AllySelected != null)
+                    if (AllySelected != null && AllySelected.IsValidAlly() && AllySelected.Position.IsValidPosition())
                     {
-                        if (AllySelected.IsValidAlly() && AllySelected.Position.IsValidPosition())
-                            return AllySelected.Position + (target.Position - AllySelected.Position).Normalized().To2D().Perpendicular().To3D() * (AllySelected.AttackRange + AllySelected.BoundingRadius + target.BoundingRadius) / 2;
+                        return AllySelected.Position + (target.Position - AllySelected.Position).Normalized().To2D().Perpendicular().To3D() * (AllySelected.AttackRange + AllySelected.BoundingRadius + target.BoundingRadius) / 2;
                     }
                     if (PositionSelected != Vector3.Zero && PositionSelected.IsValidPosition())
                     {
@@ -339,6 +341,7 @@ namespace LeeSin
                 AllySelected = null;
                 PositionSelected = Vector3.Zero;
                 LastSetPositionTime = 0;
+                TargetSelector.ForcedTarget = null;
             }
         }
     }

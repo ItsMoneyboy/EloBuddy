@@ -165,8 +165,12 @@ namespace LeeSin
 
         private static void Game_OnTick(EventArgs args)
         {
-            TargetSelector.Range = 1300f;
-            if (!SpellSlot.Q.IsFirstSpell() && _Q.Target != null)
+            TargetSelector.Range = SpellManager.W_Range + Util.myHero.GetAutoAttackRange() + 80;
+            if (SpellSlot.Q.IsReady() && SpellSlot.Q.IsFirstSpell())
+            {
+                TargetSelector.Range = 1300f;
+            }
+            if (SpellSlot.Q.IsReady() && !SpellSlot.Q.IsFirstSpell() && _Q.Target != null)
             {
                 TargetSelector.Range = 1500f;
             }
