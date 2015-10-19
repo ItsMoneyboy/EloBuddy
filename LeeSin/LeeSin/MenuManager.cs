@@ -20,13 +20,13 @@ namespace LeeSin
         {
             var AddonName = Champion.AddonName;
             var Author = Champion.Author;
-            AddonMenu = MainMenu.AddMenu(AddonName, AddonName + " by " + Author + " v1.00");
+            AddonMenu = MainMenu.AddMenu(AddonName, AddonName + " by " + Author + " v1.1");
             AddonMenu.AddLabel(AddonName + " made by " + Author);
 
             SubMenu["Prediction"] = AddonMenu.AddSubMenu("Prediction", "Prediction");
             SubMenu["Prediction"].AddGroupLabel("Q Settings");
-            SubMenu["Prediction"].Add("QCombo", new Slider("Combo HitChancePercent", 60, 0, 100));
-            SubMenu["Prediction"].Add("QHarass", new Slider("Harass HitChancePercent", 70, 0, 100));
+            SubMenu["Prediction"].Add("QCombo", new Slider("Combo HitChancePercent", 85, 0, 100));
+            SubMenu["Prediction"].Add("QHarass", new Slider("Harass HitChancePercent", 91, 0, 100));
 
             //Combo
             SubMenu["Combo"] = AddonMenu.AddSubMenu("Combo", "Combo");

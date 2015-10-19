@@ -39,7 +39,7 @@ namespace LeeSin
             var target = TargetSelector.Target;
             if (MenuManager.DrawingsMenu.GetCheckBoxValue("Target") && target.IsValidTarget())
             {
-                Circle.Draw(Color.Red, 150f, 5, TargetSelector.Target.Position);
+                Circle.Draw(Color.Red, 120f, 5, TargetSelector.Target.Position);
             }
             if (Menu.GetCheckBoxValue("Insec.Line") && Insec.IsReady)
             {
