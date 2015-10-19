@@ -267,10 +267,10 @@ namespace LeeSin
                         case 2:
                             return Util.myHero.Position;
                         default:
-                            var turret = EntityManager.Turrets.Allies.OrderBy(m => Extensions.Distance(Util.myHero, m, true)).FirstOrDefault();
+                            var turret = EntityManager.Turrets.Allies.Where(m => m.IsValidAlly()).OrderBy(m => Extensions.Distance(Util.myHero, m, true)).FirstOrDefault();
                             if (turret != null)
                             {
-                                if (Extensions.Distance(turret, target) - SpellManager.RKick.Range < turret.GetAutoAttackRange() + 750 + 200)
+                                if (Extensions.Distance(turret, target) - SpellManager.RKick.Range < (turret.BoundingRadius + target.BoundingRadius) + 750 + 200)
                                 {
                                     return turret.Position;
                                 }
@@ -279,8 +279,7 @@ namespace LeeSin
                             if (allies.Count() > 0)
                             {
                                 var ally = allies.LastOrDefault();
-                                var pos = ally.Position + (target.Position - ally.Position).Normalized().To2D().Perpendicular().To3D() * ally.GetAutoAttackRange(target) / 2;
-                                return pos;
+                                return ally.Position + (target.Position - ally.Position).Normalized().To2D().Perpendicular().To3D() * (ally.AttackRange + ally.BoundingRadius + target.BoundingRadius) / 2;
                             }
                             break;
 
