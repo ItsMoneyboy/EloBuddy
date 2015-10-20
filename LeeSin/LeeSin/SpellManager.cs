@@ -268,6 +268,25 @@ namespace LeeSin
                 return false;
             }
         }
+        public static float SmiteDamage(this Obj_AI_Base target)
+        {
+            if (target.IsValidTarget() && Smite_IsReady)
+            {
+                if (target is AIHeroClient)
+                {
+                    if (CanUseSmiteOnHeroes)
+                    {
+                        return Util.myHero.GetSummonerSpellDamage(target, DamageLibrary.SummonerSpells.Smite);
+                    }
+                }
+                else
+                {
+                    var level = Util.myHero.Level;
+                    return Math.Max(20 * level + 370, Math.Max(30 * level + 330, Math.Max(40 * level + 240, 50 * level + 100)));
+                }
+            }
+            return 0;
+        }
         public static float E_Range
         {
             get

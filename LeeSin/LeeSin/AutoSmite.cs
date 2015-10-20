@@ -40,7 +40,7 @@ namespace LeeSin
                     var minion = EntityManager.MinionsAndMonsters.GetJungleMonsters(Util.myHero.Position, SpellManager.Q2.Range, true).Where(m => m.IsInSmiteRange() && m.IsDragon()).FirstOrDefault();
                     if (minion != null)
                     {
-                        if (minion.Health <= Util.myHero.GetSummonerSpellDamage(minion, DamageLibrary.SummonerSpells.Smite))
+                        if (minion.Health <= minion.SmiteDamage())
                         {
                             Util.myHero.Spellbook.CastSpell(SpellManager.Smite.Slot, minion);
                         }

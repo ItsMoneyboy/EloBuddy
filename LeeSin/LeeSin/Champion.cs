@@ -45,7 +45,6 @@ namespace LeeSin
             _R.Init();
             Insec.Init();
             AutoSmite.Init();
-            JungleClear.Init();
             DrawManager.Init();
             TargetSelector.Init(SpellManager.Q2.Range + 200, DamageType.Physical);
             LoadCallbacks();
@@ -174,10 +173,13 @@ namespace LeeSin
             {
                 TargetSelector.Range = 1500f;
             }
-            var t = _R.BestHitR(MenuManager.MiscMenu.GetSliderValue("R.Hit"));
-            if (MenuManager.MiscMenu.GetSliderValue("R.Hit") <= t.Item1)
+            if (!Insec.IsActive)
             {
-                SpellManager.CastR(t.Item2);
+                var t = _R.BestHitR(MenuManager.MiscMenu.GetSliderValue("R.Hit"));
+                if (MenuManager.MiscMenu.GetSliderValue("R.Hit") <= t.Item1)
+                {
+                    SpellManager.CastR(t.Item2);
+                }
             }
         }
 
