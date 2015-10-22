@@ -1,0 +1,10 @@
+C:\Users\JChicao\Google Drive\EloBuddy\Addons\Draven Me Crazy\Draven Me Crazy\bin\Debug\Draven Me Crazy.exe.config
+C:\Users\JChicao\Google Drive\EloBuddy\Addons\Draven Me Crazy\Draven Me Crazy\bin\Debug\Draven Me Crazy.exe
+C:\Users\JChicao\Google Drive\EloBuddy\Addons\Draven Me Crazy\Draven Me Crazy\bin\Debug\Draven Me Crazy.pdb
+C:\Users\JChicao\Google Drive\EloBuddy\Addons\Draven Me Crazy\Draven Me Crazy\bin\Debug\EloBuddy.dll
+C:\Users\JChicao\Google Drive\EloBuddy\Addons\Draven Me Crazy\Draven Me Crazy\bin\Debug\EloBuddy.SDK.dll
+C:\Users\JChicao\Google Drive\EloBuddy\Addons\Draven Me Crazy\Draven Me Crazy\bin\Debug\SharpDX.Direct3D9.dll
+C:\Users\JChicao\Google Drive\EloBuddy\Addons\Draven Me Crazy\Draven Me Crazy\bin\Debug\SharpDX.dll
+C:\Users\JChicao\Google Drive\EloBuddy\Addons\Draven Me Crazy\Draven Me Crazy\bin\Debug\Newtonsoft.Json.dll
+C:\Users\JChicao\Google Drive\EloBuddy\Addons\Draven Me Crazy\Draven Me Crazy\obj\Debug\Draven Me Crazy.exe
+C:\Users\JChicao\Google Drive\EloBuddy\Addons\Draven Me Crazy\Draven Me Crazy\obj\Debug\Draven Me Crazy.pdb
