@@ -42,7 +42,7 @@ namespace Draven_Me_Crazy
                     ItemManager.UseOffensiveItems(target);
                 }
                 if (Menu.GetCheckBoxValue("R") && damageI.IsKillable && damageI.R) { SpellManager.CastR(target); }
-                if (Menu.GetCheckBoxValue("E")) { SpellManager.CastE(target); }
+                if (Menu.GetCheckBoxValue("E") && damageI.IsKillable) { SpellManager.CastE(target); }
                 if (Menu.GetCheckBoxValue("W")) { SpellManager.CastW(target); }
             }
         }
