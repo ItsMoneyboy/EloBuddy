@@ -20,6 +20,7 @@ namespace LeeSin
         public static float Range;
         public static void Init(float range, DamageType d)
         {
+            Range = range;
             Game.OnWndProc += Game_OnWndProc;
             damageType = d;
         }

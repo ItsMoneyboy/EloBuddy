@@ -163,7 +163,6 @@ namespace LeeSin
             {
                 sender.DisplayName = DisplayName + ": " + values[args.NewValue];
             };
-            SubMenu["Combo"].AddSeparator(5);
         }
         public static Menu GetSubMenu(string s)
         {

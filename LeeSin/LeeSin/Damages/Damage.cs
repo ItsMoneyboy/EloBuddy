@@ -79,7 +79,7 @@ namespace LeeSin
                 }
                 else if (slot == SpellSlot.R)
                 {
-                    return Util.myHero.CalculateDamageOnUnit(target, DamageType.Magical, (float)200 * slot.GetSpellDataInst().Level + 2.0f * Util.myHero.FlatMagicDamageMod);
+                    return Util.myHero.CalculateDamageOnUnit(target, DamageType.Physical, (float)200 * slot.GetSpellDataInst().Level + 2.0f * Util.myHero.FlatMagicDamageMod);
                 }
             }
             return Util.myHero.GetSpellDamage(target, slot);

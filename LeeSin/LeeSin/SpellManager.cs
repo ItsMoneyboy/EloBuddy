@@ -259,7 +259,7 @@ namespace LeeSin
             {
                 if (Smite_IsReady)
                 {
-                    var name = SpellManager.Smite.Slot.GetSpellDataInst().SData.Name.ToLower();
+                    var name = Smite.Slot.GetSpellDataInst().SData.Name.ToLower();
                     if (name.Contains("smiteduel") || name.Contains("smiteplayerganker"))
                     {
                         return true;
@@ -282,7 +282,7 @@ namespace LeeSin
                 else
                 {
                     var level = Util.myHero.Level;
-                    return Math.Max(20 * level + 370, Math.Max(30 * level + 330, Math.Max(40 * level + 240, 50 * level + 100)));
+                    return (new[] { 20 * level + 370, 30 * level + 330, 40 * level + 240, 50 * level + 100 }).Max();
                 }
             }
             return 0;
