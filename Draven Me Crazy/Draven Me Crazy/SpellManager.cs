@@ -89,7 +89,7 @@ namespace Draven_Me_Crazy
             {
                 var pred = E.GetPrediction(target);
                 var damageI = target.GetBestCombo();
-                if (pred.HitChancePercent >= 20f && ((damageI.IsKillable && Extensions.Distance(Util.MyHero, target, true) < Extensions.Distance(Util.MyHero, pred.CastPosition, true)) || Extensions.Distance(Util.MyHero, target) >= 750f))
+                if (pred.HitChancePercent >= 20f && ((damageI.IsKillable && Extensions.Distance(Util.MyHero, target, true) < Extensions.Distance(Util.MyHero, pred.CastPosition, true)) || Extensions.Distance(Util.MyHero, target) >= 500f))
                 {
                     Util.MyHero.Spellbook.CastSpell(SpellSlot.W);
                 }

@@ -86,17 +86,9 @@ namespace Draven_Me_Crazy
         }
         public static Axe AxeAfter(this Axe a)
         {
-            return Axes.Where(m => m.InTime && m.SourceInRadius && m.TimeLeft > a.TimeLeft).OrderBy(m => m.TimeLeft).FirstOrDefault();
-        }
-        public static Axe _AxeAfter(this Axe a)
-        {
             return Axes.Where(m => m.InTime && m.TimeLeft > a.TimeLeft).OrderBy(m => m.TimeLeft).FirstOrDefault();
         }
         public static Axe AxeBefore(this Axe a)
-        {
-            return Axes.Where(m => m.InTime && m.SourceInRadius && m.TimeLeft < a.TimeLeft).OrderBy(m => m.TimeLeft).LastOrDefault();
-        }
-        public static Axe _AxeBefore(this Axe a)
         {
             return Axes.Where(m => m.InTime && m.TimeLeft < a.TimeLeft).OrderBy(m => m.TimeLeft).LastOrDefault();
         }

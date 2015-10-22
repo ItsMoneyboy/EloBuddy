@@ -56,7 +56,7 @@ namespace Draven_Me_Crazy
                 {
                     return AxesManager.CatchSource;
                 }
-                return _StartPosition;
+                return StartPosition;
 
             }
         }
@@ -65,7 +65,7 @@ namespace Draven_Me_Crazy
             get
             {
                 if (MissileIsValid || ReticleIsValid)
-                    return Extensions.Distance(CatchSource, EndPosition, true) <= Math.Pow(AxesManager.CatchRadius, 2);
+                    return Extensions.Distance(CatchSource, EndPosition, true) < Math.Pow(AxesManager.CatchRadius, 2);
                 return false;
             }
         }
@@ -89,7 +89,7 @@ namespace Draven_Me_Crazy
             get
             {
                 var TimeLefts = 0f;
-                foreach (Axe a1 in AxesManager.Axes.Where(m => m.TimeLeft < TimeLeft))
+                foreach (Axe a1 in AxesManager.Axes.Where(m =>m.InTime && m.TimeLeft < TimeLeft))
                 {
                     TimeLefts += a1.TimeLeft;
                 }
@@ -107,28 +107,28 @@ namespace Draven_Me_Crazy
         {
             get
             {
-                return TimeToCatchReticle - TimeToMakeAutoAttack >= 0;
+                return TimeToCatchReticle - TimeToMakeAutoAttack > 0;
             }
         }
         public bool CanOrbwalkWithUserDelay
         {
             get
             {
-                return TimeToCatchReticle - (1 - AxesManager.CatchDelay) * LimitTime - OffsetTimeNeededToCatchReticle >= 0;
+                return TimeToCatchReticle - (1 - AxesManager.CatchDelay) * LimitTime - OffsetTimeNeededToCatchReticle > 0;
             }
         }
         public bool CanOrbwalk
         {
             get
             {
-                return TimeToCatchReticle - OffsetTimeNeededToCatchReticle >= 0;
+                return TimeToCatchReticle - OffsetTimeNeededToCatchReticle > 0;
             }
         }
         public bool CanMove
         {
             get
             {
-                return TimeToCatchReticle >= 0;
+                return TimeToCatchReticle > 0;
             }
         }
         public float DistanceFromHero
@@ -154,7 +154,7 @@ namespace Draven_Me_Crazy
             get
             {
                 if (MissileIsValid || ReticleIsValid)
-                    return Extensions.Distance(Util.MyHero.Position, EndPosition, true) <= Math.Pow(Radius, 2);
+                    return Extensions.Distance(Util.MyHero.Position, EndPosition, true) < Math.Pow(Radius, 2);
                 return false;
             }
         }
@@ -189,17 +189,6 @@ namespace Draven_Me_Crazy
                     return Util.MyHero.Position;
                 }
                 return this.AxeBefore().EndPosition;
-            }
-        }
-        public Vector3 _StartPosition
-        {
-            get
-            {
-                if (this.IsFirst())
-                {
-                    return Util.MyHero.Position;
-                }
-                return this._AxeBefore().EndPosition;
             }
         }
         public Vector3 EndPosition

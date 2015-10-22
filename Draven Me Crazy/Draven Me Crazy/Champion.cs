@@ -19,11 +19,6 @@ namespace Draven_Me_Crazy
         public static string AddonName = "Draven Me Crazy";
         static void Main(string[] args)
         {
-            Loading.OnLoadingComplete += SpellManager.Init;
-            Loading.OnLoadingComplete += MenuManager.Init;
-            Loading.OnLoadingComplete += DrawManager.Init;
-            Loading.OnLoadingComplete += AxesManager.Init;
-            Loading.OnLoadingComplete += ModeManager.Init;
             Loading.OnLoadingComplete += Loading_OnLoadingComplete;
         }
 
@@ -35,6 +30,11 @@ namespace Draven_Me_Crazy
             TargetSelector.Init(1000f, DamageType.Physical);
             Interrupter.OnInterruptableSpell += Interrupter_OnInterruptableSpell;
             Gapcloser.OnGapcloser += Gapcloser_OnGapcloser;
+            SpellManager.Init(args);
+            MenuManager.Init(args);
+            DrawManager.Init(args);
+            AxesManager.Init(args);
+            ModeManager.Init(args);
         }
 
         private static void Gapcloser_OnGapcloser(AIHeroClient sender, Gapcloser.GapcloserEventArgs e)
