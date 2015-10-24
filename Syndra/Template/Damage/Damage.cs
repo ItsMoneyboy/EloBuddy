@@ -87,7 +87,51 @@ namespace Template
             ComboDamage = ComboDamage * Overkill;
             return new DamageResult(target, ComboDamage, ManaWasted);
         }
-
+        public static DamageResult GetBestComboR(this Obj_AI_Base target)
+        {
+            if (target.IsValidTarget())
+            {
+                float cd = Combo.Menu.GetSliderValue("Cooldown");
+                float qcd = SpellSlot.Q.GetSpellDataInst().Cooldown;
+                float wcd = SpellSlot.W.GetSpellDataInst().Cooldown;
+                float ecd = SpellSlot.E.GetSpellDataInst().Cooldown;
+                bool q1 = (SpellSlot.Q.IsReady() || qcd < cd);
+                bool w1 = (SpellSlot.W.IsReady() || wcd < cd);
+                bool e1 = (SpellSlot.E.IsReady() || ecd < cd);
+                bool[] q_array = (SpellSlot.Q.IsReady() || qcd < cd) ? new bool[] { false, true } : new bool[] { false };
+                bool[] w_array = (SpellSlot.W.IsReady() || wcd < cd) ? new bool[] { false, true } : new bool[] { false };
+                bool[] e_array = (SpellSlot.E.IsReady() || ecd < cd) ? new bool[] { false, true } : new bool[] { false };
+                float bestdmg = -1;
+                float bestmana = 0;
+                bool[] best = new bool[] { false, false, false };
+                if (q1 || w1 || e1)
+                {
+                    foreach (bool q_bool in q_array)
+                    {
+                        foreach (bool w_bool in w_array)
+                        {
+                            foreach (bool e_bool in e_array)
+                            {
+                                DamageResult damageI2 = target.GetComboDamage(q_bool, w_bool, e_bool, false);
+                                float d = damageI2.Damage;
+                                float m = damageI2.Mana;
+                                if (Util.MyHero.Mana >= m && d >= target.Health)
+                                {
+                                    if (d < bestdmg || bestdmg == -1)
+                                    {
+                                        bestdmg = d;
+                                        bestmana = m;
+                                        best = new bool[] { q1, w1, e1, false };
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                return new DamageResult(target, bestdmg, bestmana, best[0], best[1], best[2], false, 0);
+            }
+            return new DamageResult(target, 0, 0, false, false, false, false, 0);
+        }
         public static DamageResult GetBestCombo(this Obj_AI_Base target)
         {
             var q = SpellSlot.Q.IsReady() ? new bool[] { false, true } : new bool[] { false };

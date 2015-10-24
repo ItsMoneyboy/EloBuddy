@@ -17,12 +17,12 @@ namespace Template
     {
         public static string Author = "iCreative";
         public static string AddonName = "Limitless Potential";
+        //Add Killable text
         static void Main(string[] args)
         {
             Loading.OnLoadingComplete += Loading_OnLoadingComplete;
         }
-
-
+        
         private static void Loading_OnLoadingComplete(EventArgs args)
         {
             if (Util.MyHero.Hero != EloBuddy.Champion.Syndra) { return; }
@@ -41,7 +41,9 @@ namespace Template
         {
             if (MenuManager.MiscMenu.GetCheckBoxValue("Gapcloser"))
             {
-
+                SpellManager.CastE(sender);
+                SpellManager.CastQE(sender);
+                SpellManager.CastWE(sender);
             }
         }
 
@@ -50,7 +52,9 @@ namespace Template
 
             if (MenuManager.MiscMenu.GetCheckBoxValue("Interrupter"))
             {
-
+                SpellManager.CastE(sender);
+                SpellManager.CastQE(sender);
+                SpellManager.CastWE(sender);
             }
         }
     }

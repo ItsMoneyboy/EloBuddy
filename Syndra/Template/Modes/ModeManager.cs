@@ -78,7 +78,7 @@ namespace Template
         {
             get
             {
-                return Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.JungleClear);
+                return Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.JungleClear) && EntityManager.MinionsAndMonsters.GetJungleMonsters(Util.MyHero.Position, Util.MyHero.GetAutoAttackRange() + 200, false).Count() > 0;
             }
         }
         public static bool IsLastHit

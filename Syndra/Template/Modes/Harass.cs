@@ -32,6 +32,16 @@ namespace Template
         {
             if (Menu.GetSliderValue("Mana") <= Util.MyHero.ManaPercent)
             {
+                var target = TargetSelector.Target;
+                if (target.IsValidTarget())
+                {
+                    if (Menu.GetCheckBoxValue("Turret") && target.IsInEnemyTurret() && Util.MyHero.IsInEnemyTurret()) { return; }
+                    if (Menu.GetCheckBoxValue("E")) { SpellManager.CastE(target); }
+                    if (Menu.GetCheckBoxValue("W")) { SpellManager.CastW(target); }
+                    if (Menu.GetCheckBoxValue("Q")) { SpellManager.CastQ(target); }
+                    if (Menu.GetCheckBoxValue("WE")) { SpellManager.CastWE(target); }
+                    if (Menu.GetCheckBoxValue("QE")) { SpellManager.CastQE(target); }
+                }
             }
         }
     }

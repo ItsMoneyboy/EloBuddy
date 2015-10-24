@@ -38,11 +38,12 @@ namespace Template
         public static int QE_Speed = 2000;
         public static float Combo_QE, Combo_WE = 0f;
         private static Obj_AI_Base _W_Object = null;
+        private static Obj_AI_Base _WE_Object = null;
         public static Obj_AI_Base W_Object
         {
             get
             {
-                if (IsW2 && Util.MyHero.HasBuff("syndrawtooltip"))
+                if (IsW2)
                 {
                     if (_W_Object != null)
                     {
@@ -54,6 +55,7 @@ namespace Template
                     var ball = BallManager.Balls.Where(m => m.IsWObject).FirstOrDefault();
                     if (ball != null)
                     {
+                        _WE_Object = _W_Object;
                         return ball.Object;
                     }
                 }
@@ -108,7 +110,6 @@ namespace Template
                 if (args.Buff.Name.Equals("syndrawbuff"))
                 {
                     _W_Object = null;
-                    
                 }
             }
         }
@@ -135,10 +136,11 @@ namespace Template
                     {
                         W_EndPosition = args.End;
                         W_LastCastTime = Game.Time;
+                        Core.DelayAction(delegate { _WE_Object = null; }, W.CastDelay + 1500 * (int)(Extensions.Distance(Util.MyHero, args.End) / W.Speed));
                     }
                     else
                     {
-                        W_LastCastTime = Game.Time;
+                        //W_LastCastTime = Game.Time;
                         //W_LastSentTime = Game.Time;
                     }
                 }
@@ -150,12 +152,9 @@ namespace Template
         }
         private static void Spellbook_OnCastSpell(Spellbook sender, SpellbookCastSpellEventArgs args)
         {
-            if (sender.IsCastingSpell)
+            if (args.Slot == SpellSlot.W)
             {
-                if (args.Slot == SpellSlot.W)
-                {
-                    W_LastSentTime = Game.Time;
-                }
+                W_LastSentTime = Game.Time;
             }
         }
         public static SpellSlot SpellSlotFromName(this AIHeroClient hero, string name)
@@ -169,7 +168,7 @@ namespace Template
             }
             return SpellSlot.Unknown;
         }
-        public static void CastQ(Obj_AI_Base target, float hitchancepercent = -1)
+        public static void CastQ(Obj_AI_Base target)
         {
             if (SpellSlot.Q.IsReady() && target.IsValidTarget() && target.IsEnemy)
             {
@@ -178,15 +177,14 @@ namespace Template
                     Q.Width = Q_Width2;
                 }
                 var pred = Q.GetPrediction(target);
-                if (hitchancepercent == -1) { Q.Slot.HitChancePercent(); }
-                if (pred.HitChancePercent >= hitchancepercent)
+                if (pred.HitChancePercent >= Q.Slot.HitChancePercent())
                 {
                     Q.Cast(pred.CastPosition);
                 }
             }
         }
 
-        public static void CastW(Obj_AI_Base target, float hitchancepercent = -1)
+        public static void CastW(Obj_AI_Base target)
         {
             if (SpellSlot.W.IsReady() && target.IsValidTarget(W.Range + W.Width) && target.IsEnemy && Game.Time - W_LastSentTime > 0.25f)
             {
@@ -197,8 +195,7 @@ namespace Template
                         W.Width = W_Width2;
                     }
                     var pred = W.GetPrediction(target);
-                    if (hitchancepercent == -1) { W.Slot.HitChancePercent(); }
-                    if (pred.HitChancePercent >= hitchancepercent)
+                    if (pred.HitChancePercent >= W.Slot.HitChancePercent())
                     {
                         Util.MyHero.Spellbook.CastSpell(W.Slot, pred.CastPosition);
                     }
@@ -224,7 +221,7 @@ namespace Template
                     }
                     if (Best == null)
                     {
-                        foreach (Ball b in BallManager.Balls.Where(m => m.IsIdle && Extensions.Distance(Util.MyHero, m.Position, true) <= Math.Pow(W.Range, 2) && Game.Time - E_LastCastTime >= E.CastDelay / 1000 + 1.5f * Extensions.Distance(Util.MyHero, m.Position) / E.Speed && m.Object.NetworkId != target.NetworkId).OrderBy(m => Extensions.Distance(Util.MyHero, m.Position, true)))
+                        foreach (Ball b in BallManager.Balls.Where(m => m.IsIdle && Extensions.Distance(Util.MyHero, m.Position, true) <= Math.Pow(W.Range, 2) && !m.E_IsOnTime && m.Object.NetworkId != target.NetworkId).OrderBy(m => Extensions.Distance(Util.MyHero, m.Position, true)))
                         {
                             Best = b.Object;
                             break;
@@ -341,13 +338,13 @@ namespace Template
                 {
                     if (!IsW2 && W.Slot.Mana() + QE.Slot.Mana() <= Util.MyHero.Mana)
                     {
-                        var Best = BallManager.Balls.Where(m => m.IsIdle && !m.IsOnETime).OrderBy(m => target.Position.To2D().ProjectOn(m.Position.To2D(), m.E_EndPosition.To2D()).SegmentPoint.Distance(target.Position.To2D(), true)).LastOrDefault();
+                        var Best = BallManager.Balls.Where(m => m.IsIdle && !m.E_IsOnTime).OrderBy(m => target.Position.To2D().ProjectOn(m.Position.To2D(), m.E_EndPosition.To2D()).SegmentPoint.Distance(target.Position.To2D(), true)).LastOrDefault();
                         if (Best != null)
                         {
-                            //Util.MyHero.Spellbook.CastSpell(W.Slot, Best.Position);
+                            Util.MyHero.Spellbook.CastSpell(W.Slot, Best.Position);
                         }
                     }
-                    else if (IsW2 && QE.Slot.Mana() <= Util.MyHero.Mana)
+                    else if (IsW2 && QE.Slot.Mana() <= Util.MyHero.Mana && W_Object != null && W_Object.IsBall())
                     {
                         if (!target.IsValidTarget(W.Range))
                         {
@@ -362,8 +359,8 @@ namespace Template
                                 var pred2 = QE.GetPrediction(target);
                                 if (pred2.HitChancePercent >= QE.Slot.HitChancePercent())
                                 {
-                                    var StartPos = Util.MyHero.Position + (pred.CastPosition - Util.MyHero.Position).Normalized() * (E.Range + E_ExtraWidth);
-                                    //Util.MyHero.Spellbook.CastSpell(W.Slot, StartPos);
+                                    var StartPos = Util.MyHero.Position + (pred2.CastPosition - Util.MyHero.Position).Normalized() * (E.Range + E_ExtraWidth);
+                                    Util.MyHero.Spellbook.CastSpell(W.Slot, StartPos);
                                     Combo_WE = Game.Time;
                                 }
                             }
@@ -377,15 +374,15 @@ namespace Template
                             var pred = W.GetPrediction(target);
                             if (pred.HitChancePercent >= SpellSlot.W.HitChancePercent() / 2)
                             {
-                                //Util.MyHero.Spellbook.CastSpell(W.Slot, pred.CastPosition);
+                                Util.MyHero.Spellbook.CastSpell(W.Slot, pred.CastPosition);
                                 Combo_WE = Game.Time;
                             }
                         }
                     }
                 }
-                else if (W_Object != null && W_Object.IsBall() && Game.Time - Combo_WE <= 1.5f * (W_CastDelay2 / 1000 + Extensions.Distance(W_Object, W_EndPosition) / W_Speed2))
+                else if (_WE_Object != null && _WE_Object.IsBall() && Game.Time - Combo_WE <= 1.5f * (W_CastDelay2 / 1000 + Extensions.Distance(_WE_Object, W_EndPosition) / W_Speed2))
                 {
-                    var TimeToArriveW = W_CastDelay2 / 1000 + Extensions.Distance(W_Object, W_EndPosition) / W_Speed2 - (Game.Time - W_LastCastTime);
+                    var TimeToArriveW = W_CastDelay2 / 1000 + Extensions.Distance(_WE_Object, W_EndPosition) / W_Speed2 - (Game.Time - W_LastCastTime);
                     if (TimeToArriveW >= 0)
                     {
                         if (TimeToArriveW <= Extensions.Distance(W_EndPosition, Util.MyHero) / E.Speed + E_CastDelay2 / 1000)
@@ -407,7 +404,7 @@ namespace Template
         {
             get
             {
-                return SpellSlot.W.GetSpellDataInst().SData.Name.ToLower().Equals("syndrawcast");
+                return SpellSlot.W.GetSpellDataInst().SData.Name.ToLower().Equals("syndrawcast") || Util.MyHero.HasBuff("syndrawtooltip");
             }
         }
         public static float HitChancePercent(this SpellSlot s)

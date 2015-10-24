@@ -33,6 +33,7 @@ namespace Template
         {
             if (Util.MyHero.ManaPercent >= Menu.GetSliderValue("Mana"))
             {
+                if (Menu.GetCheckBoxValue("Q")) { SpellManager.Q.LastHit(); }
             }
         }
     }

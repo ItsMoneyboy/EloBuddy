@@ -30,7 +30,18 @@ namespace Template
                 {
                     if (Menu.GetCheckBoxValue("Q") && result.CanKillWith(SpellSlot.Q)) { SpellManager.CastQ(enemy); }
                     if (Menu.GetCheckBoxValue("W") && result.CanKillWith(SpellSlot.W)) { SpellManager.CastW(enemy); }
-                    if (Menu.GetCheckBoxValue("E") && result.CanKillWith(SpellSlot.E)) { SpellManager.CastE(enemy); }
+                    if (Menu.GetCheckBoxValue("E") && result.CanKillWith(SpellSlot.E))
+                    {
+                        SpellManager.CastE(enemy);
+                    }
+                    if (Menu.GetCheckBoxValue("Q") && Menu.GetCheckBoxValue("E") && (result.CanKillWith(SpellSlot.Q) || result.CanKillWith(SpellSlot.E)))
+                    {
+                        SpellManager.CastQE(enemy);
+                    }
+                    if (Menu.GetCheckBoxValue("W") && Menu.GetCheckBoxValue("E") && (result.CanKillWith(SpellSlot.W) || result.CanKillWith(SpellSlot.E)))
+                    {
+                        SpellManager.CastWE(enemy);
+                    }
                     if (Menu.GetCheckBoxValue("R") && result.CanKillWith(SpellSlot.R)) { SpellManager.CastR(enemy); }
                 }
                 if (Menu.GetCheckBoxValue("Ignite") && SpellManager.Ignite_IsReady && Util.MyHero.GetSummonerSpellDamage(enemy, DamageLibrary.SummonerSpells.Ignite) >= enemy.Health)

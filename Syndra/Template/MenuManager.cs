@@ -41,7 +41,7 @@ namespace Template
             SubMenu["Combo"].Add("E", new CheckBox("Use E", true));
             SubMenu["Combo"].Add("QE", new CheckBox("Use QE", true));
             SubMenu["Combo"].Add("WE", new CheckBox("Use WE", true));
-            SubMenu["Combo"].AddStringList("R", "Use R:", new[] { "Never", "If killable", "If needed", "Always" }, 2);
+            SubMenu["Combo"].AddStringList("R", "Use R", new[] { "Never", "If killable", "If needed", "Always" }, 2);
             SubMenu["Combo"].Add("Zhonyas", new Slider("Use Zhonyas if HealthPercent <=", 10, 0, 100));
             SubMenu["Combo"].Add("Cooldown", new Slider("Cooldown on spells for R needed", 3, 0, 10));
 

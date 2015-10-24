@@ -33,6 +33,10 @@ namespace Template
         {
             if (Util.MyHero.ManaPercent >= Menu.GetSliderValue("Mana"))
             {
+                if (Menu.GetCheckBoxValue("Q2")) { SpellManager.Q.LastHit(); }
+                SpellManager.Q.LaneClear(Menu.GetSliderValue("Q"));
+                var count = SpellManager.IsW2 ? (Menu.GetSliderValue("W") - 1) : Menu.GetSliderValue("W");
+                SpellManager.CastW(SpellManager.W.LaneClear(count, false));
             }
         }
     }

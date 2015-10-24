@@ -54,14 +54,14 @@ namespace Template
                 return ObjectIsValid && !Object.IsTargetable;
             }
         }
-        public bool IsOnETime
+        public bool E_IsOnTime
         {
             get
             {
                 return ObjectIsValid && Game.Time - SpellManager.E_LastCastTime <= SpellManager.E.CastDelay / 1000 + 1.5f * Extensions.Distance(Util.MyHero, Position) / SpellManager.E.Speed;
             }
         }
-        public bool IsOnERange
+        public bool E_IsOnRange
         {
             get
             {
