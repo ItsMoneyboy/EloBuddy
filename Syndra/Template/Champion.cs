@@ -9,8 +9,8 @@ namespace Template
 {
     public static class Champion
     {
-        public static string Author = "iCreative";
-        public static string AddonName = "Limitless Potential";
+        public static string Author = "Moneyboy";
+        public static string AddonName = "Moneyboy";
         //Add Killable text
         static void Main(string[] args)
         {
