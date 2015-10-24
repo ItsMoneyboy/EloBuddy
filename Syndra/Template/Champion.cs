@@ -19,7 +19,7 @@ namespace Template
         
         private static void Loading_OnLoadingComplete(EventArgs args)
         {
-            if (Util.MyHero.Hero != EloBuddy.Champion.Syndra) { return; }
+            if (Util.MyHero.Hero !=Champion.Syndra) { return; }
             Chat.Print(AddonName + " made by " + Author + " loaded, have fun!.");
             TargetSelector.Init(1200f, DamageType.Physical);
             SpellManager.Init(args);
