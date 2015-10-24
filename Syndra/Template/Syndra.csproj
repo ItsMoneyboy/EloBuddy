@@ -81,6 +81,8 @@
     <Compile Include="TargetSelector.cs" />
     <Compile Include="Util.cs" />
   </ItemGroup>
+  <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
