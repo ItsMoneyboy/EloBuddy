@@ -50,7 +50,7 @@ namespace Template
             if (s.IsReady())
             {
                 var minions = EntityManager.MinionsAndMonsters.GetJungleMonsters(s.Source(), s.Range + s.Width, true).OrderBy(m => m.MaxHealth);
-                if (minions.Count() > 0)
+                if (minions.Count() > 0 && minions.Count() >= NumberOfHits)
                 {
                     switch (s.Type)
                     {
@@ -86,7 +86,7 @@ namespace Template
             if (s.IsReady())
             {
                 var minions = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, s.Source(), s.Range + s.Width, true);
-                if (minions.Count() > 0)
+                if (minions.Count() > 0 && minions.Count() >= NumberOfHits)
                 {
                     switch (s.Type)
                     {
@@ -187,10 +187,10 @@ namespace Template
         {
             if (s.IsReady())
             {
-                var enemyminions = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, s.Source(), s.Range + s.Width, true).Where(o => o.Health <= 2.0f * s.Slot.GetSpellDamage(o));
-                if (enemyminions.Count() > 0)
+                var minions = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, s.Source(), s.Range + s.Width, true).Where(o => o.Health <= 2.0f * s.Slot.GetSpellDamage(o));
+                if (minions.Count() > 0)
                 {
-                    foreach (Obj_AI_Base minion in enemyminions)
+                    foreach (Obj_AI_Base minion in minions)
                     {
                         bool CanCalculate = false;
                         if (minion.IsValidTarget())

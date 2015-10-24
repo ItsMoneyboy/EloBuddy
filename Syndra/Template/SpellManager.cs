@@ -265,7 +265,7 @@ namespace Template
                         if (pred.HitChancePercent >= QE.Slot.HitChancePercent())
                         {
                             var info2 = pred.CastPosition.To2D().ProjectOn(StartPosition, EndPosition);
-                            if (info2.IsOnSegment && Extensions.Distance(info2.SegmentPoint, pred.CastPosition.To2D(), true) <= Math.Pow((QE.Width + target.BoundingRadius) * 3 / 4, 2))
+                            if (info2.IsOnSegment && Extensions.Distance(info2.SegmentPoint, pred.CastPosition.To2D(), true) <= Math.Pow((QE.Width + target.BoundingRadius) * 4 / 4, 2))
                             {
                                 Util.MyHero.Spellbook.CastSpell(QE.Slot, pred.CastPosition);
                             }

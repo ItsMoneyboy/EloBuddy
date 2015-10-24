@@ -42,10 +42,6 @@ namespace Template
                     Drawing.DrawLine(b.Position.WorldToScreen(), b.E_EndPosition.WorldToScreen(), SpellManager.QE.Width, System.Drawing.Color.FromArgb(100, 255, 255, 255));
                 }
             }
-            foreach (Ball b in BallManager.Balls.Where(m => m.IsIdle && m.ObjectIsValid))
-            {
-                Circle.Draw(Color.Blue, SpellManager.Q.Width, 1, b.Position);
-            }
             if (Menu.GetCheckBoxValue("W.Object") && SpellManager.W_Object != null)
             {
                 Circle.Draw(Color.Blue, SpellManager.W_Width1, 1, SpellManager.W_Object.Position);
