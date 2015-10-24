@@ -1,14 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
+using System.Drawing;
 using System.Linq;
-using EloBuddy;
-using EloBuddy.SDK;
-using EloBuddy.SDK.Enumerations;
-using EloBuddy.SDK.Events;
-using EloBuddy.SDK.Menu;
-using EloBuddy.SDK.Menu.Values;
-using EloBuddy.SDK.Rendering;
-using SharpDX;
+using LeagueSharp;
+using LeagueSharp.Common;
 
 namespace Template
 {
