@@ -60,18 +60,18 @@ namespace Template
             SubMenu["LaneClear"].AddGroupLabel("Unkillable minions");
             SubMenu["LaneClear"].Add("Q2", new CheckBox("Use Q", true));
             SubMenu["LaneClear"].Add("Mana", new Slider("Min. Mana Percent:", 50, 0, 100));
-
-            SubMenu["LastHit"] = AddonMenu.AddSubMenu("LastHit", "LastHit");
-            SubMenu["LastHit"].AddGroupLabel("Unkillable minions");
-            SubMenu["LastHit"].Add("Q", new CheckBox("Use Q", true));
-            SubMenu["LastHit"].Add("Mana", new Slider("Min. Mana Percent:", 50, 0, 100));
-
+            
             SubMenu["JungleClear"] = AddonMenu.AddSubMenu("JungleClear", "JungleClear");
             SubMenu["JungleClear"].Add("Q", new CheckBox("Use Q", true));
             SubMenu["JungleClear"].Add("W", new CheckBox("Use W", true));
             SubMenu["JungleClear"].Add("E", new CheckBox("Use E", true));
             SubMenu["JungleClear"].Add("Mana", new Slider("Min. Mana Percent:", 20, 0, 100));
 
+            SubMenu["LastHit"] = AddonMenu.AddSubMenu("LastHit", "LastHit");
+            SubMenu["LastHit"].AddGroupLabel("Unkillable minions");
+            SubMenu["LastHit"].Add("Q", new CheckBox("Use Q", true));
+            SubMenu["LastHit"].Add("Mana", new Slider("Min. Mana Percent:", 50, 0, 100));
+            
             SubMenu["KillSteal"] = AddonMenu.AddSubMenu("KillSteal", "KillSteal");
             SubMenu["KillSteal"].Add("Q", new CheckBox("Use Q", true));
             SubMenu["KillSteal"].Add("W", new CheckBox("Use W", true));

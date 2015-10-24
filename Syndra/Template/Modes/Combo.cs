@@ -52,7 +52,7 @@ namespace Template
                     switch (Menu.GetSliderValue("R"))
                     {
                         case 1:
-                            if (damageI.IsKillable && damageI.R)
+                            if (damageI.IsKillable && SpellSlot.R.GetSpellDamage(target) >= target.Health)
                             {
                                 var qcd = SpellSlot.Q.GetSpellDataInst().Cooldown;
                                 if (SpellSlot.Q.IsReady() || qcd < cd) { boolean = false; }

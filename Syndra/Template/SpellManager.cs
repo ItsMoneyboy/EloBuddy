@@ -256,10 +256,8 @@ namespace Template
                     var info = target.ServerPosition.To2D().ProjectOn(StartPosition, EndPosition);
                     if (info.IsOnSegment && Extensions.Distance(target.ServerPosition.To2D(), info.SegmentPoint, true) <= Math.Pow(1.8f * (QE.Width + target.BoundingRadius), 2))
                     {
-                        int speed = (int)(Extensions.Distance(Util.MyHero, target, true) >= Extensions.Distance(Util.MyHero, target, true) ? QE_Speed : int.MaxValue);
-                        int delay = E.CastDelay + 1000 * (int)(Math.Min(Extensions.Distance(Util.MyHero, Position), Extensions.Distance(Util.MyHero, target)) / E.Speed);
-                        QE.Speed = speed;
-                        QE.CastDelay = delay;
+                        QE.Speed = (int)(Extensions.Distance(Util.MyHero, target, true) >= Extensions.Distance(Util.MyHero, target, true) ? QE_Speed : int.MaxValue);
+                        QE.CastDelay = E.CastDelay + 1000 * (int)(Math.Min(Extensions.Distance(Util.MyHero, Position), Extensions.Distance(Util.MyHero, target)) / E.Speed);
                         QE.SourcePosition = Position;
                         var pred = QE.GetPrediction(target);
                         if (pred.HitChancePercent >= QE.Slot.HitChancePercent())
